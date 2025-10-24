@@ -16,7 +16,10 @@ DECLARE
   v_tx jsonb;
   v_category_id uuid;
   v_bank_account_id uuid;
+<<<<<<< HEAD
   v_tx_id uuid;
+=======
+>>>>>>> 5c7e38d (Bulk Transaction Insert (#36))
   v_inserted_count integer := 0;
   v_errors jsonb := '[]'::jsonb;
   v_idx integer := 0;
@@ -161,6 +164,7 @@ BEGIN
         (v_tx->>'amount')::numeric,
         CASE WHEN v_tx->'tags' IS NOT NULL THEN (SELECT array_agg(value::text) FROM jsonb_array_elements_text(v_tx->'tags')) ELSE NULL END,
         v_tx->>'notes'
+<<<<<<< HEAD
       )
       RETURNING id INTO v_tx_id;
 
@@ -177,6 +181,12 @@ BEGIN
         ON CONFLICT (transaction_id, tag_id) DO NOTHING;
       END IF;
 
+=======
+      );
+
+      v_inserted_count := v_inserted_count + 1;
+
+>>>>>>> 5c7e38d (Bulk Transaction Insert (#36))
     EXCEPTION WHEN OTHERS THEN
       v_errors := v_errors || jsonb_build_object(
         'index', v_idx,
