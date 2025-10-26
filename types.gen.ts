@@ -302,9 +302,7 @@ export type Database = {
         Row: {
           amount: number | null
           bank_account: string | null
-          bank_account_id: string | null
           category: string | null
-          category_id: string | null
           created_at: string | null
           date: string | null
           id: string | null
@@ -349,9 +347,7 @@ export type Database = {
         Row: {
           amount: number | null
           bank_account: string | null
-          bank_account_id: string | null
           category: string | null
-          category_id: string | null
           created_at: string | null
           date: string | null
           id: string | null
@@ -396,9 +392,7 @@ export type Database = {
         Row: {
           amount: number | null
           bank_account: string | null
-          bank_account_id: string | null
           category: string | null
-          category_id: string | null
           created_at: string | null
           date: string | null
           id: string | null
