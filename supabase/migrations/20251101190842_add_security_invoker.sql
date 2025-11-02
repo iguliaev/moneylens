@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 drop view if exists public.categories_with_usage;
 
 drop view if exists public.bank_accounts_with_usage;
@@ -19,8 +18,6 @@ drop view if exists public.view_yearly_tagged_type_totals;
 
 drop view if exists public.view_yearly_totals;
 
-=======
->>>>>>> 44c319f (Fix security advisor findings (#44))
 create or replace view public.categories_with_usage
 with (security_invoker = true) as
 select
@@ -85,7 +82,6 @@ left join (
  and u.tag = g.name;
 
 comment on view public.tags_with_usage is 'Per-user tags with reference counts from transactions (in_use_count).';
-<<<<<<< HEAD
 
 
 create or replace view "public"."view_monthly_category_totals"
@@ -166,5 +162,3 @@ with (security_invoker = true) as
    FROM transactions
   GROUP BY user_id, (date_trunc('year'::text, (date)::timestamp with time zone)), type
   ORDER BY user_id, (date_trunc('year'::text, (date)::timestamp with time zone)) DESC, type;
-=======
->>>>>>> 44c319f (Fix security advisor findings (#44))
