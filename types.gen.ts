@@ -546,10 +546,6 @@ export type Database = {
         Args: { p_categories: Json; p_user_id: string }
         Returns: number
       }
-      insert_tags: {
-        Args: { p_tags: Json; p_user_id: string }
-        Returns: number
-      }
       reset_user_data: { Args: never; Returns: Json }
       set_transaction_tags: {
         Args: { p_tag_ids: string[]; p_transaction_id: string }
@@ -557,7 +553,7 @@ export type Database = {
       }
       insert_tags: {
         Args: { p_tags: Json; p_user_id: string }
-        Returns: undefined
+        Returns: number
       }
       sum_transactions_amount: {
         Args: {
