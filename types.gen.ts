@@ -555,6 +555,7 @@ export type Database = {
         Args: { p_tags: Json; p_user_id: string }
         Returns: number
       }
+      reset_user_data: { Args: never; Returns: Json }
       sum_transactions_amount: {
         Args: {
           p_bank_account?: string
