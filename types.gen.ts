@@ -556,6 +556,10 @@ export type Database = {
         Returns: number
       }
       reset_user_data: { Args: never; Returns: Json }
+      set_transaction_tags: {
+        Args: { p_tag_ids: string[]; p_transaction_id: string }
+        Returns: undefined
+      }
       sum_transactions_amount: {
         Args: {
           p_bank_account?: string
