@@ -1,0 +1,54 @@
+import React from "react";
+import { BaseRecord } from "@refinedev/core";
+import { useTable, List, EditButton, ShowButton } from "@refinedev/antd";
+import { Table, Space } from "antd";
+
+export interface Column {
+  dataIndex: string;
+  title: string;
+  render?: (value: any, record: BaseRecord) => React.ReactNode;
+}
+
+export interface ResourceListProps {
+  resource: string;
+  columns: Column[];
+  showActions?: boolean;
+}
+
+export const ResourceList: React.FC<ResourceListProps> = ({
+  resource,
+  columns,
+  showActions = true,
+}) => {
+  const { tableProps } = useTable({
+    syncWithLocation: true,
+    resource,
+  });
+
+  return (
+    <List>
+      <Table {...tableProps} rowKey="id">
+        {columns.map((column) => (
+          <Table.Column
+            key={column.dataIndex}
+            dataIndex={column.dataIndex}
+            title={column.title}
+            render={column.render}
+          />
+        ))}
+        {showActions && (
+          <Table.Column
+            title="Actions"
+            dataIndex="actions"
+            render={(_, record: BaseRecord) => (
+              <Space>
+                <EditButton hideText size="small" recordItemId={record.id} />
+                <ShowButton hideText size="small" recordItemId={record.id} />
+              </Space>
+            )}
+          />
+        )}
+      </Table>
+    </List>
+  );
+};

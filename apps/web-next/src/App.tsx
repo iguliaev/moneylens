@@ -1,5 +1,9 @@
 import { Authenticated, Refine, WelcomePage } from "@refinedev/core";
-import { DashboardOutlined } from "@ant-design/icons";
+import {
+  BankOutlined,
+  DashboardOutlined,
+  TagsOutlined,
+} from "@ant-design/icons";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
 import {
@@ -23,6 +27,9 @@ import authProvider from "./authProvider";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { supabaseClient } from "./utility";
 import { DashboardPage } from "./pages/dashboard";
+import { TagList } from "./pages/tags";
+import { BankAccountList } from "./pages/bank-accounts";
+import { CategoriesList } from "./pages/categories";
 
 function App() {
   return (
@@ -50,6 +57,35 @@ function App() {
                     icon: <DashboardOutlined />,
                   },
                 },
+                {
+                  name: "bank_accounts", // Database table name
+                  list: "/bank-accounts",
+                  create: "/bank-accounts/create",
+                  edit: "/bank-accounts/edit/:id",
+                  show: "/bank-accounts/show/:id",
+                  meta: {
+                    label: "Bank Accounts",
+                    icon: <BankOutlined />,
+                  },
+                },
+                {
+                  name: "tags",
+                  list: "/tags",
+                  create: "/tags/create",
+                  edit: "/tags/edit/:id",
+                  show: "/tags/show/:id",
+                  meta: {
+                    label: "Tags",
+                    icon: <TagsOutlined />,
+                  },
+                },
+                {
+                  name: "categories",
+                  list: "/categories",
+                  create: "/categories/create",
+                  edit: "/categories/edit/:id",
+                  show: "/categories/show/:id",
+                },
               ]}
             >
               <Routes>
@@ -65,8 +101,21 @@ function App() {
                     </Authenticated>
                   }
                 >
-                <Route index element={<DashboardPage />} />
+                  <Route index element={<DashboardPage />} />
+
+                  <Route path="categories">
+                    <Route index element={<CategoriesList />} />
+                  </Route>
+
+                  <Route path="bank-accounts">
+                    <Route index element={<BankAccountList />} />
+                  </Route>
+
+                  <Route path="tags">
+                    <Route index element={<TagList />} />
+                  </Route>
                 </Route>
+
                 <Route
                   element={
                     <Authenticated key="auth-pages" fallback={<Outlet />}>
