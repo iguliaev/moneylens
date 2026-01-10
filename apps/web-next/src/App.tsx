@@ -80,6 +80,13 @@ function App() {
                   },
                 },
                 {
+                  name: "categories",
+                  list: "/categories",
+                  create: "/categories/create",
+                  edit: "/categories/edit/:id",
+                  show: "/categories/show/:id",
+                },
+                {
                   name: "tags",
                   list: "/tags",
                   create: "/tags/create",
@@ -90,13 +97,7 @@ function App() {
                     icon: <TagsOutlined />,
                   },
                 },
-                {
-                  name: "categories",
-                  list: "/categories",
-                  create: "/categories/create",
-                  edit: "/categories/edit/:id",
-                  show: "/categories/show/:id",
-                },
+
                 {
                   name: "bank_accounts", // Database table name
                   list: "/bank-accounts",
