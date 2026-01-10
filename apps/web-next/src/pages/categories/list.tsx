@@ -1,5 +1,5 @@
 import { BaseRecord } from "@refinedev/core";
-import { useTable, List, EditButton, ShowButton } from "@refinedev/antd";
+import { useTable, List, EditButton, ShowButton, DeleteButton } from "@refinedev/antd";
 import { Table, Space, Segmented } from "antd";
 import { useState } from "react";
 import {
@@ -46,6 +46,7 @@ export const CategoryList = () => {
             <Space>
               <EditButton hideText size="small" recordItemId={record.id} />
               <ShowButton hideText size="small" recordItemId={record.id} />
+              <DeleteButton hideText size="small" recordItemId={record.id} />
             </Space>
           )}
         />

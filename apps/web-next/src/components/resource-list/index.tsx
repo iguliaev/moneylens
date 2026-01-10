@@ -1,6 +1,12 @@
 import React from "react";
 import { BaseRecord } from "@refinedev/core";
-import { useTable, List, EditButton, ShowButton } from "@refinedev/antd";
+import {
+  useTable,
+  List,
+  EditButton,
+  ShowButton,
+  DeleteButton,
+} from "@refinedev/antd";
 import { Table, Space } from "antd";
 
 export interface Column {
@@ -44,6 +50,7 @@ export const ResourceList: React.FC<ResourceListProps> = ({
               <Space>
                 <EditButton hideText size="small" recordItemId={record.id} />
                 <ShowButton hideText size="small" recordItemId={record.id} />
+                <DeleteButton hideText size="small" recordItemId={record.id} />
               </Space>
             )}
           />
