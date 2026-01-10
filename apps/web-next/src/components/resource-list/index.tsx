@@ -1,5 +1,5 @@
 import React from "react";
-import { BaseRecord } from "@refinedev/core";
+import { BaseRecord, useInvalidate } from "@refinedev/core";
 import {
   useTable,
   List,
@@ -19,13 +19,16 @@ export interface ResourceListProps {
   resource: string;
   columns: Column[];
   showActions?: boolean;
+  deleteResource?: string;
 }
 
 export const ResourceList: React.FC<ResourceListProps> = ({
   resource,
   columns,
   showActions = true,
+  deleteResource,
 }) => {
+  const invalidate = useInvalidate();
   const { tableProps } = useTable({
     syncWithLocation: true,
     resource,
@@ -50,7 +53,20 @@ export const ResourceList: React.FC<ResourceListProps> = ({
               <Space>
                 <EditButton hideText size="small" recordItemId={record.id} />
                 <ShowButton hideText size="small" recordItemId={record.id} />
-                <DeleteButton hideText size="small" recordItemId={record.id} />
+                <DeleteButton
+                  hideText
+                  size="small"
+                  recordItemId={record.id}
+                  resource={deleteResource}
+                  onSuccess={() => {
+                    if (deleteResource && deleteResource !== resource) {
+                      invalidate({
+                        resource: resource,
+                        invalidates: ["list"],
+                      });
+                    }
+                  }}
+                />
               </Space>
             )}
           />

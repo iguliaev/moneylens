@@ -1,5 +1,11 @@
-import { BaseRecord } from "@refinedev/core";
-import { useTable, List, EditButton, ShowButton, DeleteButton } from "@refinedev/antd";
+import { BaseRecord, useInvalidate } from "@refinedev/core";
+import {
+  useTable,
+  List,
+  EditButton,
+  ShowButton,
+  DeleteButton,
+} from "@refinedev/antd";
 import { Table, Space, Segmented } from "antd";
 import { useState } from "react";
 import {
@@ -8,12 +14,14 @@ import {
 } from "../../constants/transactionTypes";
 
 export const CategoryList = () => {
+  const invalidate = useInvalidate();
   const [categoryType, setCategoryType] = useState<string>(
     TRANSACTION_TYPES.EARN
   );
 
   const { tableProps } = useTable({
     syncWithLocation: true,
+    resource: "categories_with_usage",
     filters: {
       permanent: [
         {
@@ -38,7 +46,7 @@ export const CategoryList = () => {
       <Table {...tableProps} rowKey="id">
         <Table.Column dataIndex="name" title="Name" sorter />
         <Table.Column dataIndex="description" title="Description" sorter />
-        {/* <Table.Column dataIndex="type" title="Type" sorter /> */}
+        <Table.Column dataIndex="in_use_count" title="Usage Count" sorter />
         <Table.Column
           title="Actions"
           dataIndex="actions"
@@ -46,7 +54,18 @@ export const CategoryList = () => {
             <Space>
               <EditButton hideText size="small" recordItemId={record.id} />
               <ShowButton hideText size="small" recordItemId={record.id} />
-              <DeleteButton hideText size="small" recordItemId={record.id} />
+              <DeleteButton
+                hideText
+                size="small"
+                recordItemId={record.id}
+                resource="categories"
+                onSuccess={() => {
+                  invalidate({
+                    resource: "categories_with_usage",
+                    invalidates: ["list"],
+                  });
+                }}
+              />
             </Space>
           )}
         />

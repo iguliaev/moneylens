@@ -4,6 +4,7 @@ export const TagList = () => {
   return (
     <ResourceList
       resource="tags_with_usage"
+      deleteResource="tags"
       columns={[
         { dataIndex: "name", title: "Name" },
         { dataIndex: "description", title: "Description" },
