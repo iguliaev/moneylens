@@ -3,6 +3,7 @@ import {
   BankOutlined,
   DashboardOutlined,
   TagsOutlined,
+  ShoppingOutlined,
 } from "@ant-design/icons";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
@@ -68,14 +69,14 @@ function App() {
                   },
                 },
                 {
-                  name: "bank_accounts", // Database table name
-                  list: "/bank-accounts",
-                  create: "/bank-accounts/create",
-                  edit: "/bank-accounts/edit/:id",
-                  show: "/bank-accounts/show/:id",
+                  name: "spend",
+                  list: "/spend",
+                  create: "/spend/create",
+                  edit: "/spend/edit/:id",
+                  show: "/spend/show/:id",
                   meta: {
-                    label: "Bank Accounts",
-                    icon: <BankOutlined />,
+                    label: "Spend",
+                    icon: <ShoppingOutlined />,
                   },
                 },
                 {
@@ -97,11 +98,15 @@ function App() {
                   show: "/categories/show/:id",
                 },
                 {
-                  name: "spend",
-                  list: "/spend",
-                  create: "/spend/create",
-                  edit: "/spend/edit/:id",
-                  show: "/spend/show/:id",
+                  name: "bank_accounts", // Database table name
+                  list: "/bank-accounts",
+                  create: "/bank-accounts/create",
+                  edit: "/bank-accounts/edit/:id",
+                  show: "/bank-accounts/show/:id",
+                  meta: {
+                    label: "Bank Accounts",
+                    icon: <BankOutlined />,
+                  },
                 },
               ]}
             >
