@@ -1,4 +1,3 @@
-import React from "react";
 import { ResourceList } from "../../components/resource-list";
 
 export const TagList = () => {

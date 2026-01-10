@@ -1,5 +1,25 @@
-import { AntdInferencer } from "@refinedev/inferencer/antd";
+import { useShow } from "@refinedev/core";
+import { Show, TextField, DateField } from "@refinedev/antd";
+import { Typography } from "antd";
 
-export const TagsShow = () => {
-    return <AntdInferencer />;
+const { Title } = Typography;
+
+export const TagShow = () => {
+  const {
+    result: record,
+    query: { isLoading },
+  } = useShow();
+
+  return (
+    <Show isLoading={isLoading}>
+      <Title level={5}>Name</Title>
+      <TextField value={record?.name} />
+      <Title level={5}>Description</Title>
+      <TextField value={record?.description} />
+      <Title level={5}>Created At</Title>
+      <DateField value={record?.created_at} />
+      <Title level={5}>Updated At</Title>
+      <DateField value={record?.updated_at} />
+    </Show>
+  );
 };

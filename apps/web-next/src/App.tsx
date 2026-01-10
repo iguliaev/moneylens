@@ -27,9 +27,19 @@ import authProvider from "./authProvider";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { supabaseClient } from "./utility";
 import { DashboardPage } from "./pages/dashboard";
-import { TagList } from "./pages/tags";
-import { BankAccountList } from "./pages/bank-accounts";
-import { CategoriesList } from "./pages/categories";
+import { TagList, TagCreate, TagEdit, TagShow } from "./pages/tags";
+import {
+  BankAccountList,
+  BankAccountCreate,
+  BankAccountEdit,
+  BankAccountShow,
+} from "./pages/bank-accounts";
+import {
+  CategoryList,
+  CategoryCreate,
+  CategoryEdit,
+  CategoryShow,
+} from "./pages/categories";
 
 function App() {
   return (
@@ -86,6 +96,13 @@ function App() {
                   edit: "/categories/edit/:id",
                   show: "/categories/show/:id",
                 },
+                {
+                  name: "spend",
+                  list: "/spend",
+                  create: "/spend/create",
+                  edit: "/spend/edit/:id",
+                  show: "/spend/show/:id",
+                },
               ]}
             >
               <Routes>
@@ -102,17 +119,25 @@ function App() {
                   }
                 >
                   <Route index element={<DashboardPage />} />
-
                   <Route path="categories">
-                    <Route index element={<CategoriesList />} />
+                    <Route index element={<CategoryList />} />
+                    <Route path="create" element={<CategoryCreate />} />
+                    <Route path="edit/:id" element={<CategoryEdit />} />
+                    <Route path="show/:id" element={<CategoryShow />} />
                   </Route>
 
                   <Route path="bank-accounts">
                     <Route index element={<BankAccountList />} />
+                    <Route path="create" element={<BankAccountCreate />} />
+                    <Route path="edit/:id" element={<BankAccountEdit />} />
+                    <Route path="show/:id" element={<BankAccountShow />} />
                   </Route>
 
                   <Route path="tags">
                     <Route index element={<TagList />} />
+                    <Route path="create" element={<TagCreate />} />
+                    <Route path="edit/:id" element={<TagEdit />} />
+                    <Route path="show/:id" element={<TagShow />} />
                   </Route>
                 </Route>
 
