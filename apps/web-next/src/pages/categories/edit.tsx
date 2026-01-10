@@ -1,5 +1,6 @@
 import { Edit, useForm } from "@refinedev/antd";
-import { Form, Input, DatePicker } from "antd";
+import { Form, Input, Select } from "antd";
+import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 
 export const CategoryEdit = () => {
   const { formProps, saveButtonProps, query } = useForm();
@@ -18,7 +19,7 @@ export const CategoryEdit = () => {
             },
           ]}
         >
-          <Input />
+          <Select options={TRANSACTION_TYPE_OPTIONS} />
         </Form.Item>
         <Form.Item
           label="Name"

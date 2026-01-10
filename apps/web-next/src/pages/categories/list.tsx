@@ -2,9 +2,15 @@ import { BaseRecord } from "@refinedev/core";
 import { useTable, List, EditButton, ShowButton } from "@refinedev/antd";
 import { Table, Space, Segmented } from "antd";
 import { useState } from "react";
+import {
+  TRANSACTION_TYPES,
+  TRANSACTION_TYPE_LABELS,
+} from "../../constants/transactionTypes";
 
 export const CategoryList = () => {
-  const [categoryType, setCategoryType] = useState<string>("Earn");
+  const [categoryType, setCategoryType] = useState<string>(
+    TRANSACTION_TYPES.EARN
+  );
 
   const { tableProps } = useTable({
     syncWithLocation: true,
@@ -13,7 +19,7 @@ export const CategoryList = () => {
         {
           field: "type",
           operator: "eq",
-          value: categoryType.toLowerCase(),
+          value: categoryType,
         },
       ],
     },
@@ -22,7 +28,10 @@ export const CategoryList = () => {
   return (
     <List>
       <Segmented
-        options={["Earn", "Save", "Spend"]}
+        options={Object.values(TRANSACTION_TYPES).map((type) => ({
+          label: TRANSACTION_TYPE_LABELS[type],
+          value: type,
+        }))}
         value={categoryType}
         onChange={(value) => setCategoryType(value as string)}
       />
