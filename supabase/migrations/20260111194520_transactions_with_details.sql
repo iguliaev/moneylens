@@ -19,7 +19,7 @@ SELECT
   t.created_at,
   t.updated_at,
   array_remove(array_agg(DISTINCT tt.tag_id ORDER BY tt.tag_id), NULL) AS tag_ids,
-  array_remove(array_agg(DISTINCT tg.name ORDER BY tt.tag_id), NULL) AS tag_names
+  array_remove(array_agg(DISTINCT tg.name ORDER BY tg.name), NULL) AS tag_names
 FROM transactions t
 LEFT JOIN categories c ON t.category_id = c.id
 LEFT JOIN bank_accounts ba ON t.bank_account_id = ba.id
