@@ -30,6 +30,13 @@ import { supabaseClient } from "./utility";
 import { DashboardPage } from "./pages/dashboard";
 import { TagList, TagCreate, TagEdit, TagShow } from "./pages/tags";
 import {
+  TransactionList,
+  TransactionCreate,
+  TransactionEdit,
+  TransactionShow,
+} from "./pages/transactions";
+
+import {
   BankAccountList,
   BankAccountCreate,
   BankAccountEdit,
@@ -69,15 +76,11 @@ function App() {
                   },
                 },
                 {
-                  name: "spend",
-                  list: "/spend",
-                  create: "/spend/create",
-                  edit: "/spend/edit/:id",
-                  show: "/spend/show/:id",
-                  meta: {
-                    label: "Spend",
-                    icon: <ShoppingOutlined />,
-                  },
+                  name: "transactions",
+                  list: "/transactions",
+                  create: "/transactions/create",
+                  edit: "/transactions/edit/:id",
+                  show: "/transactions/show/:id",
                 },
                 {
                   name: "categories",
@@ -125,6 +128,13 @@ function App() {
                   }
                 >
                   <Route index element={<DashboardPage />} />
+                  <Route path="transactions">
+                    <Route index element={<TransactionList />} />
+                    <Route path="create" element={<TransactionCreate />} />
+                    <Route path="edit/:id" element={<TransactionEdit />} />
+                    <Route path="show/:id" element={<TransactionShow />} />
+                  </Route>
+
                   <Route path="categories">
                     <Route index element={<CategoryList />} />
                     <Route path="create" element={<CategoryCreate />} />
