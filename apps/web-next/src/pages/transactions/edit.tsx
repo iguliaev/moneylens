@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Edit, useForm, useSelect } from "@refinedev/antd";
+import { useList, useOne } from "@refinedev/core";
 import { Form, Input, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
 import {
@@ -17,10 +18,22 @@ export const TransactionEdit = () => {
     | TransactionType
     | undefined;
 
-  const { selectProps: categorySelectProps } = useSelect({
+  // Track if type has changed from original
+  const originalType = transactionsData?.type;
+  const typeHasChanged = selectedType !== undefined && selectedType !== originalType;
+
+  // Fetch current category details to show label on initial load
+  const { query: currentCategoryQuery } = useOne({
     resource: "categories",
-    defaultValue: transactionsData?.category_id,
-    optionLabel: "name",
+    id: transactionsData?.category_id,
+    queryOptions: {
+      enabled: !!transactionsData?.category_id && !typeHasChanged,
+    },
+  });
+
+  // Use useList for full control over category options
+  const { query: categoriesQuery } = useList({
+    resource: "categories",
     filters: selectedType
       ? [
           {
@@ -30,7 +43,35 @@ export const TransactionEdit = () => {
           },
         ]
       : undefined,
+    queryOptions: {
+      enabled: !!selectedType,
+    },
   });
+
+  // Build category options from the filtered data
+  const categoryOptions = useMemo(() => {
+    const options =
+      categoriesQuery.data?.data?.map((category) => ({
+        label: category.name as string,
+        value: category.id as string,
+      })) ?? [];
+
+    // If we have the current category loaded and it's not already in the list, add it
+    // This ensures the label shows correctly on initial load
+    const currentCategory = currentCategoryQuery.data?.data;
+    if (
+      currentCategory &&
+      !typeHasChanged &&
+      !options.some((opt) => opt.value === currentCategory.id)
+    ) {
+      options.unshift({
+        label: currentCategory.name as string,
+        value: currentCategory.id as string,
+      });
+    }
+
+    return options;
+  }, [categoriesQuery.data, currentCategoryQuery.data, typeHasChanged]);
 
   const { selectProps: bankAccountSelectProps } = useSelect({
     resource: "bank_accounts",
@@ -81,7 +122,14 @@ export const TransactionEdit = () => {
             },
           ]}
         >
-          <Select {...categorySelectProps} />
+          <Select
+            options={categoryOptions}
+            loading={categoriesQuery.isLoading}
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+            }
+          />
         </Form.Item>
         <Form.Item
           label="Amount"
