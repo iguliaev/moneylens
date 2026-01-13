@@ -10,9 +10,19 @@ import {
 import { supabaseClient } from "../../utility";
 
 export const TransactionEdit = () => {
-  const { formProps, saveButtonProps, query, id } = useForm();
+  const { formProps, saveButtonProps, query, id } = useForm({
+    meta: {
+      select: "*, transaction_tags(tag_id)",
+    },
+  });
 
   const transactionsData = query?.data?.data;
+
+  // Extract tag IDs from the nested transaction_tags relationship
+  const currentTagIds = useMemo(() => {
+    const transactionTags = (transactionsData as any)?.transaction_tags ?? [];
+    return transactionTags.map((tt: { tag_id: string }) => tt.tag_id);
+  }, [transactionsData]);
 
   // Watch the type field to filter categories accordingly
   const selectedType = Form.useWatch("type", formProps.form) as
@@ -96,32 +106,7 @@ export const TransactionEdit = () => {
     );
   }, [tagsQuery.data]);
 
-  // Fetch current transaction's tags via junction table
-  const { query: transactionTagsQuery } = useList({
-    resource: "transaction_tags",
-    filters: [
-      {
-        field: "transaction_id",
-        operator: "eq",
-        value: id,
-      },
-    ],
-    queryOptions: {
-      enabled: !!id,
-    },
-    meta: {
-      select: "tag_id",
-    },
-  });
-
-  // Get current tag IDs for the transaction
-  const currentTagIds = useMemo(() => {
-    return (
-      transactionTagsQuery.data?.data?.map((tt) => tt.tag_id as string) ?? []
-    );
-  }, [transactionTagsQuery.data]);
-
-  // Set initial tag values when data is loaded
+  // Set initial tag values when transaction data is loaded
   useEffect(() => {
     if (currentTagIds.length > 0 && formProps.form) {
       formProps.form.setFieldValue("tag_ids", currentTagIds);
