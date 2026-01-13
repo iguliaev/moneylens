@@ -20,7 +20,8 @@ export const TransactionEdit = () => {
 
   // Track if type has changed from original
   const originalType = transactionsData?.type;
-  const typeHasChanged = selectedType !== undefined && selectedType !== originalType;
+  const typeHasChanged =
+    selectedType !== undefined && selectedType !== originalType;
 
   // Fetch current category details to show label on initial load
   const { query: currentCategoryQuery } = useOne({
@@ -127,7 +128,9 @@ export const TransactionEdit = () => {
             loading={categoriesQuery.isLoading}
             showSearch
             filterOption={(input, option) =>
-              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+              (option?.label as string)
+                ?.toLowerCase()
+                .includes(input.toLowerCase())
             }
           />
         </Form.Item>
