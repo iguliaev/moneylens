@@ -2,17 +2,34 @@ import React from "react";
 import { Edit, useForm, useSelect } from "@refinedev/antd";
 import { Form, Input, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
-import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
+import {
+  TRANSACTION_TYPE_OPTIONS,
+  TransactionType,
+} from "../../constants/transactionTypes";
 
 export const TransactionEdit = () => {
   const { formProps, saveButtonProps, query } = useForm();
 
   const transactionsData = query?.data?.data;
 
+  // Watch the type field to filter categories accordingly
+  const selectedType = Form.useWatch("type", formProps.form) as
+    | TransactionType
+    | undefined;
+
   const { selectProps: categorySelectProps } = useSelect({
     resource: "categories",
     defaultValue: transactionsData?.category_id,
     optionLabel: "name",
+    filters: selectedType
+      ? [
+          {
+            field: "type",
+            operator: "eq",
+            value: selectedType,
+          },
+        ]
+      : undefined,
   });
 
   const { selectProps: bankAccountSelectProps } = useSelect({
@@ -47,7 +64,13 @@ export const TransactionEdit = () => {
             },
           ]}
         >
-          <Select options={TRANSACTION_TYPE_OPTIONS} />
+          <Select
+            options={TRANSACTION_TYPE_OPTIONS}
+            onChange={() => {
+              // Clear category when type changes since categories are type-specific
+              formProps.form?.setFieldValue("category_id", undefined);
+            }}
+          />
         </Form.Item>
         <Form.Item
           label="Category"
