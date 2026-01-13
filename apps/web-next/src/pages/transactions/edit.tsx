@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from "react";
 import { Edit, useForm, useSelect } from "@refinedev/antd";
-import { useList, useOne } from "@refinedev/core";
+import { useList } from "@refinedev/core";
 import { Form, Input, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
 import {
@@ -12,7 +12,7 @@ import { supabaseClient } from "../../utility";
 export const TransactionEdit = () => {
   const { formProps, saveButtonProps, query, id } = useForm({
     meta: {
-      select: "*, transaction_tags(tag_id)",
+      select: "*, transaction_tags(tag_id), category:categories(id, name)",
     },
   });
 
@@ -29,61 +29,26 @@ export const TransactionEdit = () => {
     | TransactionType
     | undefined;
 
-  // Track if type has changed from original
-  const originalType = transactionsData?.type;
-  const typeHasChanged =
-    selectedType !== undefined && selectedType !== originalType;
-
-  // Fetch current category details to show label on initial load
-  const { query: currentCategoryQuery } = useOne({
-    resource: "categories",
-    id: transactionsData?.category_id,
-    queryOptions: {
-      enabled: !!transactionsData?.category_id && !typeHasChanged,
-    },
-  });
-
-  // Use useList for full control over category options
-  const { query: categoriesQuery } = useList({
-    resource: "categories",
-    filters: selectedType
-      ? [
-          {
-            field: "type",
-            operator: "eq",
-            value: selectedType,
-          },
-        ]
-      : undefined,
-    queryOptions: {
-      enabled: !!selectedType,
-    },
-  });
-
-  // Build category options from the filtered data
-  const categoryOptions = useMemo(() => {
-    const options =
-      categoriesQuery.data?.data?.map((category) => ({
-        label: category.name as string,
-        value: category.id as string,
-      })) ?? [];
-
-    // If we have the current category loaded and it's not already in the list, add it
-    // This ensures the label shows correctly on initial load
-    const currentCategory = currentCategoryQuery.data?.data;
-    if (
-      currentCategory &&
-      !typeHasChanged &&
-      !options.some((opt) => opt.value === currentCategory.id)
-    ) {
-      options.unshift({
-        label: currentCategory.name as string,
-        value: currentCategory.id as string,
-      });
-    }
-
-    return options;
-  }, [categoriesQuery.data, currentCategoryQuery.data, typeHasChanged]);
+  // Use useSelect for categories with type filtering
+  const { selectProps: categorySelectProps, query: categoriesQuery } =
+    useSelect({
+      resource: "categories",
+      optionLabel: "name",
+      optionValue: "id",
+      defaultValue: transactionsData?.category_id,
+      filters: selectedType
+        ? [
+            {
+              field: "type",
+              operator: "eq",
+              value: selectedType,
+            },
+          ]
+        : [],
+      queryOptions: {
+        enabled: !!selectedType,
+      },
+    });
 
   const { selectProps: bankAccountSelectProps } = useSelect({
     resource: "bank_accounts",
@@ -173,7 +138,7 @@ export const TransactionEdit = () => {
           ]}
         >
           <Select
-            options={categoryOptions}
+            {...categorySelectProps}
             loading={categoriesQuery.isLoading}
             showSearch
             filterOption={(input, option) =>
