@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Edit, useForm, useSelect } from "@refinedev/antd";
 import { useList, useOne } from "@refinedev/core";
 import { Form, Input, DatePicker, Select } from "antd";
@@ -7,9 +7,10 @@ import {
   TRANSACTION_TYPE_OPTIONS,
   TransactionType,
 } from "../../constants/transactionTypes";
+import { supabaseClient } from "../../utility";
 
 export const TransactionEdit = () => {
-  const { formProps, saveButtonProps, query } = useForm();
+  const { formProps, saveButtonProps, query, id } = useForm();
 
   const transactionsData = query?.data?.data;
 
@@ -80,9 +81,72 @@ export const TransactionEdit = () => {
     optionLabel: "name",
   });
 
+  // Fetch all available tags
+  const { query: tagsQuery } = useList({
+    resource: "tags",
+    pagination: { pageSize: 1000 },
+  });
+
+  const tagOptions = useMemo(() => {
+    return (
+      tagsQuery.data?.data?.map((tag) => ({
+        label: tag.name as string,
+        value: tag.id as string,
+      })) ?? []
+    );
+  }, [tagsQuery.data]);
+
+  // Fetch current transaction's tags via junction table
+  const { query: transactionTagsQuery } = useList({
+    resource: "transaction_tags",
+    filters: [
+      {
+        field: "transaction_id",
+        operator: "eq",
+        value: id,
+      },
+    ],
+    queryOptions: {
+      enabled: !!id,
+    },
+    meta: {
+      select: "tag_id",
+    },
+  });
+
+  // Get current tag IDs for the transaction
+  const currentTagIds = useMemo(() => {
+    return (
+      transactionTagsQuery.data?.data?.map((tt) => tt.tag_id as string) ?? []
+    );
+  }, [transactionTagsQuery.data]);
+
+  // Set initial tag values when data is loaded
+  useEffect(() => {
+    if (currentTagIds.length > 0 && formProps.form) {
+      formProps.form.setFieldValue("tag_ids", currentTagIds);
+    }
+  }, [currentTagIds, formProps.form]);
+
+  // Custom onFinish to handle tags via RPC
+  const handleFinish = async (values: any) => {
+    const { tag_ids, ...transactionValues } = values;
+
+    // First save the transaction (via default form behavior)
+    await formProps.onFinish?.(transactionValues);
+
+    // Then update tags via RPC
+    if (id) {
+      await supabaseClient.rpc("set_transaction_tags", {
+        p_transaction_id: id as string,
+        p_tag_ids: tag_ids ?? [],
+      });
+    }
+  };
+
   return (
     <Edit saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical">
+      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
         <Form.Item
           label="Date"
           name={["date"]}
@@ -155,6 +219,21 @@ export const TransactionEdit = () => {
           ]}
         >
           <Select {...bankAccountSelectProps} />
+        </Form.Item>
+        <Form.Item label="Tags" name={"tag_ids"}>
+          <Select
+            mode="multiple"
+            options={tagOptions}
+            loading={tagsQuery.isLoading}
+            placeholder="Select tags"
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label as string)
+                ?.toLowerCase()
+                .includes(input.toLowerCase())
+            }
+            allowClear
+          />
         </Form.Item>
         <Form.Item label="Notes" name={["notes"]}>
           <Input />
