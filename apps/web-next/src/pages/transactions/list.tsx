@@ -49,10 +49,11 @@ export const TransactionList = () => {
         <Table.Column
           dataIndex={["date"]}
           title="Date"
+          sorter
           render={(value: any) => <DateField value={value} />}
         />
-        <Table.Column dataIndex="category_name" title="Category" />
-        <Table.Column dataIndex="amount" title="Amount" />
+        <Table.Column dataIndex="category_name" title="Category" sorter />
+        <Table.Column dataIndex="amount" title="Amount" sorter />
         <Table.Column
           dataIndex="tag_names"
           title="Tags"
@@ -64,7 +65,11 @@ export const TransactionList = () => {
             </>
           )}
         />
-        <Table.Column dataIndex="bank_account_name" title="Bank Account" />
+        <Table.Column
+          dataIndex="bank_account_name"
+          title="Bank Account"
+          sorter
+        />
         <Table.Column
           title="Actions"
           dataIndex="actions"
