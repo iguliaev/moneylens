@@ -1,14 +1,19 @@
 import { BaseRecord, useInvalidate } from "@refinedev/core";
 import {
   useTable,
+  useSelect,
   List,
   EditButton,
   ShowButton,
   DeleteButton,
   DateField,
   TagField,
+  FilterDropdown,
+  getDefaultFilter,
+  rangePickerFilterMapper,
 } from "@refinedev/antd";
-import { Table, Space, Segmented } from "antd";
+import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
+import type { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import {
   TRANSACTION_TYPE_LABELS,
@@ -21,7 +26,7 @@ export const TransactionList = () => {
     TRANSACTION_TYPES.SPEND
   );
 
-  const { tableProps } = useTable({
+  const { tableProps, filters } = useTable({
     syncWithLocation: true,
     resource: "transactions_with_details",
     filters: {
@@ -33,6 +38,66 @@ export const TransactionList = () => {
         },
       ],
     },
+  });
+
+  // Category select - filtered by current transaction type
+  const { selectProps: categorySelectProps } = useSelect({
+    resource: "categories",
+    optionLabel: "name",
+    optionValue: "id",
+    filters: [
+      {
+        field: "type",
+        operator: "eq",
+        value: transactionType,
+      },
+    ],
+    sorters: [
+      {
+        field: "name",
+        order: "asc",
+      },
+    ],
+    pagination: {
+      mode: "off",
+    },
+    defaultValue: getDefaultFilter("category_id", filters, "in"),
+  });
+
+  // Bank account select
+  const { selectProps: bankAccountSelectProps } = useSelect({
+    resource: "bank_accounts",
+    optionLabel: "name",
+    optionValue: "id",
+    sorters: [
+      {
+        field: "name",
+        order: "asc",
+      },
+    ],
+    pagination: {
+      mode: "off",
+    },
+    defaultValue: getDefaultFilter("bank_account_id", filters, "in"),
+  });
+
+  // Tags select
+  // Note: For "any of these tags" filtering, Supabase uses 'ov' (overlaps) operator
+  // The data provider may need customization to handle array overlap queries
+  const { selectProps: tagSelectProps } = useSelect({
+    resource: "tags",
+    optionLabel: "name",
+    optionValue: "id",
+    sorters: [
+      {
+        field: "name",
+        order: "asc",
+      },
+    ],
+    pagination: {
+      mode: "off",
+    },
+    defaultValue: getDefaultFilter("tag_ids", filters, "in"),
   });
 
   return (
@@ -51,10 +116,51 @@ export const TransactionList = () => {
           title="Date"
           sorter
           render={(value: any) => <DateField value={value} />}
+          filterDropdown={(props: FilterDropdownProps) => (
+            <FilterDropdown
+              {...props}
+              mapValue={(selectedKeys, event) =>
+                rangePickerFilterMapper(selectedKeys, event)
+              }
+            >
+              <DatePicker.RangePicker />
+            </FilterDropdown>
+          )}
+          defaultFilteredValue={getDefaultFilter("date", filters, "between")}
         />
-        <Table.Column dataIndex="category_name" title="Category" sorter />
-        <Table.Column dataIndex="amount" title="Amount" sorter />
         <Table.Column
+          key="category_id"
+          dataIndex="category_name"
+          title="Category"
+          sorter
+          filterDropdown={(props: FilterDropdownProps) => (
+            <FilterDropdown {...props}>
+              <Select
+                mode="multiple"
+                placeholder="Select categories"
+                style={{ minWidth: 200 }}
+                {...categorySelectProps}
+              />
+            </FilterDropdown>
+          )}
+          defaultFilteredValue={getDefaultFilter("category_id", filters, "in")}
+        />
+        <Table.Column
+          dataIndex="amount"
+          title="Amount"
+          sorter
+          filterDropdown={(props: FilterDropdownProps) => (
+            <FilterDropdown {...props}>
+              <InputNumber
+                placeholder="Filter by amount"
+                style={{ width: "100%" }}
+              />
+            </FilterDropdown>
+          )}
+          defaultFilteredValue={getDefaultFilter("amount", filters, "eq")}
+        />
+        <Table.Column
+          key="tag_ids"
           dataIndex="tag_names"
           title="Tags"
           render={(value: string[]) => (
@@ -64,11 +170,40 @@ export const TransactionList = () => {
               ))}
             </>
           )}
+          filterDropdown={(props: FilterDropdownProps) => (
+            <FilterDropdown {...props}>
+              <Select
+                mode="multiple"
+                placeholder="Select tags"
+                style={{ minWidth: 200 }}
+                {...tagSelectProps}
+              />
+            </FilterDropdown>
+          )}
+          // Note: tag_ids is an array column; for "any of these tags" logic,
+          // Supabase 'ov' (overlaps) operator may be needed in the data provider
+          defaultFilteredValue={getDefaultFilter("tag_ids", filters, "in")}
         />
         <Table.Column
+          key="bank_account_id"
           dataIndex="bank_account_name"
           title="Bank Account"
           sorter
+          filterDropdown={(props: FilterDropdownProps) => (
+            <FilterDropdown {...props}>
+              <Select
+                mode="multiple"
+                placeholder="Select bank accounts"
+                style={{ minWidth: 200 }}
+                {...bankAccountSelectProps}
+              />
+            </FilterDropdown>
+          )}
+          defaultFilteredValue={getDefaultFilter(
+            "bank_account_id",
+            filters,
+            "in"
+          )}
         />
         <Table.Column
           title="Actions"
