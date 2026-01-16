@@ -13,7 +13,6 @@ import {
   type MapValueEvent,
 } from "@refinedev/antd";
 import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
-import type { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import dayjs from "dayjs";
 import {
@@ -34,25 +33,43 @@ const dateOnlyFilterMapper = (
     return selectedKeys;
   }
 
-  // "value" event: convert strings back to Dayjs for the DatePicker
   if (event === "value") {
-    return selectedKeys.map((key) => {
-      if (typeof key === "string") {
-        return dayjs(key);
-      }
-      return key;
-    });
+    return selectedKeys.map((key) =>
+      typeof key === "string" ? dayjs(key) : key
+    );
   }
 
-  // "onChange" event: convert Dayjs to date-only strings (no timezone shift)
-  if (event === "onChange") {
-    if (selectedKeys.every(dayjs.isDayjs)) {
-      return selectedKeys.map((date: any) => date.format("YYYY-MM-DD"));
-    }
+  if (event === "onChange" && selectedKeys.every(dayjs.isDayjs)) {
+    return selectedKeys.map((date: any) => date.format("YYYY-MM-DD"));
   }
 
   return selectedKeys;
 };
+
+const commonSelectOptions = {
+  sorters: [{ field: "name", order: "asc" as const }],
+  pagination: { mode: "off" as const },
+};
+
+/** Reusable multi-select filter dropdown - forwards FilterDropdown's onChange/value */
+const MultiSelectFilter = ({
+  placeholder,
+  selectProps,
+  ...rest
+}: {
+  placeholder: string;
+  selectProps: ReturnType<typeof useSelect>["selectProps"];
+  onChange?: (value: any) => void;
+  value?: any;
+}) => (
+  <Select
+    mode="multiple"
+    placeholder={placeholder}
+    style={{ minWidth: 200 }}
+    {...selectProps}
+    {...rest}
+  />
+);
 
 export const TransactionList = () => {
   const invalidate = useInvalidate();
@@ -79,22 +96,8 @@ export const TransactionList = () => {
     resource: "categories",
     optionLabel: "name",
     optionValue: "id",
-    filters: [
-      {
-        field: "type",
-        operator: "eq",
-        value: transactionType,
-      },
-    ],
-    sorters: [
-      {
-        field: "name",
-        order: "asc",
-      },
-    ],
-    pagination: {
-      mode: "off",
-    },
+    filters: [{ field: "type", operator: "eq", value: transactionType }],
+    ...commonSelectOptions,
     defaultValue: getDefaultFilter("category_id", filters, "in"),
   });
 
@@ -103,34 +106,16 @@ export const TransactionList = () => {
     resource: "bank_accounts",
     optionLabel: "name",
     optionValue: "id",
-    sorters: [
-      {
-        field: "name",
-        order: "asc",
-      },
-    ],
-    pagination: {
-      mode: "off",
-    },
+    ...commonSelectOptions,
     defaultValue: getDefaultFilter("bank_account_id", filters, "in"),
   });
 
   // Tags select
-  // Note: For "any of these tags" filtering, Supabase uses 'ov' (overlaps) operator
-  // The data provider may need customization to handle array overlap queries
   const { selectProps: tagSelectProps } = useSelect({
     resource: "tags",
     optionLabel: "name",
     optionValue: "id",
-    sorters: [
-      {
-        field: "name",
-        order: "asc",
-      },
-    ],
-    pagination: {
-      mode: "off",
-    },
+    ...commonSelectOptions,
     defaultValue: getDefaultFilter("tag_ids", filters, "in"),
   });
 
@@ -150,7 +135,7 @@ export const TransactionList = () => {
           title="Date"
           sorter
           render={(value: any) => <DateField value={value} />}
-          filterDropdown={(props: FilterDropdownProps) => (
+          filterDropdown={(props) => (
             <FilterDropdown {...props} mapValue={dateOnlyFilterMapper}>
               <DatePicker.RangePicker />
             </FilterDropdown>
@@ -162,13 +147,11 @@ export const TransactionList = () => {
           dataIndex="category_name"
           title="Category"
           sorter
-          filterDropdown={(props: FilterDropdownProps) => (
+          filterDropdown={(props) => (
             <FilterDropdown {...props}>
-              <Select
-                mode="multiple"
+              <MultiSelectFilter
                 placeholder="Select categories"
-                style={{ minWidth: 200 }}
-                {...categorySelectProps}
+                selectProps={categorySelectProps}
               />
             </FilterDropdown>
           )}
@@ -178,7 +161,7 @@ export const TransactionList = () => {
           dataIndex="amount"
           title="Amount"
           sorter
-          filterDropdown={(props: FilterDropdownProps) => (
+          filterDropdown={(props) => (
             <FilterDropdown {...props}>
               <InputNumber
                 placeholder="Filter by amount"
@@ -199,18 +182,14 @@ export const TransactionList = () => {
               ))}
             </>
           )}
-          filterDropdown={(props: FilterDropdownProps) => (
+          filterDropdown={(props) => (
             <FilterDropdown {...props}>
-              <Select
-                mode="multiple"
+              <MultiSelectFilter
                 placeholder="Select tags"
-                style={{ minWidth: 200 }}
-                {...tagSelectProps}
+                selectProps={tagSelectProps}
               />
             </FilterDropdown>
           )}
-          // Note: tag_ids is an array column; for "any of these tags" logic,
-          // Supabase 'ov' (overlaps) operator may be needed in the data provider
           defaultFilteredValue={getDefaultFilter("tag_ids", filters, "in")}
         />
         <Table.Column
@@ -218,13 +197,11 @@ export const TransactionList = () => {
           dataIndex="bank_account_name"
           title="Bank Account"
           sorter
-          filterDropdown={(props: FilterDropdownProps) => (
+          filterDropdown={(props) => (
             <FilterDropdown {...props}>
-              <Select
-                mode="multiple"
+              <MultiSelectFilter
                 placeholder="Select bank accounts"
-                style={{ minWidth: 200 }}
-                {...bankAccountSelectProps}
+                selectProps={bankAccountSelectProps}
               />
             </FilterDropdown>
           )}
