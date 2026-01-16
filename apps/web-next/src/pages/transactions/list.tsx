@@ -10,15 +10,49 @@ import {
   TagField,
   FilterDropdown,
   getDefaultFilter,
-  rangePickerFilterMapper,
+  type MapValueEvent,
 } from "@refinedev/antd";
 import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
 import type { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
+import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
 } from "../../constants/transactionTypes";
+
+/**
+ * Custom date range filter mapper that outputs date-only strings (YYYY-MM-DD)
+ * instead of ISO timestamps to avoid timezone conversion issues.
+ * Use this for DATE columns (not TIMESTAMP) in the database.
+ */
+const dateOnlyFilterMapper = (
+  selectedKeys: React.Key[],
+  event: MapValueEvent
+) => {
+  if (!selectedKeys || selectedKeys.length === 0) {
+    return selectedKeys;
+  }
+
+  // "value" event: convert strings back to Dayjs for the DatePicker
+  if (event === "value") {
+    return selectedKeys.map((key) => {
+      if (typeof key === "string") {
+        return dayjs(key);
+      }
+      return key;
+    });
+  }
+
+  // "onChange" event: convert Dayjs to date-only strings (no timezone shift)
+  if (event === "onChange") {
+    if (selectedKeys.every(dayjs.isDayjs)) {
+      return selectedKeys.map((date: any) => date.format("YYYY-MM-DD"));
+    }
+  }
+
+  return selectedKeys;
+};
 
 export const TransactionList = () => {
   const invalidate = useInvalidate();
@@ -117,12 +151,7 @@ export const TransactionList = () => {
           sorter
           render={(value: any) => <DateField value={value} />}
           filterDropdown={(props: FilterDropdownProps) => (
-            <FilterDropdown
-              {...props}
-              mapValue={(selectedKeys, event) =>
-                rangePickerFilterMapper(selectedKeys, event)
-              }
-            >
+            <FilterDropdown {...props} mapValue={dateOnlyFilterMapper}>
               <DatePicker.RangePicker />
             </FilterDropdown>
           )}
