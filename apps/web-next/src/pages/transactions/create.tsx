@@ -12,6 +12,8 @@ export const TransactionCreate = () => {
   const { selectProps: categorySelectProps } = useSelect({
     resource: "categories",
     optionLabel: "name",
+    pagination: { mode: "off" },
+    sorters: [{ field: "name", order: "asc" }],
     filters: type
       ? [
           {
@@ -25,11 +27,15 @@ export const TransactionCreate = () => {
 
   const { selectProps: tagsSelectProps } = useSelect({
     resource: "tags",
+    pagination: { mode: "off" },
+    sorters: [{ field: "name", order: "asc" }],
   });
 
   const { selectProps: bankAccountSelectProps } = useSelect({
     resource: "bank_accounts",
     optionLabel: "name",
+    pagination: { mode: "off" },
+    sorters: [{ field: "name", order: "asc" }],
   });
 
   return (
