@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Create, useForm, useSelect } from "@refinedev/antd";
+import { useList } from "@refinedev/core";
 import { Form, Input, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
+import { supabaseClient } from "../../utility";
 
 export const TransactionCreate = () => {
-  const { formProps, saveButtonProps, query } = useForm();
+  const { formProps, saveButtonProps } = useForm();
 
   const type = Form.useWatch("type", formProps.form);
 
@@ -25,12 +27,21 @@ export const TransactionCreate = () => {
       : undefined,
   });
 
-  const { selectProps: tagsSelectProps } = useSelect({
+  // Fetch all available tags
+  const { query: tagsQuery } = useList({
     resource: "tags",
-    optionLabel: "name",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
   });
+
+  const tagOptions = useMemo(() => {
+    return (
+      tagsQuery.data?.data?.map((tag) => ({
+        label: tag.name as string,
+        value: tag.id as string,
+      })) ?? []
+    );
+  }, [tagsQuery.data]);
 
   const { selectProps: bankAccountSelectProps } = useSelect({
     resource: "bank_accounts",
@@ -39,9 +50,26 @@ export const TransactionCreate = () => {
     sorters: [{ field: "name", order: "asc" }],
   });
 
+  // Custom onFinish to handle tags via RPC after transaction is created
+  const handleFinish = async (values: any) => {
+    const { tag_ids, ...transactionValues } = values;
+
+    // Create the transaction and get the new ID
+    const result = await formProps.onFinish?.(transactionValues);
+
+    // Then set tags via RPC if we have a transaction ID
+    const transactionId = (result as any)?.data?.id;
+    if (transactionId && tag_ids?.length > 0) {
+      await supabaseClient.rpc("set_transaction_tags", {
+        p_transaction_id: transactionId,
+        p_tag_ids: tag_ids,
+      });
+    }
+  };
+
   return (
     <Create saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical">
+      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
         <Form.Item
           label="Date"
           name={["date"]}
@@ -94,8 +122,20 @@ export const TransactionCreate = () => {
         >
           <Input />
         </Form.Item>
-        <Form.Item label="Tags" name={"tags"}>
-          <Select mode="multiple" {...tagsSelectProps} />
+        <Form.Item label="Tags" name={"tag_ids"}>
+          <Select
+            mode="multiple"
+            options={tagOptions}
+            loading={tagsQuery.isLoading}
+            placeholder="Select tags"
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label as string)
+                ?.toLowerCase()
+                .includes(input.toLowerCase())
+            }
+            allowClear
+          />
         </Form.Item>
         <Form.Item
           label="Bank Account"
