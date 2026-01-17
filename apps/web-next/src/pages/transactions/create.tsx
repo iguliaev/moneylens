@@ -7,9 +7,20 @@ import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 export const TransactionCreate = () => {
   const { formProps, saveButtonProps, query } = useForm();
 
+  const type = Form.useWatch("type", formProps.form);
+
   const { selectProps: categorySelectProps } = useSelect({
     resource: "categories",
     optionLabel: "name",
+    filters: type
+      ? [
+          {
+            field: "type",
+            operator: "eq",
+            value: type,
+          },
+        ]
+      : undefined,
   });
 
   const { selectProps: tagsSelectProps } = useSelect({
@@ -47,7 +58,12 @@ export const TransactionCreate = () => {
             },
           ]}
         >
-          <Select options={TRANSACTION_TYPE_OPTIONS} />
+          <Select
+            options={TRANSACTION_TYPE_OPTIONS}
+            onChange={() =>
+              formProps.form?.setFieldValue("category_id", undefined)
+            }
+          />
         </Form.Item>
         <Form.Item
           label="Category"
