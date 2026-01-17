@@ -50,6 +50,8 @@ import {
   CategoryShow,
 } from "./pages/categories";
 import { SettingsPage } from "./pages/settings";
+import { ProjectTitle } from "./components/title";
+import { Header } from "./components";
 
 function App() {
   return (
@@ -135,7 +137,7 @@ function App() {
                       key="authenticated-routes"
                       fallback={<CatchAllNavigate to="/login" />}
                     >
-                      <ThemedLayout>
+                      <ThemedLayout Header={Header} Title={ProjectTitle}>
                         <Outlet />
                       </ThemedLayout>
                     </Authenticated>
