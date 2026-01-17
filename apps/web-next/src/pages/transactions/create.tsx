@@ -94,15 +94,7 @@ export const TransactionCreate = () => {
         >
           <Input />
         </Form.Item>
-        <Form.Item
-          label="Tags"
-          name={"tags"}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-        >
+        <Form.Item label="Tags" name={"tags"}>
           <Select mode="multiple" {...tagsSelectProps} />
         </Form.Item>
         <Form.Item
