@@ -2,6 +2,7 @@ import React from "react";
 import { Create, useForm, useSelect } from "@refinedev/antd";
 import { Form, Input, DatePicker, Select } from "antd";
 import dayjs from "dayjs";
+import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 
 export const TransactionCreate = () => {
   const { formProps, saveButtonProps, query } = useForm();
@@ -46,7 +47,7 @@ export const TransactionCreate = () => {
             },
           ]}
         >
-          <Input />
+          <Select options={TRANSACTION_TYPE_OPTIONS} />
         </Form.Item>
         <Form.Item
           label="Category"
