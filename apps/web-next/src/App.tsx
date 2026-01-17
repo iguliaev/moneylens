@@ -4,6 +4,7 @@ import {
   DashboardOutlined,
   TagsOutlined,
   SwapOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
@@ -48,6 +49,7 @@ import {
   CategoryEdit,
   CategoryShow,
 } from "./pages/categories";
+import { SettingsPage } from "./pages/settings";
 
 function App() {
   return (
@@ -116,6 +118,14 @@ function App() {
                     icon: <BankOutlined />,
                   },
                 },
+                {
+                  name: "settings",
+                  list: "/settings",
+                  meta: {
+                    label: "Settings",
+                    icon: <SettingOutlined />,
+                  },
+                },
               ]}
             >
               <Routes>
@@ -159,6 +169,8 @@ function App() {
                     <Route path="edit/:id" element={<TagEdit />} />
                     <Route path="show/:id" element={<TagShow />} />
                   </Route>
+
+                  <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
                 <Route
