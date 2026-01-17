@@ -3,7 +3,7 @@ import {
   BankOutlined,
   DashboardOutlined,
   TagsOutlined,
-  ShoppingOutlined,
+  SwapOutlined,
 } from "@ant-design/icons";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
@@ -81,6 +81,10 @@ function App() {
                   create: "/transactions/create",
                   edit: "/transactions/edit/:id",
                   show: "/transactions/show/:id",
+                  meta: {
+                    label: "Transactions",
+                    icon: <SwapOutlined />,
+                  },
                 },
                 {
                   name: "categories",
