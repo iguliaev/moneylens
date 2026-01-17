@@ -354,7 +354,7 @@ const DataResetSection: React.FC = () => {
         extra={<DeleteOutlined style={{ color: "#ff4d4f" }} />}
         styles={{
           header: { borderColor: "#ffccc7", color: "#cf1322" },
-          body: { backgroundColor: "#fff2f0" },
+          body: { borderColor: "#ffccc7", color: "#cf1322" },
         }}
       >
         <Paragraph>
