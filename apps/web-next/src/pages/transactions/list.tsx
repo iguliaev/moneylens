@@ -80,6 +80,9 @@ export const TransactionList = () => {
   const { tableProps, filters } = useTable({
     syncWithLocation: true,
     resource: "transactions_with_details",
+    sorters: {
+      initial: [{ field: "date", order: "desc" }],
+    },
     filters: {
       permanent: [
         {
