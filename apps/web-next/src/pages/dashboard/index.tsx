@@ -9,14 +9,16 @@ import {
   Tabs,
   message,
 } from "antd";
-import { useCallback, useEffect, useState } from "react";
+import { Show } from "@refinedev/antd";
+
+import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { supabaseClient } from "../utility";
+import { supabaseClient } from "../../utility";
 import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
   TransactionType,
-} from "../constants/transactionTypes";
+} from "../../constants/transactionTypes";
 
 const { Text, Title } = Typography;
 
@@ -366,9 +368,8 @@ export const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={2}>Dashboard</Title>
+    <Show title="Dashboard" headerButtons={() => null}>
       <Tabs items={tabItems} defaultActiveKey="yearly" />
-    </div>
+    </Show>
   );
 };
