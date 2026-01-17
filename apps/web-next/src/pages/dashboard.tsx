@@ -7,9 +7,9 @@ import {
   Statistic,
   Table,
   Tabs,
-  Spin,
+  message,
 } from "antd";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { supabaseClient } from "../utility";
 import {
@@ -20,6 +20,7 @@ import {
 
 const { Text, Title } = Typography;
 
+// === Types ===
 interface CategorySummary {
   category_id: string;
   category_name: string;
@@ -32,26 +33,146 @@ interface TypeSummary {
   total: number;
 }
 
-// Generate year options (last 5 years + current)
+interface TransactionRow {
+  type: TransactionType;
+  category_id: string;
+  categories: { name: string } | { name: string }[] | null;
+  amount: number;
+}
+
+interface PeriodStats {
+  typeSummary: TypeSummary[];
+  categorySummary: CategorySummary[];
+}
+
+// === Constants ===
 const currentYear = dayjs().year();
+
 const yearOptions = Array.from({ length: 6 }, (_, i) => ({
   label: String(currentYear - i),
   value: currentYear - i,
 }));
 
-// Generate month options
 const monthOptions = Array.from({ length: 12 }, (_, i) => ({
   label: dayjs().month(i).format("MMMM"),
   value: i,
 }));
 
+const TYPE_COLORS: Record<TransactionType, string> = {
+  earn: "#3f8600",
+  spend: "#cf1322",
+  save: "#1890ff",
+};
+
+// === Utilities ===
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(amount);
 
-// Summary cards for Earn/Spend/Save
+const aggregateByCategory = (data: TransactionRow[]): CategorySummary[] => {
+  const categoryMap = new Map<string, CategorySummary>();
+
+  data.forEach((t) => {
+    const key = t.category_id;
+    if (!key) return;
+
+    // Handle both single object and array (Supabase join result)
+    const categoryName = Array.isArray(t.categories)
+      ? t.categories[0]?.name
+      : t.categories?.name;
+
+    const existing = categoryMap.get(key);
+    if (existing) {
+      existing.total += Number(t.amount);
+    } else {
+      categoryMap.set(key, {
+        category_id: t.category_id,
+        category_name: categoryName || "Unknown",
+        type: t.type,
+        total: Number(t.amount),
+      });
+    }
+  });
+
+  return Array.from(categoryMap.values());
+};
+
+// === Data Fetching Hook ===
+const usePeriodStats = (startDate: string, endDate: string) => {
+  const [stats, setStats] = useState<PeriodStats>({
+    typeSummary: [],
+    categorySummary: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchData = async () => {
+      setLoading(true);
+
+      try {
+        // Fetch totals by type in parallel
+        const typePromises = Object.values(TRANSACTION_TYPES).map(
+          async (type) => {
+            const { data, error } = await supabaseClient.rpc(
+              "sum_transactions_amount",
+              {
+                p_from: startDate,
+                p_to: endDate,
+                p_type: type,
+              }
+            );
+            if (error) throw error;
+            return { type, total: Number(data) || 0 };
+          }
+        );
+
+        // Fetch category breakdown
+        const { data: categoryData, error: categoryError } =
+          await supabaseClient
+            .from("transactions")
+            .select("type, category_id, categories(name), amount")
+            .gte("date", startDate)
+            .lte("date", endDate);
+
+        if (categoryError) throw categoryError;
+
+        const [typeSummary] = await Promise.all([Promise.all(typePromises)]);
+
+        if (!cancelled) {
+          setStats({
+            typeSummary,
+            categorySummary: aggregateByCategory(
+              (categoryData as TransactionRow[]) || []
+            ),
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        if (!cancelled) {
+          message.error("Failed to load statistics");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [startDate, endDate]);
+
+  return { ...stats, loading };
+};
+
+// === Components ===
 const TypeSummaryCards = ({
   data,
   loading,
@@ -73,14 +194,7 @@ const TypeSummaryCards = ({
               precision={2}
               prefix="$"
               loading={loading}
-              valueStyle={{
-                color:
-                  type === "earn"
-                    ? "#3f8600"
-                    : type === "spend"
-                    ? "#cf1322"
-                    : "#1890ff",
-              }}
+              valueStyle={{ color: TYPE_COLORS[type] }}
             />
           </Card>
         </Col>
@@ -89,7 +203,6 @@ const TypeSummaryCards = ({
   );
 };
 
-// Category breakdown table
 const CategoryBreakdownTable = ({
   data,
   loading,
@@ -143,159 +256,54 @@ const CategoryBreakdownTable = ({
   );
 };
 
+const CategoryBreakdownSection = ({
+  data,
+  loading,
+}: {
+  data: CategorySummary[];
+  loading: boolean;
+}) => (
+  <>
+    <Title level={4}>By Category</Title>
+    <Row gutter={[16, 16]}>
+      {Object.values(TRANSACTION_TYPES).map((type) => (
+        <Col xs={24} md={8} key={type}>
+          <Card title={TRANSACTION_TYPE_LABELS[type]} size="small">
+            <CategoryBreakdownTable data={data} loading={loading} type={type} />
+          </Card>
+        </Col>
+      ))}
+    </Row>
+  </>
+);
+
+// === Main Component ===
 export const DashboardPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().month());
 
-  // Year data
-  const [yearTypeSummary, setYearTypeSummary] = useState<TypeSummary[]>([]);
-  const [yearCategorySummary, setYearCategorySummary] = useState<
-    CategorySummary[]
-  >([]);
-  const [yearLoading, setYearLoading] = useState(true);
+  // Compute date ranges
+  const yearDateRange = {
+    start: dayjs().year(selectedYear).startOf("year").format("YYYY-MM-DD"),
+    end: dayjs().year(selectedYear).endOf("year").format("YYYY-MM-DD"),
+  };
 
-  // Month data
-  const [monthTypeSummary, setMonthTypeSummary] = useState<TypeSummary[]>([]);
-  const [monthCategorySummary, setMonthCategorySummary] = useState<
-    CategorySummary[]
-  >([]);
-  const [monthLoading, setMonthLoading] = useState(true);
+  const monthDateRange = {
+    start: dayjs()
+      .year(selectedYear)
+      .month(selectedMonth)
+      .startOf("month")
+      .format("YYYY-MM-DD"),
+    end: dayjs()
+      .year(selectedYear)
+      .month(selectedMonth)
+      .endOf("month")
+      .format("YYYY-MM-DD"),
+  };
 
-  // Fetch year statistics
-  useEffect(() => {
-    const fetchYearData = async () => {
-      setYearLoading(true);
-      const startDate = dayjs()
-        .year(selectedYear)
-        .startOf("year")
-        .format("YYYY-MM-DD");
-      const endDate = dayjs()
-        .year(selectedYear)
-        .endOf("year")
-        .format("YYYY-MM-DD");
-
-      try {
-        // Fetch totals by type
-        const typePromises = Object.values(TRANSACTION_TYPES).map(
-          async (type) => {
-            const { data } = await supabaseClient.rpc(
-              "sum_transactions_amount",
-              {
-                p_from: startDate,
-                p_to: endDate,
-                p_type: type,
-              }
-            );
-            return { type, total: Number(data) || 0 };
-          }
-        );
-
-        // Fetch category breakdown
-        const { data: categoryData } = await supabaseClient
-          .from("transactions")
-          .select("type, category_id, categories(name), amount")
-          .gte("date", startDate)
-          .lte("date", endDate);
-
-        const typeSummary = await Promise.all(typePromises);
-        setYearTypeSummary(typeSummary);
-
-        // Aggregate by category
-        const categoryMap = new Map<string, CategorySummary>();
-        categoryData?.forEach((t: any) => {
-          const key = t.category_id;
-          if (!key) return;
-          const existing = categoryMap.get(key);
-          if (existing) {
-            existing.total += Number(t.amount);
-          } else {
-            categoryMap.set(key, {
-              category_id: t.category_id,
-              category_name: t.categories?.name || "Unknown",
-              type: t.type,
-              total: Number(t.amount),
-            });
-          }
-        });
-        setYearCategorySummary(Array.from(categoryMap.values()));
-      } catch (error) {
-        console.error("Error fetching year data:", error);
-      } finally {
-        setYearLoading(false);
-      }
-    };
-
-    fetchYearData();
-  }, [selectedYear]);
-
-  // Fetch month statistics
-  useEffect(() => {
-    const fetchMonthData = async () => {
-      setMonthLoading(true);
-      const startDate = dayjs()
-        .year(selectedYear)
-        .month(selectedMonth)
-        .startOf("month")
-        .format("YYYY-MM-DD");
-      const endDate = dayjs()
-        .year(selectedYear)
-        .month(selectedMonth)
-        .endOf("month")
-        .format("YYYY-MM-DD");
-
-      try {
-        // Fetch totals by type
-        const typePromises = Object.values(TRANSACTION_TYPES).map(
-          async (type) => {
-            const { data } = await supabaseClient.rpc(
-              "sum_transactions_amount",
-              {
-                p_from: startDate,
-                p_to: endDate,
-                p_type: type,
-              }
-            );
-            return { type, total: Number(data) || 0 };
-          }
-        );
-
-        // Fetch category breakdown
-        const { data: categoryData } = await supabaseClient
-          .from("transactions")
-          .select("type, category_id, categories(name), amount")
-          .gte("date", startDate)
-          .lte("date", endDate);
-
-        const typeSummary = await Promise.all(typePromises);
-        setMonthTypeSummary(typeSummary);
-
-        // Aggregate by category
-        const categoryMap = new Map<string, CategorySummary>();
-        categoryData?.forEach((t: any) => {
-          const key = t.category_id;
-          if (!key) return;
-          const existing = categoryMap.get(key);
-          if (existing) {
-            existing.total += Number(t.amount);
-          } else {
-            categoryMap.set(key, {
-              category_id: t.category_id,
-              category_name: t.categories?.name || "Unknown",
-              type: t.type,
-              total: Number(t.amount),
-            });
-          }
-        });
-        setMonthCategorySummary(Array.from(categoryMap.values()));
-      } catch (error) {
-        console.error("Error fetching month data:", error);
-      } finally {
-        setMonthLoading(false);
-      }
-    };
-
-    fetchMonthData();
-  }, [selectedYear, selectedMonth]);
+  // Fetch data using custom hook
+  const yearStats = usePeriodStats(yearDateRange.start, yearDateRange.end);
+  const monthStats = usePeriodStats(monthDateRange.start, monthDateRange.end);
 
   const tabItems = [
     {
@@ -312,23 +320,14 @@ export const DashboardPage: React.FC = () => {
               style={{ width: 120 }}
             />
           </div>
-
-          <TypeSummaryCards data={yearTypeSummary} loading={yearLoading} />
-
-          <Title level={4}>By Category</Title>
-          <Row gutter={[16, 16]}>
-            {Object.values(TRANSACTION_TYPES).map((type) => (
-              <Col xs={24} md={8} key={type}>
-                <Card title={TRANSACTION_TYPE_LABELS[type]} size="small">
-                  <CategoryBreakdownTable
-                    data={yearCategorySummary}
-                    loading={yearLoading}
-                    type={type}
-                  />
-                </Card>
-              </Col>
-            ))}
-          </Row>
+          <TypeSummaryCards
+            data={yearStats.typeSummary}
+            loading={yearStats.loading}
+          />
+          <CategoryBreakdownSection
+            data={yearStats.categorySummary}
+            loading={yearStats.loading}
+          />
         </div>
       ),
     },
@@ -353,23 +352,14 @@ export const DashboardPage: React.FC = () => {
               style={{ width: 150 }}
             />
           </div>
-
-          <TypeSummaryCards data={monthTypeSummary} loading={monthLoading} />
-
-          <Title level={4}>By Category</Title>
-          <Row gutter={[16, 16]}>
-            {Object.values(TRANSACTION_TYPES).map((type) => (
-              <Col xs={24} md={8} key={type}>
-                <Card title={TRANSACTION_TYPE_LABELS[type]} size="small">
-                  <CategoryBreakdownTable
-                    data={monthCategorySummary}
-                    loading={monthLoading}
-                    type={type}
-                  />
-                </Card>
-              </Col>
-            ))}
-          </Row>
+          <TypeSummaryCards
+            data={monthStats.typeSummary}
+            loading={monthStats.loading}
+          />
+          <CategoryBreakdownSection
+            data={monthStats.categorySummary}
+            loading={monthStats.loading}
+          />
         </div>
       ),
     },
