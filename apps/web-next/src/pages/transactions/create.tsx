@@ -27,6 +27,7 @@ export const TransactionCreate = () => {
 
   const { selectProps: tagsSelectProps } = useSelect({
     resource: "tags",
+    optionLabel: "name",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
   });
