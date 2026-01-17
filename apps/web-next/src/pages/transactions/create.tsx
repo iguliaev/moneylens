@@ -105,34 +105,6 @@ export const TransactionCreate = () => {
           <Select mode="multiple" {...tagsSelectProps} />
         </Form.Item>
         <Form.Item
-          label="Created At"
-          name={["created_at"]}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-          getValueProps={(value) => ({
-            value: value ? dayjs(value) : undefined,
-          })}
-        >
-          <DatePicker />
-        </Form.Item>
-        <Form.Item
-          label="Updated At"
-          name={["updated_at"]}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-          getValueProps={(value) => ({
-            value: value ? dayjs(value) : undefined,
-          })}
-        >
-          <DatePicker />
-        </Form.Item>
-        <Form.Item
           label="Bank Account"
           name={"bank_account_id"}
           rules={[
