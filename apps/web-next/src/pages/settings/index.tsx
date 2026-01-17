@@ -14,7 +14,6 @@ import {
 import {
   UploadOutlined,
   DeleteOutlined,
-  SettingOutlined,
   FileTextOutlined,
   TagsOutlined,
   BankOutlined,
@@ -23,6 +22,7 @@ import {
 import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import { Link } from "react-router";
 import { supabaseClient } from "../../utility";
+import { Show } from "@refinedev/antd";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -436,21 +436,13 @@ const DataResetSection: React.FC = () => {
 // === Main Component ===
 export const SettingsPage: React.FC = () => {
   return (
-    <div style={{ padding: 24, maxWidth: 800 }}>
-      <Title level={2}>
-        <SettingOutlined /> Settings
-      </Title>
+    <Show title="Settings" headerButtons={() => null}>
+      <BulkUploadSection />
 
-      <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        {/* Bulk Upload Section */}
-        <BulkUploadSection />
+      <Divider />
 
-        <Divider />
-
-        {/* Danger Zone */}
-        <DataResetSection />
-      </Space>
-    </div>
+      <DataResetSection />
+    </Show>
   );
 };
 
