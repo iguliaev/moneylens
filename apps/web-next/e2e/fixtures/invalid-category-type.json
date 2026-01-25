@@ -1,0 +1,5 @@
+{
+  "categories": [
+    { "type": "invalid_type", "name": "BadCategory" }
+  ]
+}
