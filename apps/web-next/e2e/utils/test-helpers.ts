@@ -59,12 +59,12 @@ export async function deleteTestUser(userId: string) {
 export async function loginUser(page: Page, email: string, password: string) {
   await page.goto("/login");
 
-    await page.getByRole("textbox", { name: "Email" }).fill(email);
-    await page.getByRole("textbox", { name: "Password" }).fill(password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("textbox", { name: "Email" }).fill(email);
+  await page.getByRole("textbox", { name: "Password" }).fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
 
-    await expect(page).toHaveURL("/", { timeout: 5000 });
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page).toHaveURL("/", { timeout: 5000 });
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 }
 
 export async function logoutUser(page: Page) {
@@ -238,14 +238,28 @@ export async function createBankAccount(page: Page, name: string) {
 }
 
 // Helper to create a tag via Settings UI
-export async function createTag(page: Page, name: string) {
-  await page.goto("/settings/tags");
-  await page.getByTestId("tags-create-name").fill(name);
-  await page.getByTestId("tags-create-description").fill("e2e");
-  await page.getByTestId("tags-create-submit").click();
+export async function createTag(
+  page: Page,
+  name: string,
+  description?: string,
+) {
+  await page.goto("/tags");
+  await page.getByRole("button", { name: /create/i }).click();
+  await page.getByRole("textbox", { name: "* Name" }).fill(name);
+  if (description !== undefined) {
+    await page.getByRole("textbox", { name: "Description" }).fill(description);
+  }
+  await page.getByRole("button", { name: /save/i }).click();
+  await expect(page).toHaveURL(/\/tags/);
+  await expect(page.getByRole("heading", { name: "Tags" })).toBeVisible();
   await expect(
-    page.getByTestId("tags-row").filter({ hasText: name }),
+    page.getByRole("cell", { name: name, exact: true }),
   ).toBeVisible();
+  if (description !== undefined) {
+    await expect(
+      page.getByRole("cell", { name: description, exact: true }),
+    ).toBeVisible();
+  }
 }
 
 // Helper to create a category for a given type via Settings UI

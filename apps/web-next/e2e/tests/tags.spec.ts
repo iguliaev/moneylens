@@ -3,6 +3,7 @@ import {
   createTestUser,
   deleteTestUser,
   loginUser,
+  createTag,
   cleanupReferenceDataForUser,
 } from "../utils/test-helpers";
 
@@ -27,29 +28,7 @@ test.describe("Tags", () => {
     const name = `e2e-tag-create-name-${ts}`;
     const desc = `e2e-tag-create-desc-${ts}`;
 
-    await page.goto("/tags");
-
-    // Click create button
-    await page.getByRole("button", { name: /create/i }).click();
-
-    // Fill form
-    await page.getByRole("textbox", { name: "* Name" }).fill(name);
-    await page.getByRole("textbox", { name: "Description" }).fill(desc);
-
-    // Submit
-    await page.getByRole("button", { name: /save/i }).click();
-
-    // Should redirect to list
-    await expect(page).toHaveURL(/\/tags/);
-    await expect(page.getByRole("heading", { name: "Tags" })).toBeVisible();
-
-    // Verify tag appears in list
-    await expect(
-      page.getByRole("cell", { name: name, exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("cell", { name: desc, exact: true }),
-    ).toBeVisible();
+    await createTag(page, name, desc);
   });
 
   test("user can edit a tag", async ({ page }) => {
@@ -60,19 +39,7 @@ test.describe("Tags", () => {
     const updatedDesc = `${desc}-updated`;
 
     // Create tag
-    await page.goto("/tags/create");
-    await page.getByRole("textbox", { name: "* Name" }).fill(name);
-    await page.getByRole("textbox", { name: "Description" }).fill(desc);
-    await page.getByRole("button", { name: /save/i }).click();
-
-    await page.waitForURL(/\/tags/);
-    await expect(page.getByRole("heading", { name: "Tags" })).toBeVisible();
-    await expect(
-      page.getByRole("cell", { name: name, exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("cell", { name: desc, exact: true }),
-    ).toBeVisible();
+    await createTag(page, name, desc);
 
     // Click edit on the created tag
     await page
@@ -114,16 +81,7 @@ test.describe("Tags", () => {
     const name = `e2e-tag-delete-name${ts}`;
 
     // Create tag
-    await page.goto("/tags/create");
-    await page.getByRole("textbox", { name: "* Name" }).fill(name);
-    await page.getByRole("button", { name: /save/i }).click();
-    await page.waitForURL(/\/tags/);
-    await expect(page.getByRole("heading", { name: "Tags" })).toBeVisible();
-
-    // Verify it exists
-    await expect(
-      page.getByRole("cell", { name: name, exact: true }),
-    ).toBeVisible();
+    await createTag(page, name);
 
     // Delete
     await page
@@ -148,10 +106,7 @@ test.describe("Tags", () => {
     const desc = `e2e-tag-show-desc-${ts}`;
 
     // Create tag
-    await page.goto("/tags/create");
-    await page.getByRole("textbox", { name: "* Name" }).fill(name);
-    await page.getByRole("textbox", { name: "Description" }).fill(desc);
-    await page.getByRole("button", { name: /save/i }).click();
+    await createTag(page, name, desc);
 
     // Click show button
     await page
@@ -169,12 +124,9 @@ test.describe("Tags", () => {
     const name = `e2e-tag-usage-${ts}`;
 
     // Create tag
-    await page.goto("/tags/create");
-    await page.getByRole("textbox", { name: "* Name" }).fill(name);
-    await page.getByRole("button", { name: /save/i }).click();
+    await createTag(page, name);
 
     // Verify tag appears with usage count
-    await expect(page.getByText(name)).toBeVisible();
 
     // TODO: Check usage count when transactions can be tagged in e2e tests
     // Usage count should be 0 for new tag
