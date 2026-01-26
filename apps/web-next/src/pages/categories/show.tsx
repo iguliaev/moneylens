@@ -17,6 +17,8 @@ export const CategoryShow = () => {
             <TextField value={record?.type} />
             <Title level={5}>Name</Title>
             <TextField value={record?.name} />
+            <Title level={5}>Description</Title>
+            <TextField value={record?.description} />
             <Title level={5}>Created At</Title>
             <DateField value={record?.created_at} />
             <Title level={5}>Updated At</Title>

@@ -8,7 +8,7 @@ import {
 } from "../utils/test-helpers";
 import { create } from "node:domain";
 
-test.describe("Settings: Bank Accounts", () => {
+test.describe("Bank Accounts", () => {
   let testUser: { email: string; password: string; userId: string };
 
   test.beforeAll(async () => {

@@ -284,15 +284,51 @@ export async function createCategoryForType(
   page: Page,
   type: string,
   name: string,
+  description?: string,
 ) {
-  await page.goto("/settings/categories");
-  await page.getByTestId(`categories-type-${type}`).click();
-  await page.getByTestId("categories-create-name").fill(name);
-  await page.getByTestId("categories-create-description").fill("e2e");
-  await page.getByTestId("categories-create-submit").click();
+  await page.goto("/categories");
+
+  // Open create category modal
+  await page.getByRole("button", { name: /create/i }).click();
   await expect(
-    page.getByTestId("categories-row").filter({ hasText: name }),
+    page.getByRole("heading", { name: "Create Category" }),
   ).toBeVisible();
+
+  // Select category type
+  await page.getByRole("combobox", { name: "* Type" }).click();
+  await page.getByTitle(new RegExp(type, "i")).click();
+  await expect(
+    page.locator("#root").getByTitle(new RegExp(type, "i")),
+  ).toBeVisible();
+
+  // Fill in name and description
+  await page.getByRole("textbox", { name: "* Name" }).fill(name);
+  if (description !== undefined) {
+    await page.getByRole("textbox", { name: "Description" }).fill(description);
+  }
+
+  // Save category
+  await page.getByRole("button", { name: /save/i }).click();
+
+  // Verify redirect back to categories list
+  await expect(page).toHaveURL(/\/categories/);
+  await expect(page.getByRole("heading", { name: "Categories" })).toBeVisible();
+
+  // Select the type tab to filter categories
+  await page
+    .getByRole("radiogroup", { name: "segmented control" })
+    .getByText(new RegExp(type, "i"))
+    .click();
+
+  // Verify the new category is visible in the list
+  await expect(
+    page.getByRole("cell", { name: name, exact: true }),
+  ).toBeVisible();
+  if (description !== undefined) {
+    await expect(
+      page.getByRole("cell", { name: description, exact: true }),
+    ).toBeVisible();
+  }
 }
 
 // Helper to select multiple tags via MultiSelect dropdown
