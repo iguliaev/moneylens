@@ -227,14 +227,31 @@ export async function cleanupTransactionsForUser(userId: string) {
 }
 
 // Helper to create a bank account via Settings UI
-export async function createBankAccount(page: Page, name: string) {
-  await page.goto("/settings/bank-accounts");
-  await page.getByTestId("bank-accounts-create-name").fill(name);
-  await page.getByTestId("bank-accounts-create-description").fill("e2e");
-  await page.getByTestId("bank-accounts-create-submit").click();
+export async function createBankAccount(
+  page: Page,
+  name: string,
+  description?: string,
+) {
+  await page.goto("/bank-accounts");
+  await page.getByRole("button", { name: /create/i }).click();
+  await page.getByRole("textbox", { name: "* Name" }).fill(name);
+  if (description !== undefined) {
+    await page.getByRole("textbox", { name: "Description" }).fill(description);
+  }
+
+  await page.getByRole("button", { name: /save/i }).click();
+  await expect(page).toHaveURL(/\/bank-accounts/);
   await expect(
-    page.getByTestId("bank-accounts-row").filter({ hasText: name }),
+    page.getByRole("heading", { name: "Bank Accounts" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: name, exact: true }),
+  ).toBeVisible();
+  if (description !== undefined) {
+    await expect(
+      page.getByRole("cell", { name: description, exact: true }),
+    ).toBeVisible();
+  }
 }
 
 // Helper to create a tag via Settings UI
