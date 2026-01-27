@@ -154,6 +154,13 @@ export async function seedReferenceDataForUser(userId: string) {
       created_at: now,
       updated_at: now,
     },
+    {
+      user_id: userId,
+      name: "Secondary Account",
+      description: "Secondary bank account",
+      created_at: now,
+      updated_at: now,
+    },
   ];
   const { error: bankAccountsError } = await supabaseAdmin
     .from("bank_accounts")
@@ -329,6 +336,77 @@ export async function createCategoryForType(
       page.getByRole("cell", { name: description, exact: true }),
     ).toBeVisible();
   }
+}
+
+export async function createTransactionWithoutTags(
+  page: Page,
+  date: string,
+  type: string,
+  category: string,
+  amount: string,
+  bankAccount: string,
+  notes?: string,
+) {
+  await page.goto("/transactions/create");
+
+  // Fill date
+  await page.getByLabel("Date").fill(date);
+
+  // Select transaction type
+  await page.getByRole("combobox", { name: "* Type" }).click();
+  await page.getByTitle(new RegExp(type, "i")).click();
+  await expect(
+    page.locator("#root").getByTitle(new RegExp(type, "i")),
+  ).toBeVisible();
+
+  // Select category
+  await page.getByRole("combobox", { name: "* Category" }).click();
+  await page.getByTitle(new RegExp(category, "i")).click();
+  await expect(
+    page.locator("#root").getByTitle(new RegExp(category, "i")),
+  ).toBeVisible();
+
+  // Fill amount
+  await page.getByLabel("Amount").fill(amount);
+
+  // Select bank account
+  await page.getByRole("combobox", { name: "* Bank Account" }).click();
+  await page.getByTitle(new RegExp(bankAccount, "i")).click();
+  await expect(
+    page.locator("#root").getByTitle(new RegExp(bankAccount, "i")),
+  ).toBeVisible();
+
+  // Fill notes
+  if (notes !== undefined) {
+    await page.getByTitle("Notes").fill(notes);
+  }
+
+  // Submit form
+  await page.getByRole("button", { name: /save/i }).click();
+
+  // Should redirect to transactions list
+  await expect(page).toHaveURL(/\/transactions/);
+
+  // Transactions list page is visible
+  await expect(
+    page.getByRole("heading", { name: "Transactions" }),
+  ).toBeVisible();
+
+  // Select the type tab to filter categories
+  await page
+    .getByRole("radiogroup", { name: "segmented control" })
+    .getByText(new RegExp(type, "i"))
+    .click();
+
+  // Verify the transaction appears in the list
+  await expect(
+    page
+      .locator("tr")
+      .filter({ hasText: `${date}` })
+      .filter({ hasText: new RegExp(category, "i") })
+      .filter({ hasText: new RegExp(amount, "i") })
+      .filter({ hasText: new RegExp(bankAccount, "i") }),
+  ).toBeDefined();
 }
 
 // Helper to select multiple tags via MultiSelect dropdown

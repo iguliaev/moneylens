@@ -6,7 +6,6 @@ import {
   cleanupReferenceDataForUser,
   createCategoryForType,
 } from "../utils/test-helpers";
-import { create } from "node:domain";
 
 test.describe("Categories", () => {
   let testUser: { email: string; password: string; userId: string };
@@ -47,7 +46,6 @@ test.describe("Categories", () => {
     const updatedName = `${name}-updated`;
     const updatedDesc = `${desc}-updated`;
 
-
     await createCategoryForType(page, categoryType, name, desc);
 
     // Click edit on the created category
@@ -74,13 +72,15 @@ test.describe("Categories", () => {
     await page.getByLabel("Name").fill(updatedName);
     await page.getByLabel("Description").clear();
     await page.getByLabel("Description").fill(updatedDesc);
- 
+
     // Save
     await page.getByRole("button", { name: /save/i }).click();
 
     // Verify redirect back to categories list
     await expect(page).toHaveURL(/\/categories/);
-    await expect(page.getByRole("heading", { name: "Categories" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Categories" }),
+    ).toBeVisible();
 
     // Old values gone
     await page

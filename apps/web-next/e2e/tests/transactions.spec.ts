@@ -7,6 +7,7 @@ import {
   cleanupReferenceDataForUser,
   cleanupTransactionsForUser,
   e2eCurrentMonthDate,
+  createTransactionWithoutTags,
 } from "../utils/test-helpers";
 
 test.describe("Transactions", () => {
@@ -34,118 +35,41 @@ test.describe("Transactions", () => {
     await cleanupTransactionsForUser(testUser.userId);
   });
 
-  test("user can create spend transaction", async ({ page }) => {
-    const date = e2eCurrentMonthDate();
-    await page.goto("/transactions/create");
-
-    // Select transaction type
-    await page.getByLabel("Type").click();
-    await page.getByRole("option", { name: "Spend" }).click();
-
-    // Fill date
-    await page.getByLabel("Date").fill(date);
-
-    // Select category (should be filtered to "spend" categories)
-    await page.getByLabel("Category").click();
-    await page.getByRole("option", { name: "Groceries" }).click();
-
-    // Fill amount
-    await page.getByLabel("Amount").fill("50.00");
-
-    // Select bank account
-    await page.getByLabel("Bank Account").click();
-    await page.getByRole("option", { name: "Main Account" }).click();
-
-    // Submit form
-    await page.getByRole("button", { name: /save|create/i }).click();
-
-    // Should redirect to transactions list
-    await expect(page).toHaveURL(/\/transactions/);
-
-    // Verify the transaction appears in the list
-    await expect(
-      page.getByRole("cell", { name: /50\.?00/i }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("cell", { name: /groceries/i }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("cell", { name: /test spend transaction/i }),
-    ).not.toBeVisible(); // Notes not shown in list by default
-  });
-
-  test("user can create earn transaction", async ({ page }) => {
-    const date = e2eCurrentMonthDate();
-    await page.goto("/transactions/create");
-
-    // Select transaction type
-    await page.getByLabel("Type").click();
-    await page.getByRole("option", { name: "Earn" }).click();
-
-    // Fill date
-    await page.getByLabel("Date").fill(date);
-
-    // Select category (should be filtered to "earn" categories)
-    await page.getByLabel("Category").click();
-    await page.getByRole("option", { name: "Salary" }).click();
-
-    // Fill amount
-    await page.getByLabel("Amount").fill("1000.00");
-
-    // Select bank account
-    await page.getByLabel("Bank Account").click();
-    await page.getByRole("option", { name: "Main Account" }).click();
-
-    // Submit form
-    await page.getByRole("button", { name: /save|create/i }).click();
-
-    // Should redirect to transactions list
-    await expect(page).toHaveURL(/\/transactions/);
-
-    // Verify the transaction appears in the list
-    await expect(
-      page.getByRole("cell", { name: /1[, ]?000/i }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("cell", { name: /salary/i }),
-    ).toBeVisible();
-  });
-
-  test("user can create save transaction", async ({ page }) => {
-    const date = e2eCurrentMonthDate();
-    await page.goto("/transactions/create");
-
-    // Select transaction type
-    await page.getByLabel("Type").click();
-    await page.getByRole("option", { name: "Save" }).click();
-
-    // Fill date
-    await page.getByLabel("Date").fill(date);
-
-    // Select category (should be filtered to "save" categories)
-    await page.getByLabel("Category").click();
-    await page.getByRole("option", { name: "Savings" }).click();
-
-    // Fill amount
-    await page.getByLabel("Amount").fill("200.00");
-
-    // Select bank account
-    await page.getByLabel("Bank Account").click();
-    await page.getByRole("option", { name: "Main Account" }).click();
-
-    // Submit form
-    await page.getByRole("button", { name: /save|create/i }).click();
-
-    // Should redirect to transactions list
-    await expect(page).toHaveURL(/\/transactions/);
-
-    // Verify the transaction appears in the list
-    await expect(
-      page.getByRole("cell", { name: /200/i }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("cell", { name: /savings/i }),
-    ).toBeVisible();
+  [
+    {
+      categoryType: "spend",
+      categoryName: "Groceries",
+      amount: "150.00",
+      bankAccount: "Main Account",
+      notes: "Weekly grocery shopping",
+    },
+    {
+      categoryType: "earn",
+      categoryName: "Salary",
+      amount: "1000.00",
+      bankAccount: "Main Account",
+      notes: "Monthly salary",
+    },
+    {
+      categoryType: "save",
+      categoryName: "Savings",
+      amount: "200.00",
+      bankAccount: "Main Account",
+      notes: "Monthly savings",
+    },
+  ].forEach(({ categoryType, categoryName, amount, bankAccount, notes }) => {
+    test(`user can create ${categoryType} transaction`, async ({ page }) => {
+      const date = e2eCurrentMonthDate();
+      await createTransactionWithoutTags(
+        page,
+        date,
+        categoryType,
+        categoryName,
+        amount,
+        bankAccount,
+        notes,
+      );
+    });
   });
 
   test("user can view transactions list with type filter", async ({ page }) => {
@@ -160,9 +84,7 @@ test.describe("Transactions", () => {
     await page.waitForURL(/\/transactions/);
 
     // Should show spend transactions by default (as per list component)
-    await expect(
-      page.getByRole("cell", { name: /100/i }),
-    ).toBeVisible();
+    await expect(page.getByRole("cell", { name: /100/i })).toBeVisible();
 
     // Filter to earn transactions
     await page.getByRole("tab", { name: /earn/i }).click();
@@ -201,14 +123,10 @@ test.describe("Transactions", () => {
     await expect(page).toHaveURL(/\/transactions/);
 
     // Verify updated amount
-    await expect(
-      page.getByRole("cell", { name: /150/i }),
-    ).toBeVisible();
+    await expect(page.getByRole("cell", { name: /150/i })).toBeVisible();
 
     // Verify old amount is gone
-    await expect(
-      page.getByRole("cell", { name: /100/i }),
-    ).not.toBeVisible();
+    await expect(page.getByRole("cell", { name: /100/i })).not.toBeVisible();
   });
 
   test("user can delete a transaction", async ({ page }) => {
@@ -223,13 +141,14 @@ test.describe("Transactions", () => {
     await page.waitForURL(/\/transactions/);
 
     // Verify transaction appears
-    await expect(
-      page.getByRole("cell", { name: /75/i }),
-    ).toBeVisible();
+    await expect(page.getByRole("cell", { name: /75/i })).toBeVisible();
 
     // Click delete button on the first row
     // Note: May need to confirm deletion
-    await page.getByRole("button", { name: /delete/i }).first().click();
+    await page
+      .getByRole("button", { name: /delete/i })
+      .first()
+      .click();
 
     // Handle confirmation dialog if it appears
     try {
@@ -239,9 +158,7 @@ test.describe("Transactions", () => {
     }
 
     // Verify transaction is gone
-    await expect(
-      page.getByRole("cell", { name: /75/i }),
-    ).not.toBeVisible();
+    await expect(page.getByRole("cell", { name: /75/i })).not.toBeVisible();
   });
 
   test("user can add tags to a transaction", async ({ page }) => {
@@ -271,7 +188,9 @@ test.describe("Transactions", () => {
     await expect(page.getByText("essentials")).toBeVisible();
   });
 
-  test("category options change based on transaction type", async ({ page }) => {
+  test("category options change based on transaction type", async ({
+    page,
+  }) => {
     await page.goto("/transactions/create");
 
     // Select spend type
@@ -282,7 +201,9 @@ test.describe("Transactions", () => {
 
     // Should show spend categories
     await expect(page.getByRole("option", { name: "Groceries" })).toBeVisible();
-    await expect(page.getByRole("option", { name: "Salary" })).not.toBeVisible();
+    await expect(
+      page.getByRole("option", { name: "Salary" }),
+    ).not.toBeVisible();
 
     // Close dropdown
     await page.keyboard.press("Escape");
@@ -295,7 +216,9 @@ test.describe("Transactions", () => {
 
     // Should show earn categories
     await expect(page.getByRole("option", { name: "Salary" })).toBeVisible();
-    await expect(page.getByRole("option", { name: "Groceries" })).not.toBeVisible();
+    await expect(
+      page.getByRole("option", { name: "Groceries" }),
+    ).not.toBeVisible();
   });
 
   test("transaction form validation works", async ({ page }) => {
