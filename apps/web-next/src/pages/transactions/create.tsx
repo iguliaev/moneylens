@@ -122,6 +122,17 @@ export const TransactionCreate = () => {
         >
           <Input />
         </Form.Item>
+        <Form.Item
+          label="Bank Account"
+          name={"bank_account_id"}
+          rules={[
+            {
+              required: true,
+            },
+          ]}
+        >
+          <Select {...bankAccountSelectProps} />
+        </Form.Item>
         <Form.Item label="Tags" name={"tag_ids"}>
           <Select
             mode="multiple"
@@ -137,16 +148,8 @@ export const TransactionCreate = () => {
             allowClear
           />
         </Form.Item>
-        <Form.Item
-          label="Bank Account"
-          name={"bank_account_id"}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-        >
-          <Select {...bankAccountSelectProps} />
+        <Form.Item label="Notes" name={["notes"]}>
+          <Input.TextArea rows={3} />
         </Form.Item>
       </Form>
     </Create>
