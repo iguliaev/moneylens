@@ -27,7 +27,7 @@ import {
  */
 const dateOnlyFilterMapper = (
   selectedKeys: React.Key[],
-  event: MapValueEvent
+  event: MapValueEvent,
 ) => {
   if (!selectedKeys || selectedKeys.length === 0) {
     return selectedKeys;
@@ -35,7 +35,7 @@ const dateOnlyFilterMapper = (
 
   if (event === "value") {
     return selectedKeys.map((key) =>
-      typeof key === "string" ? dayjs(key) : key
+      typeof key === "string" ? dayjs(key) : key,
     );
   }
 
@@ -74,7 +74,7 @@ const MultiSelectFilter = ({
 export const TransactionList = () => {
   const invalidate = useInvalidate();
   const [transactionType, setTransactionType] = useState<string>(
-    TRANSACTION_TYPES.SPEND
+    TRANSACTION_TYPES.SPEND,
   );
 
   const { tableProps, filters } = useTable({
@@ -211,8 +211,14 @@ export const TransactionList = () => {
           defaultFilteredValue={getDefaultFilter(
             "bank_account_id",
             filters,
-            "in"
+            "in",
           )}
+        />
+        <Table.Column
+          key="notes"
+          dataIndex="notes"
+          title="Notes"
+          render={(value: string) => value || ""}
         />
         <Table.Column
           title="Actions"
