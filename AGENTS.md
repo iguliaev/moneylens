@@ -7,9 +7,7 @@ This file provides guidance to AI agents when working with code in this reposito
 ```
 moneylens/
 ├── apps/
-│   ├── web/              # Main Next.js + Refine frontend application
-│   ├── web-next/         # Alternative Refine-based frontend
-│   └── (other samples)   # Reference implementations (auth-antd, etc.)
+│   └── web-next/         # Main Vite + Refine frontend application
 ├── supabase/             # Database layer
 │   ├── migrations/       # Timestamped SQL migration files
 │   ├── seeds/            # Sample data for development
@@ -24,13 +22,12 @@ moneylens/
 
 ## Preferred Languages & Technologies
 
-### Frontend (apps/web)
+### Frontend (apps/web-next)
 - **Language**: TypeScript
-- **Framework**: Next.js 14 with Refine framework
-- **Styling**: Tailwind CSS with PostCSS
+- **Framework**: Vite + React 19 with Refine framework
+- **UI Library**: Ant Design 5
 - **State/Data**: Refine hooks + Supabase client
 - **Testing**: Playwright for E2E tests
-- **Node.js**: >=22.0.0 required
 
 ### Backend
 - **Database**: PostgreSQL 17 via Supabase
@@ -43,7 +40,7 @@ moneylens/
 ### Development
 
 ```bash
-cd apps/web
+cd apps/web-next
 
 # Install dependencies
 npm install
@@ -61,22 +58,19 @@ npm run start
 ### Code Quality
 
 ```bash
-cd apps/web
+cd apps/web-next
 
 # Lint code
 npm run lint
 
-# Format code
-npm run format
-
-# Check formatting
-npm run format:check
+# Type check
+npm run check-types
 ```
 
 ### E2E Testing
 
 ```bash
-cd apps/web
+cd apps/web-next
 
 # Run tests
 npm run test:e2e
@@ -86,15 +80,6 @@ npm run test:e2e:ui
 
 # Run with browser visible
 npm run test:e2e:headed
-
-# Debug tests
-npm run test:e2e:debug
-
-# View test report
-npm run test:e2e:report
-
-# Generate tests via codegen
-npm run test:e2e:codegen
 ```
 
 ## Supabase Database Management
@@ -194,7 +179,7 @@ supabase db pull
 
 ## Environment Configuration
 
-- Local development: `apps/web/.env.local`
+- Local development: `apps/web-next/.env.local`
 - Supabase config: `supabase/config.toml`
 - Environment backups: `.env.backup.*` files at repo root
 
