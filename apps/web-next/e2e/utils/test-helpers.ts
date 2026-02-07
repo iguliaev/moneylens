@@ -352,7 +352,6 @@ export async function createTransactionWithoutTags(
   bankAccount: string,
   notes: string,
 ) {
-
   await page.goto("/transactions/create");
 
   // Fill date

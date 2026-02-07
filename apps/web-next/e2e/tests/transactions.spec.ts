@@ -132,6 +132,8 @@ test.describe("Transactions", () => {
         ).toBeVisible();
 
         // Change date
+        await page.getByLabel("Date").click();
+        await page.keyboard.press("Control+A"); // Select all (works on both Mac/Win)
         await page.getByLabel("Date").fill(newDate);
 
         // Change type
