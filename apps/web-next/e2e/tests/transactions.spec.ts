@@ -130,36 +130,53 @@ test.describe("Transactions", () => {
     await expect(page.getByRole("cell", { name: /100/i })).not.toBeVisible();
   });
 
-  test("user can delete a transaction", async ({ page }) => {
-    // First create a transaction
-    await page.goto("/transactions/create");
-    await page.getByLabel("Type").selectOption("spend");
-    await page.getByLabel("Date").fill(e2eCurrentMonthDate());
-    await page.getByLabel("Category").selectOption("Groceries");
-    await page.getByLabel("Amount").fill("75.00");
-    await page.getByLabel("Bank Account").selectOption("Main Account");
-    await page.getByRole("button", { name: /save|create/i }).click();
-    await page.waitForURL(/\/transactions/);
+  [
+    {
+      categoryType: "spend",
+      categoryName: "Groceries",
+      amount: "150.00",
+      bankAccount: "Main Account",
+    },
+    {
+      categoryType: "earn",
+      categoryName: "Salary",
+      amount: "1000.00",
+      bankAccount: "Main Account",
+    },
+    {
+      categoryType: "save",
+      categoryName: "Savings",
+      amount: "200.00",
+      bankAccount: "Main Account",
+    },
+  ].forEach(({ categoryType, categoryName, amount, bankAccount }) => {
+    test(`user can delete ${categoryType} transaction`, async ({ page }) => {
+      const date = e2eCurrentMonthDate();
+      const note = `txn-${categoryType}-${Date.now()}-${Math.random()
+        .toString(16)
+        .slice(2, 8)}`;
 
-    // Verify transaction appears
-    await expect(page.getByRole("cell", { name: /75/i })).toBeVisible();
+      // Create transaction
+      const row = await createTransactionWithoutTags(
+        page,
+        date,
+        categoryType,
+        categoryName,
+        amount,
+        bankAccount,
+        note,
+      );
 
-    // Click delete button on the first row
-    // Note: May need to confirm deletion
-    await page
-      .getByRole("button", { name: /delete/i })
-      .first()
-      .click();
+      // Click delete button - use page.getByRole with .first() since row is unique
+      await page.getByRole("button", { name: "delete" }).first().click();
 
-    // Handle confirmation dialog if it appears
-    try {
-      await page.getByRole("button", { name: /ok|confirm|yes/i }).click();
-    } catch {
-      // No confirmation dialog, continue
-    }
+      // Handle confirmation dialog
+      await expect(page.getByText("Are you sure?")).toBeVisible();
+      await page.getByRole("button", { name: "Delete", exact: true }).click();
 
-    // Verify transaction is gone
-    await expect(page.getByRole("cell", { name: /75/i })).not.toBeVisible();
+      // Verify transaction is deleted
+      await expect(row).not.toBeVisible();
+    });
   });
 
   test("user can add tags to a transaction", async ({ page }) => {
