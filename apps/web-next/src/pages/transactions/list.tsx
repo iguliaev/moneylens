@@ -164,6 +164,7 @@ export const TransactionList = () => {
           dataIndex="amount"
           title="Amount"
           sorter
+          render={(value: number) => value?.toFixed(2)}
           filterDropdown={(props) => (
             <FilterDropdown {...props}>
               <InputNumber
