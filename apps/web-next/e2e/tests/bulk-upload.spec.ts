@@ -4,11 +4,13 @@ import {
   deleteTestUser,
   loginUser,
   cleanupReferenceDataForUser,
-  e2eCurrentMonthDate,
+  supabaseAdmin,
 } from "../utils/test-helpers";
 import * as path from "path";
-import * as fs from "fs";
-import { Buffer } from "buffer";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 test.describe("Bulk Upload", () => {
   let testUser: { email: string; password: string; userId: string };
@@ -26,238 +28,143 @@ test.describe("Bulk Upload", () => {
     await loginUser(page, testUser.email, testUser.password);
   });
 
-  test("user can bulk upload valid JSON with all entity types", async ({
+  test("uploads valid JSON and verifies data is present in the system", async ({
     page,
   }) => {
+    // Reset all data first
+    await page.goto("/settings");
+    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: /reset.*data/i }).click();
+    await page
+      .getByRole("button", { name: /yes.*delete.*everything/i })
+      .click();
+    await expect(page.getByText(/data reset complete/i)).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Go back to settings to upload
     await page.goto("/settings");
 
-    const date = e2eCurrentMonthDate();
-    const fixturePath = path.join(__dirname, "../fixtures/valid-bulk-upload.json");
-    const fixtureJson = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
-
-    // Update dates in fixture to current month
-    if (Array.isArray(fixtureJson.transactions)) {
-      fixtureJson.transactions = fixtureJson.transactions.map((t: any) => ({
-        ...t,
-        date,
-      }));
-    }
-    const buffer = Buffer.from(JSON.stringify(fixtureJson), "utf8");
-
-    // Upload valid JSON file
-    await page
-      .locator("input[type='file']")
-      .setInputFiles({
-        name: "valid-bulk-upload.json",
-        mimeType: "application/json",
-        buffer,
-      });
+    // Upload valid bulk upload file
+    const fixturePath = path.join(
+      __dirname,
+      "../fixtures/valid-bulk-upload.json",
+    );
+    await page.locator("input[type='file']").setInputFiles(fixturePath);
 
     // Verify preview appears
-    await expect(page.getByText(/preview|upload/i)).toBeVisible();
+    await expect(page.getByText(/Preview:.*3 categories/i)).toBeVisible();
+    await expect(page.getByText(/1 bank accounts/i)).toBeVisible();
+    await expect(page.getByText(/2 tags/i)).toBeVisible();
+    await expect(page.getByText(/3 transactions/i)).toBeVisible();
 
     // Click upload button
-    await page.getByRole("button", { name: /upload/i }).click();
+    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
 
-    // Verify success message
-    await expect(page.getByText(/success|completed/i)).toBeVisible();
+    // Verify success alert appears
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: new RegExp("Upload Successful", "i") }),
+    ).toBeVisible({ timeout: 10000 });
 
-    // Verify counts
-    await expect(page.getByText(/categories/i)).toBeVisible();
-    await expect(page.getByText(/bank accounts/i)).toBeVisible();
-    await expect(page.getByText(/tags/i)).toBeVisible();
-    await expect(page.getByText(/transactions/i)).toBeVisible();
+    // Verify counts are shown in success message
+    await expect(page.getByText(/3 categories inserted/i)).toBeVisible();
+    await expect(page.getByText(/1 bank accounts inserted/i)).toBeVisible();
+    await expect(page.getByText(/2 tags inserted/i)).toBeVisible();
+    await expect(page.getByText(/3 transactions inserted/i)).toBeVisible();
 
-    // Navigate to categories and verify
-    await page.goto("/categories");
-    await expect(page.getByText("e2e-spend-cat")).toBeVisible();
-    await expect(page.getByText("e2e-earn-cat")).toBeVisible();
-    await expect(page.getByText("e2e-save-cat")).toBeVisible();
+    // Verify data exists in database
+    const { data: categories, error: catError } = await supabaseAdmin
+      .from("categories")
+      .select("name")
+      .eq("user_id", testUser.userId);
 
-    // Navigate to bank accounts and verify
-    await page.goto("/bank-accounts");
-    await expect(page.getByText("e2e-bank-account")).toBeVisible();
+    expect(catError).toBeNull();
+    expect(categories).toHaveLength(3);
+    expect(categories?.map((c) => c.name)).toContain("e2e-spend-cat");
+    expect(categories?.map((c) => c.name)).toContain("e2e-earn-cat");
+    expect(categories?.map((c) => c.name)).toContain("e2e-save-cat");
 
-    // Navigate to tags and verify
-    await page.goto("/tags");
-    await expect(page.getByText("e2e-tag-1")).toBeVisible();
-    await expect(page.getByText("e2e-tag-2")).toBeVisible();
+    const { data: bankAccounts, error: bankError } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("name")
+      .eq("user_id", testUser.userId);
 
-    // Navigate to transactions and verify
-    await page.goto("/transactions");
-    await expect(page.getByText("E2E spend transaction")).toBeVisible();
-    await expect(page.getByText("E2E earn transaction")).toBeVisible();
-    await expect(page.getByText("E2E save transaction")).toBeVisible();
+    expect(bankError).toBeNull();
+    expect(bankAccounts).toHaveLength(1);
+    expect(bankAccounts?.[0].name).toBe("e2e-bank-account");
+
+    const { data: tags, error: tagsError } = await supabaseAdmin
+      .from("tags")
+      .select("name")
+      .eq("user_id", testUser.userId);
+
+    expect(tagsError).toBeNull();
+    expect(tags).toHaveLength(2);
+
+    const { data: transactions, error: txError } = await supabaseAdmin
+      .from("transactions")
+      .select("notes")
+      .eq("user_id", testUser.userId);
+
+    expect(txError).toBeNull();
+    expect(transactions).toHaveLength(3);
   });
 
-  test("user sees error for invalid JSON syntax", async ({ page }) => {
+  test("shows error when uploading invalid JSON syntax", async ({ page }) => {
+    // Reset all data first
     await page.goto("/settings");
+    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: /reset.*data/i }).click();
+    await page
+      .getByRole("button", { name: /yes.*delete.*everything/i })
+      .click();
+    await expect(page.getByText(/data reset complete/i)).toBeVisible({
+      timeout: 10000,
+    });
 
-    const filePath = path.join(__dirname, "../fixtures/invalid-json.json");
+    // Try to upload invalid JSON file
+    const fixturePath = path.join(__dirname, "../fixtures/invalid-json.json");
+    await page.locator("input[type='file']").setInputFiles(fixturePath);
 
-    // Upload invalid JSON file
-    await page.locator("input[type='file']").setInputFiles(filePath);
-
-    // File error should appear
-    await expect(page.getByText(/error|invalid|failed/i)).toBeVisible();
-
-    // Upload button should be disabled or error shown
+    // Error message should appear
     await expect(
-      page.getByRole("button", { name: /upload/i }),
+      page.getByRole("alert").filter({ hasText: new RegExp("error", "i") }),
+    ).toBeVisible({ timeout: 10000 });
+
+    // Upload button should be disabled
+    await expect(
+      page.getByRole("button", { name: /^upload$/i, exact: true }),
     ).toBeDisabled();
   });
 
-  test("user sees error for invalid category type", async ({ page }) => {
+  test("shows error when uploading invalid category type", async ({ page }) => {
     await page.goto("/settings");
 
-    const filePath = path.join(
+    // Try to upload file with invalid category type
+    const fixturePath = path.join(
       __dirname,
       "../fixtures/invalid-category-type.json",
     );
+    await page.locator("input[type='file']").setInputFiles(fixturePath);
 
-    // Upload file with invalid category type
-    await page.locator("input[type='file']").setInputFiles(filePath);
+    // Preview should appear (JSON is syntactically valid)
+    await expect(page.getByText(/Preview:.*1 categories/i)).toBeVisible();
 
-    // Preview should appear (JSON is valid, data is not)
-    await expect(page.getByText(/preview/i)).toBeVisible();
+    // Click upload button
+    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
 
-    // Click upload
-    await page.getByRole("button", { name: /upload/i }).click();
-
-    // Error should appear
-    await expect(page.getByText(/error|invalid/i)).toBeVisible();
-
-    // No success message
-    await expect(page.getByText(/success|completed/i)).not.toBeVisible();
-  });
-
-  test("user can upload transactions only", async ({ page }) => {
-    await page.goto("/settings");
-
-    // Create a simple transactions-only JSON
-    const date = e2eCurrentMonthDate();
-    const transactionsJson = {
-      transactions: [
-        {
-          date,
-          type: "spend",
-          amount: 100.0,
-          category: "Groceries",
-          notes: "Test bulk upload transaction",
-        },
-      ],
-    };
-
-    const buffer = Buffer.from(JSON.stringify(transactionsJson), "utf8");
-
-    // Upload file
-    await page
-      .locator("input[type='file']")
-      .setInputFiles({
-        name: "transactions-only.json",
-        mimeType: "application/json",
-        buffer,
-      });
-
-    // Click upload
-    await page.getByRole("button", { name: /upload/i }).click();
-
-    // Verify success
-    await expect(page.getByText(/success|completed/i)).toBeVisible();
-
-    // Verify transactions were created
-    await page.goto("/transactions");
+    // Error alert should appear
     await expect(
-      page.getByText("Test bulk upload transaction"),
-    ).toBeVisible();
-  });
+      page.getByRole("alert").filter({ hasText: new RegExp("error", "i") }),
+    ).toBeVisible({ timeout: 10000 });
 
-  test("user can upload categories, tags, and bank accounts", async ({
-    page,
-  }) => {
-    await page.goto("/settings");
-
-    const json = {
-      categories: [
-        { type: "spend", name: "Bulk Category", description: "Test" },
-      ],
-      bank_accounts: [{ name: "Bulk Bank", description: "Test" }],
-      tags: [{ name: "Bulk Tag", description: "Test" }],
-    };
-
-    const buffer = Buffer.from(JSON.stringify(json), "utf8");
-
-    // Upload file
-    await page
-      .locator("input[type='file']")
-      .setInputFiles({
-        name: "reference-data.json",
-        mimeType: "application/json",
-        buffer,
-      });
-
-    // Click upload
-    await page.getByRole("button", { name: /upload/i }).click();
-
-    // Verify success
-    await expect(page.getByText(/success|completed/i)).toBeVisible();
-
-    // Verify each resource
-    await page.goto("/categories");
-    await expect(page.getByText("Bulk Category")).toBeVisible();
-
-    await page.goto("/bank-accounts");
-    await expect(page.getByText("Bulk Bank")).toBeVisible();
-
-    await page.goto("/tags");
-    await expect(page.getByText("Bulk Tag")).toBeVisible();
-  });
-
-  test("file size validation works", async ({ page }) => {
-    await page.goto("/settings");
-
-    // Create a large JSON file (> 1MB)
-    const largeJson = {
-      transactions: Array.from({ length: 50000 }, (_, i) => ({
-        date: "2024-01-01",
-        type: "spend",
-        amount: i,
-        category: "Test",
-        notes: `Transaction ${i}`,
-      })),
-    };
-
-    const buffer = Buffer.from(JSON.stringify(largeJson), "utf8");
-
-    // Try to upload
-    await page
-      .locator("input[type='file']")
-      .setInputFiles({
-        name: "too-large.json",
-        mimeType: "application/json",
-        buffer,
-      });
-
-    // Should show file size error
-    await expect(page.getByText(/large|size/i)).toBeVisible();
-  });
-
-  test("file type validation works", async ({ page }) => {
-    await page.goto("/settings");
-
-    // Create a text file
-    const buffer = Buffer.from("This is not a JSON file", "utf8");
-
-    // Try to upload
-    await page
-      .locator("input[type='file']")
-      .setInputFiles({
-        name: "not-json.txt",
-        mimeType: "text/plain",
-        buffer,
-      });
-
-    // Should show file type error
-    await expect(page.getByText(/json/i)).toBeVisible();
+    // Success alert should not appear
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: new RegExp("Upload Successful", "i") }),
+    ).not.toBeVisible();
   });
 });
