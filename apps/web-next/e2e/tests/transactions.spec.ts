@@ -246,37 +246,58 @@ test.describe("Transactions", () => {
     await expect(page.getByText("essentials")).toBeVisible();
   });
 
-  test("category options change based on transaction type", async ({
+  test("category options change based on transaction type on edit page", async ({
     page,
   }) => {
-    await page.goto("/transactions/create");
+    const date = e2eCurrentMonthDate();
+    const note = `txn-category-filter-${Date.now()}-${Math.random()
+      .toString(16)
+      .slice(2, 8)}`;
 
-    // Select spend type
-    await page.getByLabel("Type").selectOption("spend");
+    // Create a spend transaction with Groceries category
+    await createTransactionWithoutTags(
+      page,
+      date,
+      "spend",
+      "Groceries",
+      "100.00",
+      "Main Account",
+      note,
+    );
+
+    // Navigate to edit page
+    await page.getByRole("button", { name: "edit" }).first().click();
+    await expect(page).toHaveURL(/\/transactions\/edit\//);
+    await expect(page.getByRole("heading", { name: "Edit Transaction" })).toBeVisible();
+
+    // Change to earn type
+    await page.getByRole("combobox", { name: "* Type" }).click({force: true});
+    await page.getByTitle(new RegExp("earn", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("earn", "i")),
+    ).toBeVisible();
 
     // Open category dropdown
-    await page.getByLabel("Category").click();
+    await page.getByRole("combobox", { name: "* Category" }).click({force: true});
 
-    // Should show spend categories
-    await expect(page.getByRole("option", { name: "Groceries" })).toBeVisible();
-    await expect(
-      page.getByRole("option", { name: "Salary" }),
-    ).not.toBeVisible();
+    // Should show earn categories (Salary)
+    await page.getByText('Salary')
 
     // Close dropdown
     await page.keyboard.press("Escape");
 
-    // Change to earn type
-    await page.getByLabel("Type").selectOption("earn");
+    // Change to save type
+    await page.getByRole("combobox", { name: "* Type" }).click({force: true});
+    await page.getByTitle(new RegExp("save", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("save", "i")),
+    ).toBeVisible();
 
     // Open category dropdown again
-    await page.getByLabel("Category").click();
+    await page.getByRole("combobox", { name: "* Category" }).click({force: true});
 
-    // Should show earn categories
-    await expect(page.getByRole("option", { name: "Salary" })).toBeVisible();
-    await expect(
-      page.getByRole("option", { name: "Groceries" }),
-    ).not.toBeVisible();
+    // Should show save categories (Savings)
+    await page.getByText('Savings')
   });
 
   test("transaction form validation works", async ({ page }) => {

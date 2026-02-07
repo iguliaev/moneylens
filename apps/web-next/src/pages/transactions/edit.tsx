@@ -35,7 +35,8 @@ export const TransactionEdit = () => {
       resource: "categories",
       optionLabel: "name",
       optionValue: "id",
-      defaultValue: transactionsData?.category_id,
+      pagination: { mode: "off" },
+      sorters: [{ field: "name", order: "asc" }],
       filters: selectedType
         ? [
             {
