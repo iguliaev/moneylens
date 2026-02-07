@@ -403,16 +403,52 @@ export async function createTransactionWithoutTags(
     .click();
 
   // Verify the transaction appears in the list
-  const row = page
-    .locator("tr")
-    .filter({ hasText: notes })
-    .filter({ hasText: `${date}` })
-    .filter({ hasText: new RegExp(category, "i") })
-    .filter({ hasText: new RegExp(amount, "i") })
-    .filter({ hasText: new RegExp(bankAccount, "i") });
-  await expect(row).toBeDefined();
+  const row = getTransactionRow(page, {
+    note: notes,
+    date,
+    category,
+    amount,
+    bankAccount,
+  });
+  await expect(row).toBeVisible({ timeout: 10000 });
 
   return row;
+}
+
+/**
+ * Gets a transaction row in the transactions list by matching criteria.
+ * @param page - Playwright Page object
+ * @param criteria - Object containing fields to match:
+ *   - note: unique note text
+ *   - date: date in YYYY-MM-DD format (will be converted to MM/DD/YYYY for display)
+ *   - category: category name (case-insensitive regex match)
+ *   - amount: amount string (will be formatted to 2 decimal places)
+ *   - bankAccount: bank account name (case-insensitive regex match)
+ * @returns Playwright Locator for the matching row
+ */
+export function getTransactionRow(
+  page: Page,
+  criteria: {
+    note: string;
+    date: string;
+    category: string;
+    amount: string;
+    bankAccount: string;
+  },
+) {
+  // Date is displayed as MM/DD/YYYY, convert from YYYY-MM-DD
+  const [y, m, d] = criteria.date.split("-");
+  const displayDate = `${m}/${d}/${y}`;
+  // Amount is displayed with 2 decimal places (e.g., 100.00, 1.01)
+  const displayAmount = parseFloat(criteria.amount).toFixed(2);
+
+  return page
+    .locator("tr")
+    .filter({ hasText: criteria.note })
+    .filter({ hasText: displayDate })
+    .filter({ hasText: new RegExp(criteria.category, "i") })
+    .filter({ hasText: displayAmount })
+    .filter({ hasText: new RegExp(criteria.bankAccount, "i") });
 }
 
 // Helper to select multiple tags via MultiSelect dropdown
