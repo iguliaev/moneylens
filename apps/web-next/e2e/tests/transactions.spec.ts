@@ -73,28 +73,6 @@ test.describe("Transactions", () => {
     });
   });
 
-  test("user can view transactions list with type filter", async ({ page }) => {
-    // Create a spend transaction
-    await page.goto("/transactions/create");
-    await page.getByLabel("Type").selectOption("spend");
-    await page.getByLabel("Date").fill(e2eCurrentMonthDate());
-    await page.getByLabel("Category").selectOption("Groceries");
-    await page.getByLabel("Amount").fill("100.00");
-    await page.getByLabel("Bank Account").selectOption("Main Account");
-    await page.getByRole("button", { name: /save|create/i }).click();
-    await page.waitForURL(/\/transactions/);
-
-    // Should show spend transactions by default (as per list component)
-    await expect(page.getByRole("cell", { name: /100/i })).toBeVisible();
-
-    // Filter to earn transactions
-    await page.getByRole("tab", { name: /earn/i }).click();
-
-    // Should show earn transactions
-    // Note: This might show empty or different data depending on the filter
-    // The list component has a default filter for "spend"
-  });
-
   test("user can edit a transaction", async ({ page }) => {
     // First create a transaction
     const date = e2eCurrentMonthDate();
@@ -176,6 +154,68 @@ test.describe("Transactions", () => {
 
       // Verify transaction is deleted
       await expect(row).not.toBeVisible();
+    });
+  });
+
+  [
+    {
+      categoryType: "spend",
+      categoryName: "Groceries",
+      amount: "150.00",
+      bankAccount: "Main Account",
+    },
+    {
+      categoryType: "earn",
+      categoryName: "Salary",
+      amount: "1000.00",
+      bankAccount: "Main Account",
+    },
+    {
+      categoryType: "save",
+      categoryName: "Savings",
+      amount: "200.00",
+      bankAccount: "Main Account",
+    },
+  ].forEach(({ categoryType, categoryName, amount, bankAccount }) => {
+    test(`user can view ${categoryType} transaction details`, async ({
+      page,
+    }) => {
+      const date = e2eCurrentMonthDate();
+      const note = `txn-${categoryType}-${Date.now()}-${Math.random()
+        .toString(16)
+        .slice(2, 8)}`;
+
+      // Create transaction
+      const row = await createTransactionWithoutTags(
+        page,
+        date,
+        categoryType,
+        categoryName,
+        amount,
+        bankAccount,
+        note,
+      );
+
+      // Click show button
+      await page.getByRole("button", { name: "eye" }).first().click();
+
+      // Should navigate to show page
+      await expect(
+        page.getByRole("heading", { name: "Show Transaction" }),
+      ).toBeVisible();
+
+      // Verify key transaction details are visible
+      // Check for field labels to confirm data is loaded
+      await expect(page.getByText("Date", { exact: true })).toBeVisible();
+      await expect(page.getByText("Type", { exact: true })).toBeVisible();
+      await expect(page.getByText("Category", { exact: true })).toBeVisible();
+      await expect(page.getByText("Amount", { exact: true })).toBeVisible();
+
+      // Verify specific values
+      await expect(page.getByText(categoryType, { exact: true })).toBeVisible();
+      await expect(page.getByText(categoryName)).toBeVisible();
+      await expect(page.getByText(bankAccount)).toBeVisible();
+      await expect(page.getByText(note)).toBeVisible();
     });
   });
 
