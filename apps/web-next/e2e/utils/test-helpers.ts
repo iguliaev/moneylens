@@ -338,6 +338,11 @@ export async function createCategoryForType(
   }
 }
 
+/**
+ * Creates a transaction without tags and returns the row locator.
+ * @returns A Playwright Locator for the created transaction row that can be used
+ * to locate action buttons (edit, delete, view) within the row.
+ */
 export async function createTransactionWithoutTags(
   page: Page,
   date: string,
@@ -345,8 +350,9 @@ export async function createTransactionWithoutTags(
   category: string,
   amount: string,
   bankAccount: string,
-  notes?: string,
+  notes: string,
 ) {
+
   await page.goto("/transactions/create");
 
   // Fill date
@@ -377,9 +383,7 @@ export async function createTransactionWithoutTags(
   ).toBeVisible();
 
   // Fill notes
-  if (notes !== undefined) {
-    await page.getByTitle("Notes").fill(notes);
-  }
+  await page.getByLabel("Notes").fill(notes);
 
   // Submit form
   await page.getByRole("button", { name: /save/i }).click();
@@ -399,14 +403,16 @@ export async function createTransactionWithoutTags(
     .click();
 
   // Verify the transaction appears in the list
-  await expect(
-    page
-      .locator("tr")
-      .filter({ hasText: `${date}` })
-      .filter({ hasText: new RegExp(category, "i") })
-      .filter({ hasText: new RegExp(amount, "i") })
-      .filter({ hasText: new RegExp(bankAccount, "i") }),
-  ).toBeDefined();
+  const row = page
+    .locator("tr")
+    .filter({ hasText: notes })
+    .filter({ hasText: `${date}` })
+    .filter({ hasText: new RegExp(category, "i") })
+    .filter({ hasText: new RegExp(amount, "i") })
+    .filter({ hasText: new RegExp(bankAccount, "i") });
+  await expect(row).toBeDefined();
+
+  return row;
 }
 
 // Helper to select multiple tags via MultiSelect dropdown

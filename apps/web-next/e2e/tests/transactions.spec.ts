@@ -41,25 +41,26 @@ test.describe("Transactions", () => {
       categoryName: "Groceries",
       amount: "150.00",
       bankAccount: "Main Account",
-      notes: "Weekly grocery shopping",
     },
     {
       categoryType: "earn",
       categoryName: "Salary",
       amount: "1000.00",
       bankAccount: "Main Account",
-      notes: "Monthly salary",
     },
     {
       categoryType: "save",
       categoryName: "Savings",
       amount: "200.00",
       bankAccount: "Main Account",
-      notes: "Monthly savings",
     },
-  ].forEach(({ categoryType, categoryName, amount, bankAccount, notes }) => {
+  ].forEach(({ categoryType, categoryName, amount, bankAccount }) => {
     test(`user can create ${categoryType} transaction`, async ({ page }) => {
       const date = e2eCurrentMonthDate();
+      const note = `txn-${categoryType}-${Date.now()}-${Math.random()
+        .toString(16)
+        .slice(2, 8)}`;
+
       await createTransactionWithoutTags(
         page,
         date,
@@ -67,7 +68,7 @@ test.describe("Transactions", () => {
         categoryName,
         amount,
         bankAccount,
-        notes,
+        note,
       );
     });
   });
