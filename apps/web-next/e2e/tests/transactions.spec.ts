@@ -8,6 +8,7 @@ import {
   cleanupTransactionsForUser,
   e2eCurrentMonthDate,
   createTransactionWithoutTags,
+  getTransactionRow,
 } from "../utils/test-helpers";
 
 test.describe("Transactions", () => {
@@ -73,40 +74,130 @@ test.describe("Transactions", () => {
     });
   });
 
-  test("user can edit a transaction", async ({ page }) => {
-    // First create a transaction
-    const date = e2eCurrentMonthDate();
-    await page.goto("/transactions/create");
-    await page.getByLabel("Type").selectOption("spend");
-    await page.getByLabel("Date").fill(date);
-    await page.getByLabel("Category").selectOption("Groceries");
-    await page.getByLabel("Amount").fill("100.00");
-    await page.getByLabel("Bank Account").selectOption("Main Account");
-    await page.getByRole("button", { name: /save|create/i }).click();
-    await page.waitForURL(/\/transactions/);
+  [
+    {
+      fromType: "spend",
+      fromCategory: "Groceries",
+      fromAmount: "150.00",
+      toType: "earn",
+      toCategory: "Salary",
+      toAmount: "2000.00",
+    },
+    {
+      fromType: "earn",
+      fromCategory: "Salary",
+      fromAmount: "1000.00",
+      toType: "save",
+      toCategory: "Savings",
+      toAmount: "500.00",
+    },
+    {
+      fromType: "save",
+      fromCategory: "Savings",
+      fromAmount: "200.00",
+      toType: "spend",
+      toCategory: "Groceries",
+      toAmount: "75.00",
+    },
+  ].forEach(
+    ({ fromType, fromCategory, fromAmount, toType, toCategory, toAmount }) => {
+      test(`user can edit ${fromType} transaction to ${toType}`, async ({
+        page,
+      }) => {
+        const originalDate = e2eCurrentMonthDate(15);
+        const newDate = e2eCurrentMonthDate(10);
+        const originalNote = `txn-edit-${fromType}-${Date.now()}-${Math.random()
+          .toString(16)
+          .slice(2, 8)}`;
+        const newNote = `txn-edited-${toType}-${Date.now()}-${Math.random()
+          .toString(16)
+          .slice(2, 8)}`;
 
-    // Click edit button on the first row
-    await page.getByRole("button", { name: /edit/i }).first().click();
+        // Create the original transaction
+        const row = await createTransactionWithoutTags(
+          page,
+          originalDate,
+          fromType,
+          fromCategory,
+          fromAmount,
+          "Main Account",
+          originalNote,
+        );
 
-    // Should navigate to edit page
-    await expect(page).toHaveURL(/\/transactions\/edit\//);
+        // Click edit on the created row
+        await row.getByRole("button", { name: "edit" }).click();
+        await expect(page).toHaveURL(/\/transactions\/edit\//);
+        await expect(
+          page.getByRole("heading", { name: "Edit Transaction" }),
+        ).toBeVisible();
 
-    // Update the amount
-    await page.getByLabel("Amount").clear();
-    await page.getByLabel("Amount").fill("150.00");
+        // Change date
+        await page.getByLabel("Date").fill(newDate);
 
-    // Save changes
-    await page.getByRole("button", { name: /save/i }).click();
+        // Change type
+        await page
+          .getByRole("combobox", { name: "* Type" })
+          .click({ force: true });
+        await page.getByTitle(new RegExp(`^${toType}$`, "i")).click();
+        await expect(
+          page.locator("#root").getByTitle(new RegExp(`^${toType}$`, "i")),
+        ).toBeVisible();
 
-    // Should redirect back to list
-    await expect(page).toHaveURL(/\/transactions/);
+        // Change category (should show only categories for new type)
+        await page
+          .getByRole("combobox", { name: "* Category" })
+          .click({ force: true });
+        await page.getByTitle(new RegExp(`^${toCategory}$`, "i")).click();
+        await expect(
+          page.locator("#root").getByTitle(new RegExp(`^${toCategory}$`, "i")),
+        ).toBeVisible();
 
-    // Verify updated amount
-    await expect(page.getByRole("cell", { name: /150/i })).toBeVisible();
+        // Change amount
+        await page.getByLabel("Amount").clear();
+        await page.getByLabel("Amount").fill(toAmount);
 
-    // Verify old amount is gone
-    await expect(page.getByRole("cell", { name: /100/i })).not.toBeVisible();
-  });
+        // Change bank account
+        await page
+          .getByRole("combobox", { name: "* Bank Account" })
+          .click({ force: true });
+        await page.getByTitle(new RegExp("^Secondary Account$", "i")).click();
+        await expect(
+          page
+            .locator("#root")
+            .getByTitle(new RegExp("^Secondary Account$", "i")),
+        ).toBeVisible();
+
+        // Change notes
+        await page.getByLabel("Notes").clear();
+        await page.getByLabel("Notes").fill(newNote);
+
+        // Save
+        await page.getByRole("button", { name: /save/i }).click();
+
+        // Should redirect to transactions list
+        await expect(page).toHaveURL(/\/transactions/);
+        await expect(
+          page.getByRole("heading", { name: "Transactions" }),
+        ).toBeVisible();
+
+        // Switch to the new type's tab
+        await page
+          .getByRole("radiogroup", { name: "segmented control" })
+          .getByText(new RegExp(toType, "i"))
+          .click();
+
+        // Verify the edited transaction row
+        const editedRow = getTransactionRow(page, {
+          note: newNote,
+          date: newDate,
+          category: toCategory,
+          amount: toAmount,
+          bankAccount: "Secondary Account",
+        });
+        await expect(editedRow).toBeVisible();
+      });
+    },
+  );
 
   [
     {
@@ -146,7 +237,9 @@ test.describe("Transactions", () => {
       );
 
       // Click delete button - use page.getByRole with .first() since row is unique
-      await page.getByRole("button", { name: "delete" }).first().click();
+      //await page.getByRole("button", { name: "delete" }).first().click();
+
+      await row.getByRole("button", { name: "delete" }).click();
 
       // Handle confirmation dialog
       await expect(page.getByText("Are you sure?")).toBeVisible();
@@ -268,36 +361,42 @@ test.describe("Transactions", () => {
     // Navigate to edit page
     await page.getByRole("button", { name: "edit" }).first().click();
     await expect(page).toHaveURL(/\/transactions\/edit\//);
-    await expect(page.getByRole("heading", { name: "Edit Transaction" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Edit Transaction" }),
+    ).toBeVisible();
 
     // Change to earn type
-    await page.getByRole("combobox", { name: "* Type" }).click({force: true});
+    await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
     await page.getByTitle(new RegExp("earn", "i")).click();
     await expect(
       page.locator("#root").getByTitle(new RegExp("earn", "i")),
     ).toBeVisible();
 
     // Open category dropdown
-    await page.getByRole("combobox", { name: "* Category" }).click({force: true});
+    await page
+      .getByRole("combobox", { name: "* Category" })
+      .click({ force: true });
 
     // Should show earn categories (Salary)
-    await page.getByText('Salary')
+    await page.getByText("Salary");
 
     // Close dropdown
     await page.keyboard.press("Escape");
 
     // Change to save type
-    await page.getByRole("combobox", { name: "* Type" }).click({force: true});
+    await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
     await page.getByTitle(new RegExp("save", "i")).click();
     await expect(
       page.locator("#root").getByTitle(new RegExp("save", "i")),
     ).toBeVisible();
 
     // Open category dropdown again
-    await page.getByRole("combobox", { name: "* Category" }).click({force: true});
+    await page
+      .getByRole("combobox", { name: "* Category" })
+      .click({ force: true });
 
     // Should show save categories (Savings)
-    await page.getByText('Savings')
+    await page.getByText("Savings");
   });
 
   test("transaction form validation works", async ({ page }) => {
