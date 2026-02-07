@@ -73,13 +73,21 @@ npm run check-types
 cd apps/web-next
 
 # Run tests
-npm run test:e2e
+npm run test:e2e --reporter=json 
 
 # Run with UI
 npm run test:e2e:ui
 
 # Run with browser visible
 npm run test:e2e:headed
+
+
+# Run specific test file
+npm run test:e2e -- tests/transactions.spec.ts --reporter=json 
+
+# Run specific test in a file
+npm run test:e2e -- tests/transactions.spec.ts --reporter=json -g "user can add tags"
+
 ```
 
 ## Supabase Database Management

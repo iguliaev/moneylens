@@ -4,6 +4,8 @@ import {
   deleteTestUser,
   loginUser,
   cleanupReferenceDataForUser,
+  seedReferenceDataForUser,
+  createTransactionWithoutTags,
 } from "../utils/test-helpers";
 
 test.describe("Data Reset", () => {
@@ -19,6 +21,8 @@ test.describe("Data Reset", () => {
   });
 
   test.beforeEach(async ({ page }) => {
+    // Seed reference data before each test since tests may delete it
+    await seedReferenceDataForUser(testUser.userId);
     await loginUser(page, testUser.email, testUser.password);
   });
 
@@ -32,13 +36,16 @@ test.describe("Data Reset", () => {
     await page.getByRole("button", { name: /reset.*data/i }).click();
 
     // Confirmation modal should appear
-    await expect(page.getByText(/reset.*data/i)).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByRole("dialog")).toContainText(/reset.*data/i);
 
     // Click confirm
-    await page.getByRole("button", { name: /yes.*delete.*everything/i }).click();
+    await page
+      .getByRole("button", { name: /yes.*delete.*everything/i })
+      .click();
 
     // Verify success message
-    await expect(page.getByText(/success|completed/i)).toBeVisible();
+    await expect(page.getByText(/data reset complete/i)).toBeVisible();
 
     // Verify counts are shown
     await expect(page.getByText(/transactions deleted/i)).toBeVisible();
@@ -57,13 +64,17 @@ test.describe("Data Reset", () => {
     await page.getByRole("button", { name: /reset.*data/i }).click();
 
     // Confirmation modal should appear
-    await expect(page.getByText(/reset.*data/i)).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: /reset.*data/i }),
+    ).toBeVisible();
 
     // Click cancel
     await page.getByRole("button", { name: /cancel/i }).click();
 
     // Modal should close
-    await expect(page.getByText(/reset.*data/i)).not.toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: /reset.*data/i }),
+    ).not.toBeVisible();
 
     // Data should still be there (in this case, no data was created)
     // But the important part is that we didn't delete anything
@@ -71,52 +82,72 @@ test.describe("Data Reset", () => {
 
   test("data reset removes all transactions", async ({ page }) => {
     // First create some data by going to transactions
-    await page.goto("/transactions/create");
+    const date = "2024-01-15";
+    const note = "Test transaction for reset";
 
-    // Create a transaction
-    await page.getByLabel("Type").selectOption("spend");
-    await page.getByLabel("Date").fill("2024-01-15");
-    await page.getByLabel("Category").selectOption("Groceries");
-    await page.getByLabel("Amount").fill("50.00");
-    await page.getByLabel("Bank Account").selectOption("Main Account");
-    await page.getByRole("button", { name: /save/i }).click();
+    await createTransactionWithoutTags(
+      page,
+      date,
+      "spend",
+      "Groceries",
+      "50.00",
+      "Main Account",
+      note,
+    );
 
-    // Verify transaction exists
-    await expect(page.getByText("50")).toBeVisible();
+    // Verify redirected to transactions list
+    await expect(page).toHaveURL(/\/transactions/);
 
     // Now reset data
     await page.goto("/settings");
     await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
     await page.getByRole("button", { name: /reset.*data/i }).click();
-    await page.getByRole("button", { name: /yes.*delete.*everything/i }).click();
+    await page
+      .getByRole("button", { name: /yes.*delete.*everything/i })
+      .click();
+
+    // Wait for success message
+    await expect(page.getByText(/data reset complete/i)).toBeVisible({
+      timeout: 10000,
+    });
 
     // Go back to transactions
     await page.goto("/transactions");
 
-    // Verify no transactions exist
-    // The list might show empty state or no rows
-    // This depends on how the UI handles empty lists
+    // Verify no transactions exist - check for empty state or no data rows
+    const table = page.locator("table tbody tr");
+    await expect(table).toHaveCount(0);
   });
 
   test("data reset removes all categories", async ({ page }) => {
     // Create a category
     await page.goto("/categories");
     await page.getByRole("button", { name: /create/i }).click();
-    await page.getByLabel("Type").selectOption("spend");
-    await page.getByLabel("Name").fill("Test Category");
+    await page.getByRole("combobox", { name: "* Type" }).click();
+    await page.getByTitle(/spend/i).click();
+    await page.getByRole("textbox", { name: "* Name" }).fill("Test Category");
     await page.getByRole("button", { name: /save/i }).click();
 
-    // Verify category exists
-    await expect(page.getByText("Test Category")).toBeVisible();
+    // Verify redirected to categories list
+    await expect(page).toHaveURL(/\/categories/);
 
     // Reset data
     await page.goto("/settings");
     await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
     await page.getByRole("button", { name: /reset.*data/i }).click();
-    await page.getByRole("button", { name: /yes.*delete.*everything/i }).click();
+    await page
+      .getByRole("button", { name: /yes.*delete.*everything/i })
+      .click();
 
-    // Verify category is gone
+    // Wait for success message
+    await expect(page.getByText(/data reset complete/i)).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Go back to categories
     await page.goto("/categories");
+
+    // Verify category is gone - only default categories remain
     await expect(page.getByText("Test Category")).not.toBeVisible();
   });
 });
