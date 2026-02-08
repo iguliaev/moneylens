@@ -25,8 +25,8 @@ test.describe("Data Reset Isolation", () => {
     if (userB?.userId) await deleteTestUser(userB.userId);
   });
 
-  test("resetting User A's data does not affect User B's data", async ({
-    page,
+  test("data reset properly isolates between users (RLS)", async ({
+    browser,
   }) => {
     // Seed data for both users
     await seedReferenceDataForUser(userA.userId);
@@ -48,105 +48,116 @@ test.describe("Data Reset Isolation", () => {
     const spendCatA = userACats?.find((c: any) => c.type === "spend");
     const spendCatB = userBCats?.find((c: any) => c.type === "spend");
 
-    const { error: txnError } = await supabaseAdmin.from("transactions").insert([
-      {
-        user_id: userA.userId,
-        date: today,
-        type: "spend",
-        amount: 100.0,
-        category: "Groceries",
-        category_id: spendCatA?.id,
-        notes: "UserA transaction to be reset",
-        created_at: now,
-        updated_at: now,
-      },
-      {
-        user_id: userB.userId,
-        date: today,
-        type: "spend",
-        amount: 200.0,
-        category: "Groceries",
-        category_id: spendCatB?.id,
-        notes: "UserB transaction should persist",
-        created_at: now,
-        updated_at: now,
-      },
-    ]);
-    if (txnError) throw new Error(`Failed to insert transactions: ${txnError.message}`);
+    const { error: txnError } = await supabaseAdmin
+      .from("transactions")
+      .insert([
+        {
+          user_id: userA.userId,
+          date: today,
+          type: "spend",
+          amount: 100.0,
+          category: "Groceries",
+          category_id: spendCatA?.id,
+          notes: "UserA transaction to be reset",
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          user_id: userB.userId,
+          date: today,
+          type: "spend",
+          amount: 200.0,
+          category: "Groceries",
+          category_id: spendCatB?.id,
+          notes: "UserB transaction should persist",
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+    if (txnError)
+      throw new Error(`Failed to insert transactions: ${txnError.message}`);
+
+    // Verify both users have data before reset
+    const { data: userABefore } = await supabaseAdmin
+      .from("transactions")
+      .select("notes")
+      .eq("user_id", userA.userId);
+    const { data: userBBefore } = await supabaseAdmin
+      .from("transactions")
+      .select("notes")
+      .eq("user_id", userB.userId);
+
+    expect(userABefore).toHaveLength(1);
+    expect(userBBefore).toHaveLength(1);
+
+    // Create separate browser context for User A
+    const contextA = await browser.newContext();
+    const pageA = await contextA.newPage();
 
     // User A resets their data
-    await loginUser(page, userA.email, userA.password);
-    await page.goto("/settings");
+    await loginUser(pageA, userA.email, userA.password);
+    await pageA.goto("/settings");
+    await pageA.getByText("Danger Zone").scrollIntoViewIfNeeded();
+    await pageA.getByRole("button", { name: /reset.*data/i }).click();
+    await pageA
+      .getByRole("button", { name: /yes.*delete.*everything/i })
+      .click();
 
-    // Scroll to danger zone
-    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+    // Verify success with semantic locator
+    await expect(pageA.getByText(/data reset complete/i)).toBeVisible({
+      timeout: 10000,
+    });
 
-    // Click reset button
-    await page.getByRole("button", { name: /reset.*data/i }).click();
+    // Clean up User A's context
+    await contextA.close();
 
-    // Confirm reset
-    await page.getByRole("button", { name: /yes.*delete.*everything/i }).click();
+    // Verify User A's data is gone in database
+    const { data: userAAfter } = await supabaseAdmin
+      .from("transactions")
+      .select("notes")
+      .eq("user_id", userA.userId);
+    const { data: userACategoriesAfter } = await supabaseAdmin
+      .from("categories")
+      .select("name")
+      .eq("user_id", userA.userId);
+    const { data: userABankAccountsAfter } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("name")
+      .eq("user_id", userA.userId);
+    const { data: userATagsAfter } = await supabaseAdmin
+      .from("tags")
+      .select("name")
+      .eq("user_id", userA.userId);
 
-    // Verify success
-    await expect(page.getByText(/success|completed/i)).toBeVisible();
+    // User A's data should be completely removed
+    expect(userAAfter).toHaveLength(0);
+    expect(userACategoriesAfter).toHaveLength(0);
+    expect(userABankAccountsAfter).toHaveLength(0);
+    expect(userATagsAfter).toHaveLength(0);
 
-    // Verify User A's data is gone
-    await page.goto("/transactions");
-    await expect(page.getByText("UserA transaction to be reset")).not.toBeVisible();
+    // Verify User B's data is still intact in database
+    const { data: userBAfter } = await supabaseAdmin
+      .from("transactions")
+      .select("notes")
+      .eq("user_id", userB.userId);
+    const { data: userBCategoriesAfter } = await supabaseAdmin
+      .from("categories")
+      .select("name")
+      .eq("user_id", userB.userId);
+    const { data: userBBankAccountsAfter } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("name")
+      .eq("user_id", userB.userId);
+    const { data: userBTagsAfter } = await supabaseAdmin
+      .from("tags")
+      .select("name")
+      .eq("user_id", userB.userId);
 
-    await page.goto("/categories");
-    await expect(page.getByText("Groceries")).not.toBeVisible();
-
-    // Logout User A
-    await logoutUser(page);
-
-    // Now login as User B and verify their data is intact
-    await loginUser(page, userB.email, userB.password);
-
-    // User B's transaction should still exist
-    await page.goto("/transactions");
-    await expect(page.getByText("UserB transaction should persist")).toBeVisible();
-
-    // User B's categories should still exist
-    await page.goto("/categories");
-    await expect(page.getByText("Groceries")).toBeVisible();
-
-    // User B's bank accounts should still exist
-    await page.goto("/bank-accounts");
-    await expect(page.getByText("Main Account")).toBeVisible();
-
-    // User B's tags should still exist
-    await page.goto("/tags");
-    await expect(page.getByText("essentials")).toBeVisible();
+    // User B's data should remain unchanged
+    expect(userBAfter).toHaveLength(1);
+    expect(userBAfter?.[0].notes).toBe("UserB transaction should persist");
+    expect(userBCategoriesAfter?.length).toBeGreaterThan(0);
+    expect(userBBankAccountsAfter?.length).toBeGreaterThan(0);
+    expect(userBTagsAfter?.length).toBeGreaterThan(0);
   });
 });
-
-// Helper function for logout (since test-helpers has it but we need it here)
-async function logoutUser(page: any) {
-  // Try multiple logout patterns
-  const logoutSelectors = [
-    'button[aria-label="Logout"]',
-    'button:has-text("Logout")',
-    'button:has-text("Sign out")',
-  ];
-
-  let logoutClicked = false;
-  for (const selector of logoutSelectors) {
-    try {
-      if (await page.locator(selector).first().isVisible({ timeout: 1000 })) {
-        await page.locator(selector).first().click();
-        logoutClicked = true;
-        break;
-      }
-    } catch {
-      // Try next selector
-    }
-  }
-
-  // Wait for redirect to login
-  try {
-    await page.waitForURL(/\/login/, { timeout: 5000 });
-  } catch {
-    await page.goto("/login");
-  }
-}
