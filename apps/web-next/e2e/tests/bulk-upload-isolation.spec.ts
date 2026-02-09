@@ -53,7 +53,7 @@ test.describe("Bulk Upload Data Isolation", () => {
       pageA
         .getByRole("alert")
         .filter({ hasText: new RegExp("Upload Successful", "i") }),
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible();
 
     // Verify User A's data exists in database with correct user_id
     const { data: userAData } = await supabaseAdmin
@@ -88,7 +88,7 @@ test.describe("Bulk Upload Data Isolation", () => {
       pageB
         .getByRole("alert")
         .filter({ hasText: new RegExp("Upload Successful", "i") }),
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible();
 
     // Verify User B's data exists in database with correct user_id
     const { data: userBData } = await supabaseAdmin

@@ -38,9 +38,7 @@ test.describe("Bulk Upload", () => {
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
-    await expect(page.getByText(/data reset complete/i)).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page.getByText(/data reset complete/i)).toBeVisible();
 
     // Go back to settings to upload
     await page.goto("/settings");
@@ -66,7 +64,7 @@ test.describe("Bulk Upload", () => {
       page
         .getByRole("alert")
         .filter({ hasText: new RegExp("Upload Successful", "i") }),
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible();
 
     // Verify counts are shown in success message
     await expect(page.getByText(/3 categories inserted/i)).toBeVisible();
@@ -120,9 +118,7 @@ test.describe("Bulk Upload", () => {
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
-    await expect(page.getByText(/data reset complete/i)).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page.getByText(/data reset complete/i)).toBeVisible();
 
     // Try to upload invalid JSON file
     const fixturePath = path.join(__dirname, "../fixtures/invalid-json.json");
@@ -131,7 +127,7 @@ test.describe("Bulk Upload", () => {
     // Error message should appear
     await expect(
       page.getByRole("alert").filter({ hasText: new RegExp("error", "i") }),
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible();
 
     // Upload button should be disabled
     await expect(
@@ -158,7 +154,7 @@ test.describe("Bulk Upload", () => {
     // Error alert should appear
     await expect(
       page.getByRole("alert").filter({ hasText: new RegExp("error", "i") }),
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible();
 
     // Success alert should not appear
     await expect(

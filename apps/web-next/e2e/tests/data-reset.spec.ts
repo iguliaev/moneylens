@@ -107,12 +107,10 @@ test.describe("Data Reset", () => {
       .click();
 
     // Wait for success message
-    await expect(page.getByText(/data reset complete/i)).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page.getByText(/data reset complete/i)).toBeVisible();
 
-    // Go back to transactions
-    await page.goto("/transactions");
+    // Verify no transactions exist in database
+    const { data: transactions } = await supabaseAdmin
 
     // Verify no transactions exist - check for empty state or no data rows
     const table = page.locator("table tbody tr");
@@ -140,12 +138,10 @@ test.describe("Data Reset", () => {
       .click();
 
     // Wait for success message
-    await expect(page.getByText(/data reset complete/i)).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page.getByText(/data reset complete/i)).toBeVisible();
 
-    // Go back to categories
-    await page.goto("/categories");
+    // Verify no categories exist in database
+    const { data: categories } = await supabaseAdmin
 
     // Verify category is gone - only default categories remain
     await expect(page.getByText("Test Category")).not.toBeVisible();

@@ -104,9 +104,7 @@ test.describe("Data Reset Isolation", () => {
       .click();
 
     // Verify success with semantic locator
-    await expect(pageA.getByText(/data reset complete/i)).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(pageA.getByText(/data reset complete/i)).toBeVisible();
 
     // Clean up User A's context
     await contextA.close();

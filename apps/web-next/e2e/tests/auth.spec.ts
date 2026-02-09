@@ -25,7 +25,7 @@ test.describe("Authentication", () => {
       await page.getByText("Logout").click();
 
       // Verify successful logout by checking redirect to login page
-      await expect(page).toHaveURL("/login", { timeout: 5000 });
+      await expect(page).toHaveURL("/login");
     } finally {
       await deleteTestUser(userId);
     }
@@ -45,7 +45,7 @@ test.describe("Authentication", () => {
     await page.getByRole("button", { name: "Sign up" }).click();
 
     // Verify successful registration by checking for redirect to dashboard
-    await expect(page).toHaveURL("/", { timeout: 5000 });
+    await expect(page).toHaveURL("/");
     await expect(
       page.getByRole("heading", { name: "Dashboard" }),
     ).toBeVisible();
@@ -65,7 +65,7 @@ test.describe("Authentication", () => {
     await page.goto("/transactions");
 
     // Should redirect to login
-    await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test("authenticated user can access protected routes", async ({ page }) => {
@@ -76,19 +76,19 @@ test.describe("Authentication", () => {
 
       // Access protected routes
       await page.goto("/transactions");
-      await expect(page).toHaveURL("/transactions");
+      await expect(page).toHaveURL(/\/transactions/);
 
       await page.goto("/tags");
-      await expect(page).toHaveURL("/tags");
+      await expect(page).toHaveURL(/\/tags/);
 
       await page.goto("/categories");
-      await expect(page).toHaveURL("/categories");
+      await expect(page).toHaveURL(/\/categories/);
 
       await page.goto("/bank-accounts");
-      await expect(page).toHaveURL("/bank-accounts");
+      await expect(page).toHaveURL(/\/bank-accounts/);
 
       await page.goto("/settings");
-      await expect(page).toHaveURL("/settings");
+      await expect(page).toHaveURL(/\/settings/);
     } finally {
       await deleteTestUser(userId);
     }

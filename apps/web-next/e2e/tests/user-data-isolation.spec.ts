@@ -58,12 +58,16 @@ test.describe("User Data Isolation", () => {
 
     // Verify User A has their own data with correct user_id
     expect(userATransactions?.length).toBeGreaterThan(0);
-    expect(userATransactions?.every((tx) => tx.user_id === userA.userId)).toBe(true);
+    expect(userATransactions?.every((tx) => tx.user_id === userA.userId)).toBe(
+      true,
+    );
     const userANotes = userATransactions?.map((tx) => tx.notes) || [];
     expect(userANotes.some((note) => note?.includes("userA"))).toBe(true);
 
     expect(userACategories?.length).toBeGreaterThan(0);
-    expect(userACategories?.every((cat) => cat.user_id === userA.userId)).toBe(true);
+    expect(userACategories?.every((cat) => cat.user_id === userA.userId)).toBe(
+      true,
+    );
     const userACatNames = userACategories?.map((cat) => cat.name) || [];
     expect(userACatNames.some((name) => name?.includes("userA"))).toBe(true);
 
@@ -71,7 +75,9 @@ test.describe("User Data Isolation", () => {
     expect(userATags?.every((tag) => tag.user_id === userA.userId)).toBe(true);
 
     expect(userABankAccounts?.length).toBeGreaterThan(0);
-    expect(userABankAccounts?.every((acc) => acc.user_id === userA.userId)).toBe(true);
+    expect(
+      userABankAccounts?.every((acc) => acc.user_id === userA.userId),
+    ).toBe(true);
 
     // Verify User B's data in database
     const { data: userBTransactions } = await supabaseAdmin
@@ -96,12 +102,16 @@ test.describe("User Data Isolation", () => {
 
     // Verify User B has their own data with correct user_id
     expect(userBTransactions?.length).toBeGreaterThan(0);
-    expect(userBTransactions?.every((tx) => tx.user_id === userB.userId)).toBe(true);
+    expect(userBTransactions?.every((tx) => tx.user_id === userB.userId)).toBe(
+      true,
+    );
     const userBNotes = userBTransactions?.map((tx) => tx.notes) || [];
     expect(userBNotes.some((note) => note?.includes("userB"))).toBe(true);
 
     expect(userBCategories?.length).toBeGreaterThan(0);
-    expect(userBCategories?.every((cat) => cat.user_id === userB.userId)).toBe(true);
+    expect(userBCategories?.every((cat) => cat.user_id === userB.userId)).toBe(
+      true,
+    );
     const userBCatNames = userBCategories?.map((cat) => cat.name) || [];
     expect(userBCatNames.some((name) => name?.includes("userB"))).toBe(true);
 
@@ -109,7 +119,9 @@ test.describe("User Data Isolation", () => {
     expect(userBTags?.every((tag) => tag.user_id === userB.userId)).toBe(true);
 
     expect(userBBankAccounts?.length).toBeGreaterThan(0);
-    expect(userBBankAccounts?.every((acc) => acc.user_id === userB.userId)).toBe(true);
+    expect(
+      userBBankAccounts?.every((acc) => acc.user_id === userB.userId),
+    ).toBe(true);
 
     // Verify no cross-contamination: User A doesn't have User B's data
     expect(userANotes.every((note) => !note?.includes("userB"))).toBe(true);
@@ -125,8 +137,10 @@ test.describe("User Data Isolation", () => {
       .select("user_id")
       .in("user_id", [userA.userId, userB.userId]);
 
-    const userACount = allTransactions?.filter((tx) => tx.user_id === userA.userId).length || 0;
-    const userBCount = allTransactions?.filter((tx) => tx.user_id === userB.userId).length || 0;
+    const userACount =
+      allTransactions?.filter((tx) => tx.user_id === userA.userId).length || 0;
+    const userBCount =
+      allTransactions?.filter((tx) => tx.user_id === userB.userId).length || 0;
 
     // Both users should have transactions
     expect(userACount).toBeGreaterThan(0);

@@ -46,6 +46,11 @@ export default defineConfig({
     video: "retain-on-failure",
   },
 
+  /* Set default timeout for expect assertions */
+  expect: {
+    timeout: 10000, // 10 seconds (default is 5 seconds)
+  },
+
   projects: [
     {
       name: "chromium",

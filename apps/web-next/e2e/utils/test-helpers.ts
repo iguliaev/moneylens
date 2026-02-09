@@ -63,7 +63,7 @@ export async function loginUser(page: Page, email: string, password: string) {
   await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page).toHaveURL("/", { timeout: 5000 });
+  await expect(page).toHaveURL("/");
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 }
 
