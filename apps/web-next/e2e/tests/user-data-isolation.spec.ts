@@ -59,14 +59,14 @@ test.describe("User Data Isolation", () => {
     // Verify User A has their own data with correct user_id
     expect(userATransactions?.length).toBeGreaterThan(0);
     expect(userATransactions?.every((tx) => tx.user_id === userA.userId)).toBe(
-      true,
+      true
     );
     const userANotes = userATransactions?.map((tx) => tx.notes) || [];
     expect(userANotes.some((note) => note?.includes("userA"))).toBe(true);
 
     expect(userACategories?.length).toBeGreaterThan(0);
     expect(userACategories?.every((cat) => cat.user_id === userA.userId)).toBe(
-      true,
+      true
     );
     const userACatNames = userACategories?.map((cat) => cat.name) || [];
     expect(userACatNames.some((name) => name?.includes("userA"))).toBe(true);
@@ -76,7 +76,7 @@ test.describe("User Data Isolation", () => {
 
     expect(userABankAccounts?.length).toBeGreaterThan(0);
     expect(
-      userABankAccounts?.every((acc) => acc.user_id === userA.userId),
+      userABankAccounts?.every((acc) => acc.user_id === userA.userId)
     ).toBe(true);
 
     // Verify User B's data in database
@@ -103,14 +103,14 @@ test.describe("User Data Isolation", () => {
     // Verify User B has their own data with correct user_id
     expect(userBTransactions?.length).toBeGreaterThan(0);
     expect(userBTransactions?.every((tx) => tx.user_id === userB.userId)).toBe(
-      true,
+      true
     );
     const userBNotes = userBTransactions?.map((tx) => tx.notes) || [];
     expect(userBNotes.some((note) => note?.includes("userB"))).toBe(true);
 
     expect(userBCategories?.length).toBeGreaterThan(0);
     expect(userBCategories?.every((cat) => cat.user_id === userB.userId)).toBe(
-      true,
+      true
     );
     const userBCatNames = userBCategories?.map((cat) => cat.name) || [];
     expect(userBCatNames.some((name) => name?.includes("userB"))).toBe(true);
@@ -120,7 +120,7 @@ test.describe("User Data Isolation", () => {
 
     expect(userBBankAccounts?.length).toBeGreaterThan(0);
     expect(
-      userBBankAccounts?.every((acc) => acc.user_id === userB.userId),
+      userBBankAccounts?.every((acc) => acc.user_id === userB.userId)
     ).toBe(true);
 
     // Verify no cross-contamination: User A doesn't have User B's data

@@ -57,7 +57,7 @@ test.describe("Categories", () => {
       .click();
 
     await expect(
-      page.getByRole("heading", { name: "Edit Category" }),
+      page.getByRole("heading", { name: "Edit Category" })
     ).toBeVisible();
 
     // Wait for form to finish loading initial data
@@ -68,7 +68,7 @@ test.describe("Categories", () => {
     await page.getByText(new RegExp(categoryType, "i")).click();
     await page.getByTitle(new RegExp(newCategoryType, "i")).click();
     await expect(
-      page.locator("#root").getByTitle(new RegExp(newCategoryType, "i")),
+      page.locator("#root").getByTitle(new RegExp(newCategoryType, "i"))
     ).toBeVisible();
 
     // Update fields
@@ -83,7 +83,7 @@ test.describe("Categories", () => {
     // Verify redirect back to categories list
     await expect(page).toHaveURL(/\/categories/);
     await expect(
-      page.getByRole("heading", { name: "Categories" }),
+      page.getByRole("heading", { name: "Categories" })
     ).toBeVisible();
 
     // Old values gone
@@ -93,11 +93,11 @@ test.describe("Categories", () => {
       .click();
 
     await expect(
-      page.getByRole("cell", { name: name, exact: true }),
+      page.getByRole("cell", { name: name, exact: true })
     ).not.toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: desc, exact: true }),
+      page.getByRole("cell", { name: desc, exact: true })
     ).not.toBeVisible();
 
     // Verify updated values visible under new category type
@@ -107,10 +107,10 @@ test.describe("Categories", () => {
       .click();
 
     await expect(
-      page.getByRole("cell", { name: updatedName, exact: true }),
+      page.getByRole("cell", { name: updatedName, exact: true })
     ).toBeVisible();
     await expect(
-      page.getByRole("cell", { name: updatedDesc, exact: true }),
+      page.getByRole("cell", { name: updatedDesc, exact: true })
     ).toBeVisible();
   });
 
@@ -144,7 +144,7 @@ test.describe("Categories", () => {
 
       // Verify deleted
       await expect(
-        page.getByRole("cell", { name: name, exact: true }),
+        page.getByRole("cell", { name: name, exact: true })
       ).not.toBeVisible();
     });
   });
@@ -173,15 +173,15 @@ test.describe("Categories", () => {
       .click();
 
     await expect(
-      page.getByRole("cell", { name: spendCategoryName, exact: true }),
+      page.getByRole("cell", { name: spendCategoryName, exact: true })
     ).toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: earnCategoryName, exact: true }),
+      page.getByRole("cell", { name: earnCategoryName, exact: true })
     ).not.toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: saveCategoryName, exact: true }),
+      page.getByRole("cell", { name: saveCategoryName, exact: true })
     ).not.toBeVisible();
 
     // Select the Earn tab to filter categories
@@ -191,15 +191,15 @@ test.describe("Categories", () => {
       .click();
 
     await expect(
-      page.getByRole("cell", { name: earnCategoryName, exact: true }),
+      page.getByRole("cell", { name: earnCategoryName, exact: true })
     ).toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: spendCategoryName, exact: true }),
+      page.getByRole("cell", { name: spendCategoryName, exact: true })
     ).not.toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: saveCategoryName, exact: true }),
+      page.getByRole("cell", { name: saveCategoryName, exact: true })
     ).not.toBeVisible();
 
     // Select the Save tab to filter categories
@@ -209,15 +209,15 @@ test.describe("Categories", () => {
       .click();
 
     await expect(
-      page.getByRole("cell", { name: saveCategoryName, exact: true }),
+      page.getByRole("cell", { name: saveCategoryName, exact: true })
     ).toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: earnCategoryName, exact: true }),
+      page.getByRole("cell", { name: earnCategoryName, exact: true })
     ).not.toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: spendCategoryName, exact: true }),
+      page.getByRole("cell", { name: spendCategoryName, exact: true })
     ).not.toBeVisible();
   });
 
@@ -243,7 +243,7 @@ test.describe("Categories", () => {
 
       // Should navigate to show page
       await expect(
-        page.getByRole("heading", { name: "Show Category" }),
+        page.getByRole("heading", { name: "Show Category" })
       ).toBeVisible();
 
       // Verify details shown

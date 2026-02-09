@@ -70,7 +70,7 @@ test.describe("Transactions", () => {
         categoryName,
         amount,
         bankAccount,
-        note,
+        note
       );
     });
   });
@@ -122,14 +122,14 @@ test.describe("Transactions", () => {
           fromCategory,
           fromAmount,
           "Main Account",
-          originalNote,
+          originalNote
         );
 
         // Click edit on the created row
         await row.getByRole("button", { name: "edit" }).click();
         await expect(page).toHaveURL(/\/transactions\/edit\//);
         await expect(
-          page.getByRole("heading", { name: "Edit Transaction" }),
+          page.getByRole("heading", { name: "Edit Transaction" })
         ).toBeVisible();
 
         // Wait for form to finish loading initial data
@@ -146,7 +146,7 @@ test.describe("Transactions", () => {
           .click({ force: true });
         await page.getByTitle(new RegExp(`^${toType}$`, "i")).click();
         await expect(
-          page.locator("#root").getByTitle(new RegExp(`^${toType}$`, "i")),
+          page.locator("#root").getByTitle(new RegExp(`^${toType}$`, "i"))
         ).toBeVisible();
 
         // Change category (should show only categories for new type)
@@ -155,7 +155,7 @@ test.describe("Transactions", () => {
           .click({ force: true });
         await page.getByTitle(new RegExp(`^${toCategory}$`, "i")).click();
         await expect(
-          page.locator("#root").getByTitle(new RegExp(`^${toCategory}$`, "i")),
+          page.locator("#root").getByTitle(new RegExp(`^${toCategory}$`, "i"))
         ).toBeVisible();
 
         // Change amount
@@ -170,7 +170,7 @@ test.describe("Transactions", () => {
         await expect(
           page
             .locator("#root")
-            .getByTitle(new RegExp("^Secondary Account$", "i")),
+            .getByTitle(new RegExp("^Secondary Account$", "i"))
         ).toBeVisible();
 
         // Change notes
@@ -183,7 +183,7 @@ test.describe("Transactions", () => {
         // Should redirect to transactions list
         await expect(page).toHaveURL(/\/transactions/);
         await expect(
-          page.getByRole("heading", { name: "Transactions" }),
+          page.getByRole("heading", { name: "Transactions" })
         ).toBeVisible();
 
         // Switch to the new type's tab
@@ -202,7 +202,7 @@ test.describe("Transactions", () => {
         });
         await expect(editedRow).toBeVisible();
       });
-    },
+    }
   );
 
   [
@@ -239,7 +239,7 @@ test.describe("Transactions", () => {
         categoryName,
         amount,
         bankAccount,
-        note,
+        note
       );
 
       // Click delete button - use page.getByRole with .first() since row is unique
@@ -292,7 +292,7 @@ test.describe("Transactions", () => {
         categoryName,
         amount,
         bankAccount,
-        note,
+        note
       );
 
       // Click show button
@@ -300,7 +300,7 @@ test.describe("Transactions", () => {
 
       // Should navigate to show page
       await expect(
-        page.getByRole("heading", { name: "Show Transaction" }),
+        page.getByRole("heading", { name: "Show Transaction" })
       ).toBeVisible();
 
       // Verify key transaction details are visible
@@ -361,21 +361,21 @@ test.describe("Transactions", () => {
       "Groceries",
       "100.00",
       "Main Account",
-      note,
+      note
     );
 
     // Navigate to edit page
     await page.getByRole("button", { name: "edit" }).first().click();
     await expect(page).toHaveURL(/\/transactions\/edit\//);
     await expect(
-      page.getByRole("heading", { name: "Edit Transaction" }),
+      page.getByRole("heading", { name: "Edit Transaction" })
     ).toBeVisible();
 
     // Change to earn type
     await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
     await page.getByTitle(new RegExp("earn", "i")).click();
     await expect(
-      page.locator("#root").getByTitle(new RegExp("earn", "i")),
+      page.locator("#root").getByTitle(new RegExp("earn", "i"))
     ).toBeVisible();
 
     // Open category dropdown
@@ -393,7 +393,7 @@ test.describe("Transactions", () => {
     await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
     await page.getByTitle(new RegExp("save", "i")).click();
     await expect(
-      page.locator("#root").getByTitle(new RegExp("save", "i")),
+      page.locator("#root").getByTitle(new RegExp("save", "i"))
     ).toBeVisible();
 
     // Open category dropdown again

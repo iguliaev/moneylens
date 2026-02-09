@@ -46,7 +46,7 @@ test.describe("Bulk Upload", () => {
     // Upload valid bulk upload file
     const fixturePath = path.join(
       __dirname,
-      "../fixtures/valid-bulk-upload.json",
+      "../fixtures/valid-bulk-upload.json"
     );
     await page.locator("input[type='file']").setInputFiles(fixturePath);
 
@@ -63,7 +63,7 @@ test.describe("Bulk Upload", () => {
     await expect(
       page
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") }),
+        .filter({ hasText: new RegExp("Upload Successful", "i") })
     ).toBeVisible();
 
     // Verify counts are shown in success message
@@ -126,12 +126,12 @@ test.describe("Bulk Upload", () => {
 
     // Error message should appear
     await expect(
-      page.getByRole("alert").filter({ hasText: new RegExp("error", "i") }),
+      page.getByRole("alert").filter({ hasText: new RegExp("error", "i") })
     ).toBeVisible();
 
     // Upload button should be disabled
     await expect(
-      page.getByRole("button", { name: /^upload$/i, exact: true }),
+      page.getByRole("button", { name: /^upload$/i, exact: true })
     ).toBeDisabled();
   });
 
@@ -141,7 +141,7 @@ test.describe("Bulk Upload", () => {
     // Try to upload file with invalid category type
     const fixturePath = path.join(
       __dirname,
-      "../fixtures/invalid-category-type.json",
+      "../fixtures/invalid-category-type.json"
     );
     await page.locator("input[type='file']").setInputFiles(fixturePath);
 
@@ -153,14 +153,14 @@ test.describe("Bulk Upload", () => {
 
     // Error alert should appear
     await expect(
-      page.getByRole("alert").filter({ hasText: new RegExp("error", "i") }),
+      page.getByRole("alert").filter({ hasText: new RegExp("error", "i") })
     ).toBeVisible();
 
     // Success alert should not appear
     await expect(
       page
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") }),
+        .filter({ hasText: new RegExp("Upload Successful", "i") })
     ).not.toBeVisible();
   });
 });

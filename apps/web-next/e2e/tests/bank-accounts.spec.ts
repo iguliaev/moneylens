@@ -50,7 +50,7 @@ test.describe("Bank Accounts", () => {
       .click();
 
     await expect(
-      page.getByRole("heading", { name: "Edit Bank Account" }),
+      page.getByRole("heading", { name: "Edit Bank Account" })
     ).toBeVisible();
 
     // Wait for form to finish loading initial data
@@ -68,19 +68,19 @@ test.describe("Bank Accounts", () => {
     // Verify updated
     await expect(page).toHaveURL(/\/bank-accounts/);
     await expect(
-      page.getByRole("heading", { name: "Bank Accounts" }),
+      page.getByRole("heading", { name: "Bank Accounts" })
     ).toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: updatedName, exact: true }),
+      page.getByRole("cell", { name: updatedName, exact: true })
     ).toBeVisible();
     await expect(
-      page.getByRole("cell", { name: updatedDesc, exact: true }),
+      page.getByRole("cell", { name: updatedDesc, exact: true })
     ).toBeVisible();
 
     // Old values gone
     await expect(
-      page.getByRole("cell", { name: name, exact: true }),
+      page.getByRole("cell", { name: name, exact: true })
     ).not.toBeVisible();
   });
 
@@ -103,7 +103,7 @@ test.describe("Bank Accounts", () => {
 
     // Verify deleted
     await expect(
-      page.getByRole("cell", { name: name, exact: true }),
+      page.getByRole("cell", { name: name, exact: true })
     ).not.toBeVisible();
   });
 
@@ -121,7 +121,7 @@ test.describe("Bank Accounts", () => {
       .getByRole("button", { name: "eye" })
       .click();
     await expect(
-      page.getByRole("heading", { name: "Show Bank Account" }),
+      page.getByRole("heading", { name: "Show Bank Account" })
     ).toBeVisible();
     await expect(page.getByText(name)).toBeVisible();
     await expect(page.getByText(desc)).toBeVisible();
@@ -140,7 +140,7 @@ test.describe("Bank Accounts", () => {
         .getByRole("row")
         .filter({ hasText: name })
         .getByRole("cell", { name: "0" })
-        .first(),
+        .first()
     ).toBeVisible();
   });
 });

@@ -21,7 +21,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 export const supabaseAdmin = createClient<Database>(
   supabaseUrl,
   supabaseServiceKey,
-  { auth: { persistSession: false } },
+  { auth: { persistSession: false } }
 );
 
 export function e2eCurrentMonthDate(dayOfMonth = 15): string {
@@ -112,7 +112,7 @@ export async function logoutUser(page: Page) {
  * Wait for a form to finish loading before interacting with it.
  * This prevents race conditions where tests fill fields before
  * the form has loaded its initial data from the backend.
- * 
+ *
  * @param page - Playwright page object
  * @param testId - The data-testid attribute of the form (e.g., "category-edit-form")
  */
@@ -181,7 +181,7 @@ export async function seedReferenceDataForUser(userId: string) {
     .upsert(bankAccounts, { onConflict: "user_id,name" });
   if (bankAccountsError)
     throw new Error(
-      `Failed to seed bank accounts: ${bankAccountsError.message}`,
+      `Failed to seed bank accounts: ${bankAccountsError.message}`
     );
 
   // A couple of tags
@@ -251,7 +251,7 @@ export async function cleanupTransactionsForUser(userId: string) {
 export async function createBankAccount(
   page: Page,
   name: string,
-  description?: string,
+  description?: string
 ) {
   await page.goto("/bank-accounts");
   await page.getByRole("button", { name: /create/i }).click();
@@ -263,14 +263,14 @@ export async function createBankAccount(
   await page.getByRole("button", { name: /save/i }).click();
   await expect(page).toHaveURL(/\/bank-accounts/);
   await expect(
-    page.getByRole("heading", { name: "Bank Accounts" }),
+    page.getByRole("heading", { name: "Bank Accounts" })
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: name, exact: true }),
+    page.getByRole("cell", { name: name, exact: true })
   ).toBeVisible();
   if (description !== undefined) {
     await expect(
-      page.getByRole("cell", { name: description, exact: true }),
+      page.getByRole("cell", { name: description, exact: true })
     ).toBeVisible();
   }
 }
@@ -279,7 +279,7 @@ export async function createBankAccount(
 export async function createTag(
   page: Page,
   name: string,
-  description?: string,
+  description?: string
 ) {
   await page.goto("/tags");
   await page.getByRole("button", { name: /create/i }).click();
@@ -291,11 +291,11 @@ export async function createTag(
   await expect(page).toHaveURL(/\/tags/);
   await expect(page.getByRole("heading", { name: "Tags" })).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: name, exact: true }),
+    page.getByRole("cell", { name: name, exact: true })
   ).toBeVisible();
   if (description !== undefined) {
     await expect(
-      page.getByRole("cell", { name: description, exact: true }),
+      page.getByRole("cell", { name: description, exact: true })
     ).toBeVisible();
   }
 }
@@ -305,21 +305,21 @@ export async function createCategoryForType(
   page: Page,
   type: string,
   name: string,
-  description?: string,
+  description?: string
 ) {
   await page.goto("/categories");
 
   // Open create category modal
   await page.getByRole("button", { name: /create/i }).click();
   await expect(
-    page.getByRole("heading", { name: "Create Category" }),
+    page.getByRole("heading", { name: "Create Category" })
   ).toBeVisible();
 
   // Select category type
   await page.getByRole("combobox", { name: "* Type" }).click();
   await page.getByTitle(new RegExp(type, "i")).click();
   await expect(
-    page.locator("#root").getByTitle(new RegExp(type, "i")),
+    page.locator("#root").getByTitle(new RegExp(type, "i"))
   ).toBeVisible();
 
   // Fill in name and description
@@ -343,11 +343,11 @@ export async function createCategoryForType(
 
   // Verify the new category is visible in the list
   await expect(
-    page.getByRole("cell", { name: name, exact: true }),
+    page.getByRole("cell", { name: name, exact: true })
   ).toBeVisible();
   if (description !== undefined) {
     await expect(
-      page.getByRole("cell", { name: description, exact: true }),
+      page.getByRole("cell", { name: description, exact: true })
     ).toBeVisible();
   }
 }
@@ -364,7 +364,7 @@ export async function createTransactionWithoutTags(
   category: string,
   amount: string,
   bankAccount: string,
-  notes: string,
+  notes: string
 ) {
   await page.goto("/transactions/create");
 
@@ -375,14 +375,14 @@ export async function createTransactionWithoutTags(
   await page.getByRole("combobox", { name: "* Type" }).click();
   await page.getByTitle(new RegExp(type, "i")).click();
   await expect(
-    page.locator("#root").getByTitle(new RegExp(type, "i")),
+    page.locator("#root").getByTitle(new RegExp(type, "i"))
   ).toBeVisible();
 
   // Select category
   await page.getByRole("combobox", { name: "* Category" }).click();
   await page.getByTitle(new RegExp(category, "i")).click();
   await expect(
-    page.locator("#root").getByTitle(new RegExp(category, "i")),
+    page.locator("#root").getByTitle(new RegExp(category, "i"))
   ).toBeVisible();
 
   // Fill amount
@@ -392,7 +392,7 @@ export async function createTransactionWithoutTags(
   await page.getByRole("combobox", { name: "* Bank Account" }).click();
   await page.getByTitle(new RegExp(bankAccount, "i")).click();
   await expect(
-    page.locator("#root").getByTitle(new RegExp(bankAccount, "i")),
+    page.locator("#root").getByTitle(new RegExp(bankAccount, "i"))
   ).toBeVisible();
 
   // Fill notes
@@ -406,7 +406,7 @@ export async function createTransactionWithoutTags(
 
   // Transactions list page is visible
   await expect(
-    page.getByRole("heading", { name: "Transactions" }),
+    page.getByRole("heading", { name: "Transactions" })
   ).toBeVisible();
 
   // Select the type tab to filter categories
@@ -447,7 +447,7 @@ export function getTransactionRow(
     category: string;
     amount: string;
     bankAccount: string;
-  },
+  }
 ) {
   // Date is displayed as MM/DD/YYYY, convert from YYYY-MM-DD
   const [y, m, d] = criteria.date.split("-");
@@ -468,7 +468,7 @@ export function getTransactionRow(
 export async function selectTags(
   page: Page,
   testId: string,
-  tagNames: string[],
+  tagNames: string[]
 ) {
   // Open dropdown
   await page.getByTestId(`${testId}-button`).click();
@@ -488,7 +488,7 @@ export async function selectTags(
 // Seed transactions for a user with specific identifiable data
 export async function seedTransactionsForUser(
   userId: string,
-  prefix: string, // e.g., "userA" or "userB" to make data identifiable
+  prefix: string // e.g., "userA" or "userB" to make data identifiable
 ) {
   const now = new Date().toISOString();
   const dateForCurrentMonth = e2eCurrentMonthDate();
@@ -574,7 +574,7 @@ export async function seedTransactionsForUser(
 // Seed reference data with user-specific prefixes for identification
 export async function seedReferenceDataWithPrefix(
   userId: string,
-  prefix: string,
+  prefix: string
 ) {
   const now = new Date().toISOString();
 

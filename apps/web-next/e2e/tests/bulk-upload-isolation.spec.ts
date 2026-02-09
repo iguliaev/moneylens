@@ -37,7 +37,7 @@ test.describe("Bulk Upload Data Isolation", () => {
   }) => {
     const fixturePath = path.join(
       __dirname,
-      "../fixtures/valid-bulk-upload.json",
+      "../fixtures/valid-bulk-upload.json"
     );
 
     // Create separate browser contexts for each user to avoid session conflicts
@@ -52,7 +52,7 @@ test.describe("Bulk Upload Data Isolation", () => {
     await expect(
       pageA
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") }),
+        .filter({ hasText: new RegExp("Upload Successful", "i") })
     ).toBeVisible();
 
     // Verify User A's data exists in database with correct user_id
@@ -87,7 +87,7 @@ test.describe("Bulk Upload Data Isolation", () => {
     await expect(
       pageB
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") }),
+        .filter({ hasText: new RegExp("Upload Successful", "i") })
     ).toBeVisible();
 
     // Verify User B's data exists in database with correct user_id

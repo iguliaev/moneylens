@@ -331,9 +331,8 @@ const DataResetSection: React.FC = () => {
     setIsDeleting(true);
 
     try {
-      const { data, error: rpcError } = await supabaseClient.rpc(
-        "reset_user_data"
-      );
+      const { data, error: rpcError } =
+        await supabaseClient.rpc("reset_user_data");
 
       if (rpcError) throw new Error(rpcError.message);
 

@@ -66,7 +66,7 @@ test.describe("Data Reset", () => {
 
     // Confirmation modal should appear
     await expect(
-      page.getByRole("dialog", { name: /reset.*data/i }),
+      page.getByRole("dialog", { name: /reset.*data/i })
     ).toBeVisible();
 
     // Click cancel
@@ -74,7 +74,7 @@ test.describe("Data Reset", () => {
 
     // Modal should close
     await expect(
-      page.getByRole("dialog", { name: /reset.*data/i }),
+      page.getByRole("dialog", { name: /reset.*data/i })
     ).not.toBeVisible();
 
     // Data should still be there (in this case, no data was created)
@@ -93,7 +93,7 @@ test.describe("Data Reset", () => {
       "Groceries",
       "50.00",
       "Main Account",
-      note,
+      note
     );
 
     // Verify redirected to transactions list

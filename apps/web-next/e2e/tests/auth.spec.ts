@@ -47,7 +47,7 @@ test.describe("Authentication", () => {
     // Verify successful registration by checking for redirect to dashboard
     await expect(page).toHaveURL("/");
     await expect(
-      page.getByRole("heading", { name: "Dashboard" }),
+      page.getByRole("heading", { name: "Dashboard" })
     ).toBeVisible();
 
     // Check the user exists in the database

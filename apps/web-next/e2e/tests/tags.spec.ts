@@ -68,15 +68,15 @@ test.describe("Tags", () => {
     await expect(page.getByRole("heading", { name: "Tags" })).toBeVisible();
 
     await expect(
-      page.getByRole("cell", { name: updatedName, exact: true }),
+      page.getByRole("cell", { name: updatedName, exact: true })
     ).toBeVisible();
     await expect(
-      page.getByRole("cell", { name: updatedDesc, exact: true }),
+      page.getByRole("cell", { name: updatedDesc, exact: true })
     ).toBeVisible();
 
     // Old values gone
     await expect(
-      page.getByRole("cell", { name: name, exact: true }),
+      page.getByRole("cell", { name: name, exact: true })
     ).not.toBeVisible();
   });
 
@@ -100,7 +100,7 @@ test.describe("Tags", () => {
 
     // Verify deleted
     await expect(
-      page.getByRole("cell", { name: name, exact: true }),
+      page.getByRole("cell", { name: name, exact: true })
     ).not.toBeVisible();
   });
 
@@ -139,7 +139,7 @@ test.describe("Tags", () => {
         .getByRole("row")
         .filter({ hasText: name })
         .getByRole("cell", { name: "0" })
-        .first(),
+        .first()
     ).toBeVisible();
   });
 });
