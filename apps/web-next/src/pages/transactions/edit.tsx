@@ -17,6 +17,7 @@ export const TransactionEdit = () => {
   });
 
   const transactionsData = query?.data?.data;
+  const isLoading = query.isLoading;
 
   // Extract tag IDs from the nested transaction_tags relationship
   const currentTagIds = useMemo(() => {
@@ -97,7 +98,13 @@ export const TransactionEdit = () => {
 
   return (
     <Edit saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
+      <Form
+        {...formProps}
+        layout="vertical"
+        onFinish={handleFinish}
+        data-testid="transaction-edit-form"
+        aria-busy={isLoading}
+      >
         <Form.Item
           label="Date"
           name={["date"]}

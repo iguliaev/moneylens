@@ -5,6 +5,7 @@ import {
   loginUser,
   createTag,
   cleanupReferenceDataForUser,
+  waitForFormReady,
 } from "../utils/test-helpers";
 
 test.describe("Tags", () => {
@@ -49,6 +50,9 @@ test.describe("Tags", () => {
       .click();
 
     await expect(page.getByRole("heading", { name: "Edit Tag" })).toBeVisible();
+
+    // Wait for form to finish loading initial data
+    await waitForFormReady(page, "tag-edit-form");
 
     // Update fields
     await page.getByRole("textbox", { name: "* Name" }).clear();

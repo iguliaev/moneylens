@@ -5,6 +5,7 @@ import {
   loginUser,
   cleanupReferenceDataForUser,
   createCategoryForType,
+  waitForFormReady,
 } from "../utils/test-helpers";
 
 test.describe("Categories", () => {
@@ -58,6 +59,9 @@ test.describe("Categories", () => {
     await expect(
       page.getByRole("heading", { name: "Edit Category" }),
     ).toBeVisible();
+
+    // Wait for form to finish loading initial data
+    await waitForFormReady(page, "category-edit-form");
 
     // Change category type
     const newCategoryType = "save";

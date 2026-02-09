@@ -5,8 +5,9 @@ import {
   loginUser,
   createBankAccount,
   cleanupReferenceDataForUser,
+  supabaseAdmin,
+  waitForFormReady,
 } from "../utils/test-helpers";
-import { create } from "node:domain";
 
 test.describe("Bank Accounts", () => {
   let testUser: { email: string; password: string; userId: string };
@@ -51,6 +52,9 @@ test.describe("Bank Accounts", () => {
     await expect(
       page.getByRole("heading", { name: "Edit Bank Account" }),
     ).toBeVisible();
+
+    // Wait for form to finish loading initial data
+    await waitForFormReady(page, "bank-account-edit-form");
 
     // Update fields
     await page.getByLabel("Name").clear();

@@ -108,6 +108,20 @@ export async function logoutUser(page: Page) {
   }
 }
 
+/**
+ * Wait for a form to finish loading before interacting with it.
+ * This prevents race conditions where tests fill fields before
+ * the form has loaded its initial data from the backend.
+ * 
+ * @param page - Playwright page object
+ * @param testId - The data-testid attribute of the form (e.g., "category-edit-form")
+ */
+export async function waitForFormReady(page: Page, testId: string) {
+  const form = page.getByTestId(testId);
+  // Wait for form to exist and not be in loading state
+  await expect(form).toHaveAttribute("aria-busy", "false");
+}
+
 // Seed minimal reference data (categories, bank accounts, tags) for a given user
 export async function seedReferenceDataForUser(userId: string) {
   const now = new Date().toISOString();

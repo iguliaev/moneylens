@@ -6,10 +6,16 @@ export const CategoryEdit = () => {
   const { formProps, saveButtonProps, query } = useForm();
 
   const categoriesData = query?.data?.data;
+  const isLoading = query?.isLoading;
 
   return (
     <Edit saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical">
+      <Form
+        {...formProps}
+        layout="vertical"
+        data-testid="category-edit-form"
+        aria-busy={isLoading}
+      >
         <Form.Item
           label="Type"
           name={["type"]}

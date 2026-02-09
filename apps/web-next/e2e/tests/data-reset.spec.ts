@@ -6,6 +6,7 @@ import {
   cleanupReferenceDataForUser,
   seedReferenceDataForUser,
   createTransactionWithoutTags,
+  supabaseAdmin,
 } from "../utils/test-helpers";
 
 test.describe("Data Reset", () => {
@@ -111,10 +112,11 @@ test.describe("Data Reset", () => {
 
     // Verify no transactions exist in database
     const { data: transactions } = await supabaseAdmin
+      .from("transactions")
+      .select("id")
+      .eq("user_id", testUser.userId);
 
-    // Verify no transactions exist - check for empty state or no data rows
-    const table = page.locator("table tbody tr");
-    await expect(table).toHaveCount(0);
+    expect(transactions).toHaveLength(0);
   });
 
   test("data reset removes all categories", async ({ page }) => {
@@ -142,8 +144,10 @@ test.describe("Data Reset", () => {
 
     // Verify no categories exist in database
     const { data: categories } = await supabaseAdmin
+      .from("categories")
+      .select("id")
+      .eq("user_id", testUser.userId);
 
-    // Verify category is gone - only default categories remain
-    await expect(page.getByText("Test Category")).not.toBeVisible();
+    expect(categories).toHaveLength(0);
   });
 });

@@ -9,6 +9,7 @@ import {
   e2eCurrentMonthDate,
   createTransactionWithoutTags,
   getTransactionRow,
+  waitForFormReady,
 } from "../utils/test-helpers";
 
 test.describe("Transactions", () => {
@@ -130,6 +131,9 @@ test.describe("Transactions", () => {
         await expect(
           page.getByRole("heading", { name: "Edit Transaction" }),
         ).toBeVisible();
+
+        // Wait for form to finish loading initial data
+        await waitForFormReady(page, "transaction-edit-form");
 
         // Change date
         await page.getByLabel("Date").click();
