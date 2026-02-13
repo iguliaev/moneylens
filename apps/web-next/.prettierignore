@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Test results
+test-results/
+playwright-report/
+
+# Coverage
+coverage/
+
+# Environment files
+.env
+.env.*
+
+# Lock files
+package-lock.json
+
+# Generated types
+types.gen.ts
+
+# Test fixtures (intentionally invalid/malformed)
+e2e/fixtures/
