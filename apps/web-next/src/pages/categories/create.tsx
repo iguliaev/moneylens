@@ -1,7 +1,5 @@
-import React from "react";
 import { Create, useForm } from "@refinedev/antd";
 import { Form, Input, Select } from "antd";
-import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 
 export const CategoryCreate = () => {

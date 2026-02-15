@@ -1,5 +1,5 @@
 import { Edit, useForm } from "@refinedev/antd";
-import { Form, Input, DatePicker } from "antd";
+import { Form, Input } from "antd";
 
 export const BankAccountEdit = () => {
   const { formProps, saveButtonProps, query } = useForm();

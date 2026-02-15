@@ -20,7 +20,6 @@ import {
   UnorderedListOutlined,
 } from "@ant-design/icons";
 import type { UploadFile, UploadProps } from "antd/es/upload/interface";
-import { Link } from "react-router";
 import { supabaseClient } from "../../utility";
 import { Show } from "@refinedev/antd";
 

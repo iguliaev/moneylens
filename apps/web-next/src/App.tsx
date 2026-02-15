@@ -1,4 +1,4 @@
-import { Authenticated, Refine, WelcomePage } from "@refinedev/core";
+import { Authenticated, Refine } from "@refinedev/core";
 import {
   BankOutlined,
   DashboardOutlined,

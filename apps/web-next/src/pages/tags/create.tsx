@@ -1,5 +1,5 @@
 import { Create, useForm } from "@refinedev/antd";
-import { Form, Input, DatePicker } from "antd";
+import { Form, Input } from "antd";
 
 export const TagCreate = () => {
   const { formProps, saveButtonProps, query } = useForm();

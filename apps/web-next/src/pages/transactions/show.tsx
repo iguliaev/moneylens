@@ -1,11 +1,5 @@
-import React from "react";
 import { useShow, useOne } from "@refinedev/core";
-import {
-  Show,
-  TagField,
-  TextField,
-  DateField,
-} from "@refinedev/antd";
+import { Show, TagField, TextField, DateField } from "@refinedev/antd";
 import { Typography } from "antd";
 import { formatCurrency } from "../../utility";
 
@@ -48,7 +42,7 @@ export const TransactionShow = () => {
       <Title level={5}>Category</Title>
       {categoryIsLoading ? <>Loading...</> : <>{categoryData?.name}</>}
       <Title level={5}>Amount</Title>
-      <TextField value={formatCurrency(record?.amount ?? 0, 'GBP')} />
+      <TextField value={formatCurrency(record?.amount ?? 0, "GBP")} />
       <Title level={5}>Bank Account</Title>
       {bankAccountIsLoading ? <>Loading...</> : <>{bankAccountData?.name}</>}
       <Title level={5}>Notes</Title>

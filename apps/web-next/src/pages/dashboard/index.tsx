@@ -10,7 +10,6 @@ import {
   message,
 } from "antd";
 import { Show } from "@refinedev/antd";
-import { formatCurrency } from "../../utility";
 
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -195,7 +194,9 @@ const TypeSummaryCards = ({
               title={TRANSACTION_TYPE_LABELS[type]}
               value={getAmount(type)}
               precision={2}
-              formatter={(value) => formatCurrencyLocal(typeof value === 'number' ? value : 0)}
+              formatter={(value) =>
+                formatCurrencyLocal(typeof value === "number" ? value : 0)
+              }
               loading={loading}
               valueStyle={{ color: TYPE_COLORS[type] }}
             />
