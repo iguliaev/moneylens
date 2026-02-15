@@ -10,14 +10,13 @@ import {
 import { supabaseClient } from "../../utility";
 
 export const TransactionEdit = () => {
-  const { formProps, saveButtonProps, query, id } = useForm({
+  const { formProps, saveButtonProps, query, id, formLoading } = useForm({
     meta: {
       select: "*, transaction_tags(tag_id), category:categories(id, name)",
     },
   });
 
   const transactionsData = query?.data?.data;
-  const isLoading = query?.isLoading ?? false;
 
   // Extract tag IDs from the nested transaction_tags relationship
   const currentTagIds = useMemo(() => {
@@ -111,7 +110,7 @@ export const TransactionEdit = () => {
         layout="vertical"
         onFinish={handleFinish}
         data-testid="transaction-edit-form"
-        aria-busy={isLoading}
+        aria-busy={formLoading}
       >
         <Form.Item
           label="Date"
