@@ -182,18 +182,33 @@ function App() {
                     </Authenticated>
                   }
                 >
-                  <Route path="/login" element={<AuthPage type="login" />} />
+                  <Route
+                    path="/login"
+                    element={<AuthPage type="login" title={<ProjectTitle />} />}
+                  />
                   <Route
                     path="/register"
-                    element={<AuthPage type="register" />}
+                    element={
+                      <AuthPage type="register" title={<ProjectTitle />} />
+                    }
                   />
                   <Route
                     path="/forgot-password"
-                    element={<AuthPage type="forgotPassword" />}
+                    element={
+                      <AuthPage
+                        type="forgotPassword"
+                        title={<ProjectTitle />}
+                      />
+                    }
                   />
                   <Route
                     path="/update-password"
-                    element={<AuthPage type="updatePassword" />}
+                    element={
+                      <AuthPage
+                        type="updatePassword"
+                        title={<ProjectTitle />}
+                      />
+                    }
                   />
                 </Route>
                 <Route
