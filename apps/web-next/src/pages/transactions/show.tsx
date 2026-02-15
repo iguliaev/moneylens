@@ -6,32 +6,28 @@ import { formatCurrency } from "../../utility";
 const { Title } = Typography;
 
 export const TransactionShow = () => {
-  const {
-    result: record,
-    query: { isLoading },
-  } = useShow();
+  const { query, result: record } = useShow();
+  const { isLoading } = query;
 
-  const {
-    result: categoryData,
-    query: { isLoading: categoryIsLoading },
-  } = useOne({
+  const categoryQuery = useOne({
     resource: "categories",
     id: record?.category_id || "",
     queryOptions: {
       enabled: !!record,
     },
   });
+  const categoryData = categoryQuery.result;
+  const categoryIsLoading = categoryQuery.query?.isLoading;
 
-  const {
-    result: bankAccountData,
-    query: { isLoading: bankAccountIsLoading },
-  } = useOne({
+  const bankAccountQuery = useOne({
     resource: "bank_accounts",
     id: record?.bank_account_id || "",
     queryOptions: {
       enabled: !!record,
     },
   });
+  const bankAccountData = bankAccountQuery.result;
+  const bankAccountIsLoading = bankAccountQuery.query?.isLoading;
 
   return (
     <Show isLoading={isLoading}>
