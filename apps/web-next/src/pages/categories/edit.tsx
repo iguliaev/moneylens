@@ -3,9 +3,7 @@ import { Form, Input, Select } from "antd";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 
 export const CategoryEdit = () => {
-  const { formProps, saveButtonProps, query } = useForm();
-
-  const isLoading = query?.isLoading;
+  const { formProps, saveButtonProps, formLoading } = useForm();
 
   return (
     <Edit saveButtonProps={saveButtonProps}>
@@ -13,7 +11,7 @@ export const CategoryEdit = () => {
         {...formProps}
         layout="vertical"
         data-testid="category-edit-form"
-        aria-busy={isLoading}
+        aria-busy={formLoading}
       >
         <Form.Item
           label="Type"
