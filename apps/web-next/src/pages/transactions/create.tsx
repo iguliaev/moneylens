@@ -155,7 +155,7 @@ export const TransactionCreate = () => {
           />
         </Form.Item>
         <Form.Item label="Notes" name={["notes"]}>
-          <Input.TextArea rows={3} />
+          <Input />
         </Form.Item>
       </Form>
     </Create>
