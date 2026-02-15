@@ -3,7 +3,7 @@ import { Form, Input, Select } from "antd";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 
 export const CategoryCreate = () => {
-  const { formProps, saveButtonProps, query } = useForm();
+  const { formProps, saveButtonProps } = useForm();
 
   return (
     <Create saveButtonProps={saveButtonProps}>

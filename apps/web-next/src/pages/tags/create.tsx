@@ -2,7 +2,7 @@ import { Create, useForm } from "@refinedev/antd";
 import { Form, Input } from "antd";
 
 export const TagCreate = () => {
-  const { formProps, saveButtonProps, query } = useForm();
+  const { formProps, saveButtonProps } = useForm();
 
   return (
     <Create saveButtonProps={saveButtonProps}>

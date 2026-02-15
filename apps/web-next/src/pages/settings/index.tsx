@@ -23,7 +23,7 @@ import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import { supabaseClient } from "../../utility";
 import { Show } from "@refinedev/antd";
 
-const { Title, Text, Paragraph } = Typography;
+const { Paragraph } = Typography;
 
 // === Types ===
 interface CategoryInput {
