@@ -13,7 +13,7 @@ import {
   type MapValueEvent,
 } from "@refinedev/antd";
 import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
-import { useState } from "react";
+import { useState, type Key } from "react";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_LABELS,
@@ -27,7 +27,7 @@ import { formatAmount } from "../../utility";
  * Use this for DATE columns (not TIMESTAMP) in the database.
  */
 const dateOnlyFilterMapper = (
-  selectedKeys: React.Key[],
+  selectedKeys: Key[],
   event: MapValueEvent
 ) => {
   if (!selectedKeys || selectedKeys.length === 0) {
