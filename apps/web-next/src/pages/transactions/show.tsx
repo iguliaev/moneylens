@@ -6,10 +6,8 @@ import { formatCurrency } from "../../utility";
 const { Title } = Typography;
 
 export const TransactionShow = () => {
-  const {
-    result: record,
-    query: { isLoading },
-  } = useShow();
+  const { query, result: record } = useShow();
+  const { isLoading } = query;
 
   const {
     result: categoryData,

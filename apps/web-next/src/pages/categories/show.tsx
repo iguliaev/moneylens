@@ -5,10 +5,8 @@ import { Typography } from "antd";
 const { Title } = Typography;
 
 export const CategoryShow = () => {
-  const {
-    result: record,
-    query: { isLoading },
-  } = useShow();
+  const { query, result: record } = useShow();
+  const { isLoading } = query;
 
   return (
     <Show isLoading={isLoading}>
