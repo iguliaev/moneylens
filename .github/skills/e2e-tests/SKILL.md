@@ -8,7 +8,7 @@ description: Implement end-to-end tests for web-next Web Application using Playw
 ## Overview
 Implement, refactor, and maintain end-to-end tests for the web-next Web Application using Playwright. These tests ensure that the application functions correctly from the user's perspective.
 
-The web application under test is apps/web-next - Typescript/React based application that uses Vite amd built with Refine framework. Antd is used as the UI component library, Playwright is used for end-to-end testing. NPM is used as the package manager.
+The web application under test is apps/web-next - Typescript/React based application that uses Vite and built with Refine framework. Antd is used as the UI component library, Playwright is used for end-to-end testing. NPM is used as the package manager.
 The application structure is as follows:
 - apps/web-next/: Main web application codebase.
 - apps/web-next/e2e/: End-to-end test suite using Playwright.
