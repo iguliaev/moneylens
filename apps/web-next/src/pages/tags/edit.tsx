@@ -2,9 +2,7 @@ import { Edit, useForm } from "@refinedev/antd";
 import { Form, Input } from "antd";
 
 export const TagEdit = () => {
-  const { formProps, saveButtonProps, query } = useForm();
-
-  const isLoading = query?.isLoading ?? false;
+  const { formProps, saveButtonProps, formLoading } = useForm();
 
   return (
     <Edit saveButtonProps={saveButtonProps}>
@@ -12,7 +10,7 @@ export const TagEdit = () => {
         {...formProps}
         layout="vertical"
         data-testid="tag-edit-form"
-        aria-busy={isLoading}
+        aria-busy={formLoading}
       >
         <Form.Item
           label="Name"
