@@ -11,9 +11,9 @@ export const TransactionShow = () => {
 
   const categoryQuery = useOne({
     resource: "categories",
-    id: record?.category_id || "",
+    id: record?.category_id ?? "",
     queryOptions: {
-      enabled: !!record,
+      enabled: !!record?.category_id,
     },
   });
   const categoryData = categoryQuery.result;
@@ -21,9 +21,9 @@ export const TransactionShow = () => {
 
   const bankAccountQuery = useOne({
     resource: "bank_accounts",
-    id: record?.bank_account_id || "",
+    id: record?.bank_account_id ?? "",
     queryOptions: {
-      enabled: !!record,
+      enabled: !!record?.bank_account_id,
     },
   });
   const bankAccountData = bankAccountQuery.result;
