@@ -47,7 +47,7 @@ const authProvider: AuthProvider = {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error as Error,
+        error: error instanceof Error ? error : new Error(String(error)),
       };
     }
 
@@ -82,7 +82,7 @@ const authProvider: AuthProvider = {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error as Error,
+        error: error instanceof Error ? error : new Error(String(error)),
       };
     }
 
@@ -118,7 +118,7 @@ const authProvider: AuthProvider = {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error as Error,
+        error: error instanceof Error ? error : new Error(String(error)),
       };
     }
 
@@ -152,7 +152,7 @@ const authProvider: AuthProvider = {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error as Error,
+        error: error instanceof Error ? error : new Error(String(error)),
       };
     }
     return {
@@ -201,10 +201,9 @@ const authProvider: AuthProvider = {
     } catch (error: unknown) {
       return {
         authenticated: false,
-        error: (error as Error) || {
-          message: "Check failed",
-          name: "Not authenticated",
-        },
+        error: error instanceof Error
+          ? error
+          : new Error("Check failed: " + String(error)),
         logout: true,
         redirectTo: "/login",
       };
