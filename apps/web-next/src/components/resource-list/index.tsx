@@ -12,7 +12,7 @@ import { Table, Space } from "antd";
 export interface Column {
   dataIndex: string;
   title: string;
-  render?: (value: any, record: BaseRecord) => React.ReactNode;
+  render?: (value: unknown, record: BaseRecord) => React.ReactNode;
 }
 
 export interface ResourceListProps {

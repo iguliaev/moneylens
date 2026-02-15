@@ -41,7 +41,9 @@ const dateOnlyFilterMapper = (
   }
 
   if (event === "onChange" && selectedKeys.every(dayjs.isDayjs)) {
-    return selectedKeys.map((date: any) => date.format("YYYY-MM-DD"));
+    return selectedKeys.map((date) =>
+      (date as unknown as dayjs.Dayjs).format("YYYY-MM-DD")
+    );
   }
 
   return selectedKeys;
@@ -56,19 +58,22 @@ const commonSelectOptions = {
 const MultiSelectFilter = ({
   placeholder,
   selectProps,
-  ...rest
+  onChange,
+  value,
 }: {
   placeholder: string;
   selectProps: ReturnType<typeof useSelect>["selectProps"];
-  onChange?: (value: any) => void;
-  value?: any;
+  onChange?: (value: unknown) => void;
+  value?: unknown;
 }) => (
   <Select
     mode="multiple"
     placeholder={placeholder}
     style={{ minWidth: 200 }}
-    {...selectProps}
-    {...rest}
+    options={selectProps.options}
+    loading={selectProps.loading}
+    onChange={onChange}
+    value={value}
   />
 );
 
@@ -138,7 +143,7 @@ export const TransactionList = () => {
           dataIndex={["date"]}
           title="Date"
           sorter
-          render={(value: any) => <DateField value={value} />}
+          render={(value: string) => <DateField value={value} />}
           filterDropdown={(props) => (
             <FilterDropdown {...props} mapValue={dateOnlyFilterMapper}>
               <DatePicker.RangePicker />

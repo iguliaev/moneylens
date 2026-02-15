@@ -1,7 +1,7 @@
 # Logs
 
 logs
-_.log
+*.log
 npm-debug.log_
 yarn-debug.log*
 yarn-error.log*
@@ -11,7 +11,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-\*.local
+*.local
 
 # Editor directories and files
 
@@ -23,4 +23,4 @@ _.suo
 _.ntvs_
 _.njsproj
 _.sln
-\*.sw?
+*.sw?

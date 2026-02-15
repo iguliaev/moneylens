@@ -21,8 +21,10 @@ export const TransactionEdit = () => {
 
   // Extract tag IDs from the nested transaction_tags relationship
   const currentTagIds = useMemo(() => {
-    const transactionTags = (transactionsData as any)?.transaction_tags ?? [];
-    return transactionTags.map((tt: { tag_id: string }) => tt.tag_id);
+    const transactionTags =
+      (transactionsData as { transaction_tags?: Array<{ tag_id: string }> })
+        ?.transaction_tags ?? [];
+    return transactionTags.map((tt) => tt.tag_id);
   }, [transactionsData]);
 
   // Watch the type field to filter categories accordingly
@@ -81,7 +83,7 @@ export const TransactionEdit = () => {
   }, [currentTagIds, formProps.form]);
 
   // Custom onFinish to handle tags via RPC
-  const handleFinish = async (values: any) => {
+  const handleFinish = async (values: Record<string, unknown>) => {
     const { tag_ids, ...transactionValues } = values;
 
     // First save the transaction (via default form behavior)

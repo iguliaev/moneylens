@@ -51,15 +51,16 @@ export const TransactionCreate = () => {
   });
 
   // Custom onFinish to handle tags via RPC after transaction is created
-  const handleFinish = async (values: any) => {
+  const handleFinish = async (values: Record<string, unknown>) => {
     const { tag_ids, ...transactionValues } = values;
 
     // Create the transaction and get the new ID
     const result = await formProps.onFinish?.(transactionValues);
 
     // Then set tags via RPC if we have a transaction ID
-    const transactionId = (result as any)?.data?.id;
-    if (transactionId && tag_ids?.length > 0) {
+    const transactionId = (result as unknown as { data?: { id?: string } })
+      ?.data?.id;
+    if (transactionId && Array.isArray(tag_ids) && tag_ids.length > 0) {
       try {
         await supabaseClient.rpc("set_transaction_tags", {
           p_transaction_id: transactionId,

@@ -202,7 +202,12 @@ const BulkUploadSection: React.FC = () => {
             const details = JSON.parse(error.details);
             if (Array.isArray(details) && details.length > 0) {
               setFileError(
-                details.map((d: any) => `Row ${d.index}: ${d.error}`).join("\n")
+                details
+                  .map(
+                    (d: { index: number; error: string }) =>
+                      `Row ${d.index}: ${d.error}`
+                  )
+                  .join("\n")
               );
               return;
             }

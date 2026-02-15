@@ -44,10 +44,10 @@ const authProvider: AuthProvider = {
           redirectTo: "/",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error,
+        error: error as Error,
       };
     }
 
@@ -79,10 +79,10 @@ const authProvider: AuthProvider = {
           redirectTo: "/",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error,
+        error: error as Error,
       };
     }
 
@@ -115,10 +115,10 @@ const authProvider: AuthProvider = {
           success: true,
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error,
+        error: error as Error,
       };
     }
 
@@ -149,10 +149,10 @@ const authProvider: AuthProvider = {
           redirectTo: "/",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error,
+        error: error as Error,
       };
     }
     return {
@@ -198,10 +198,10 @@ const authProvider: AuthProvider = {
           redirectTo: "/login",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         authenticated: false,
-        error: error || {
+        error: (error as Error) || {
           message: "Check failed",
           name: "Not authenticated",
         },
