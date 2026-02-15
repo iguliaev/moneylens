@@ -41,6 +41,14 @@ Refine's hooks and components simplifies the development process and eliminates 
 - If you already have a server running, set `BASE_URL` to skip auto-start (e.g. `BASE_URL=http://localhost:5173 npm run test:e2e`).
 - In CI, start the server in a separate step and pass `BASE_URL` to reuse it; otherwise Playwright will launch `npm run dev` with a 120s timeout.
 
+## Environment Visual Indicator
+
+The application displays environment banners to help distinguish between different deployment environments:
+
+- **Development**: Blue banner with "🔧 DEVELOPMENT Environment" (triggered by `VITE_APP_ENV=development`)
+- **Staging**: Orange/yellow banner with "⚠️ STAGING Environment" (triggered by `VITE_APP_ENV=staging`)
+- **Production**: No banner displayed (clean UI)
+
 ## Learn More
 
 To learn more about **Refine**, please check out the [Documentation](https://refine.dev/docs)

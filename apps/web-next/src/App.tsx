@@ -51,7 +51,7 @@ import {
 } from "./pages/categories";
 import { SettingsPage } from "./pages/settings";
 import { ProjectTitle } from "./components/title";
-import { Header } from "./components";
+import { Header, EnvironmentBanner } from "./components";
 
 function App() {
   return (
@@ -137,6 +137,7 @@ function App() {
                       key="authenticated-routes"
                       fallback={<CatchAllNavigate to="/login" />}
                     >
+                      <EnvironmentBanner />
                       <ThemedLayout Header={Header} Title={ProjectTitle}>
                         <Outlet />
                       </ThemedLayout>
@@ -184,30 +185,44 @@ function App() {
                 >
                   <Route
                     path="/login"
-                    element={<AuthPage type="login" title={<ProjectTitle />} />}
+                    element={
+                      <>
+                        <EnvironmentBanner />
+                        <AuthPage type="login" title={<ProjectTitle />} />
+                      </>
+                    }
                   />
                   <Route
                     path="/register"
                     element={
-                      <AuthPage type="register" title={<ProjectTitle />} />
+                      <>
+                        <EnvironmentBanner />
+                        <AuthPage type="register" title={<ProjectTitle />} />
+                      </>
                     }
                   />
                   <Route
                     path="/forgot-password"
                     element={
-                      <AuthPage
-                        type="forgotPassword"
-                        title={<ProjectTitle />}
-                      />
+                      <>
+                        <EnvironmentBanner />
+                        <AuthPage
+                          type="forgotPassword"
+                          title={<ProjectTitle />}
+                        />
+                      </>
                     }
                   />
                   <Route
                     path="/update-password"
                     element={
-                      <AuthPage
-                        type="updatePassword"
-                        title={<ProjectTitle />}
-                      />
+                      <>
+                        <EnvironmentBanner />
+                        <AuthPage
+                          type="updatePassword"
+                          title={<ProjectTitle />}
+                        />
+                      </>
                     }
                   />
                 </Route>
