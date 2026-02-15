@@ -26,10 +26,7 @@ import { formatAmount } from "../../utility";
  * instead of ISO timestamps to avoid timezone conversion issues.
  * Use this for DATE columns (not TIMESTAMP) in the database.
  */
-const dateOnlyFilterMapper = (
-  selectedKeys: Key[],
-  event: MapValueEvent
-) => {
+const dateOnlyFilterMapper = (selectedKeys: Key[], event: MapValueEvent) => {
   if (!selectedKeys || selectedKeys.length === 0) {
     return selectedKeys;
   }

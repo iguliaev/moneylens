@@ -201,9 +201,10 @@ const authProvider: AuthProvider = {
     } catch (error: unknown) {
       return {
         authenticated: false,
-        error: error instanceof Error
-          ? error
-          : new Error("Check failed: " + String(error)),
+        error:
+          error instanceof Error
+            ? error
+            : new Error("Check failed: " + String(error)),
         logout: true,
         redirectTo: "/login",
       };
