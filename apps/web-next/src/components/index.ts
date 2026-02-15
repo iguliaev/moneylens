@@ -1,2 +1,2 @@
 export { Header } from "./header";
-export { default as EnvironmentBanner } from "./environment-banner";
+export { EnvironmentBanner } from "./environment-banner";

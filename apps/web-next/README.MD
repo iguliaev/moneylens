@@ -43,11 +43,13 @@ Refine's hooks and components simplifies the development process and eliminates 
 
 ## Environment Visual Indicator
 
-The application displays environment banners to help distinguish between different deployment environments:
+The application uses Ant Design Alert component with `banner` prop to display environment indicators:
 
-- **Development**: Blue banner with "🔧 DEVELOPMENT Environment" (triggered by `VITE_APP_ENV=development`)
-- **Staging**: Orange/yellow banner with "⚠️ STAGING Environment" (triggered by `VITE_APP_ENV=staging`)
+- **Development**: `type="info"` - Light blue background (#e6f7ff) with blue text, displays "🔧 DEVELOPMENT Environment" (triggered by `VITE_APP_ENV=development`)
+- **Staging**: `type="warning"` - Light yellow/orange background (#fffbe6) with orange text, displays "⚠️ STAGING Environment" (triggered by `VITE_APP_ENV=staging`)
 - **Production**: No banner displayed (clean UI)
+
+The colors are theme-aware and may adjust for dark mode based on Ant Design's theme configuration.
 
 ## Learn More
 
