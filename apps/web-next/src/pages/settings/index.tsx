@@ -15,9 +15,6 @@ import {
   UploadOutlined,
   DeleteOutlined,
   FileTextOutlined,
-  TagsOutlined,
-  BankOutlined,
-  UnorderedListOutlined,
 } from "@ant-design/icons";
 import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import { supabaseClient } from "../../utility";
@@ -78,12 +75,6 @@ interface DataResetResult {
 
 // === Constants ===
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
-
-const MANAGE_LINKS = [
-  { path: "/categories", label: "Categories", icon: <UnorderedListOutlined /> },
-  { path: "/tags", label: "Tags", icon: <TagsOutlined /> },
-  { path: "/bank-accounts", label: "Bank Accounts", icon: <BankOutlined /> },
-];
 
 // === Utilities ===
 const parseUploadFile = (fileContent: string): BulkUploadPayload => {

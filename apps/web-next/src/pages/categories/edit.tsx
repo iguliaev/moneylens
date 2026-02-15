@@ -5,7 +5,6 @@ import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 export const CategoryEdit = () => {
   const { formProps, saveButtonProps, query } = useForm();
 
-  const categoriesData = query?.data?.data;
   const isLoading = query?.isLoading;
 
   return (

@@ -1,5 +1,5 @@
 import { useShow, useOne } from "@refinedev/core";
-import { Show, TagField, TextField, DateField } from "@refinedev/antd";
+import { Show, TextField, DateField } from "@refinedev/antd";
 import { Typography } from "antd";
 import { formatCurrency } from "../../utility";
 

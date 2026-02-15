@@ -10,8 +10,8 @@ const slugify = (text: string): string => {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, "-")
-    .replace(/[^\w\-]+/g, "")
-    .replace(/\-\-+/g, "-");
+    .replace(/[^\w-]+/g, "")
+    .replace(/--+/g, "-");
 };
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;

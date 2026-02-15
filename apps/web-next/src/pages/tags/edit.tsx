@@ -4,7 +4,6 @@ import { Form, Input } from "antd";
 export const TagEdit = () => {
   const { formProps, saveButtonProps, query } = useForm();
 
-  const tagsData = query?.data?.data;
   const isLoading = query?.isLoading ?? false;
 
   return (

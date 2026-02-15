@@ -4,7 +4,6 @@ import { Form, Input } from "antd";
 export const BankAccountEdit = () => {
   const { formProps, saveButtonProps, query } = useForm();
 
-  const bankAccountsData = query?.data?.data;
   const isLoading = query?.isLoading ?? false;
 
   return (
