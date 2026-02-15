@@ -50,6 +50,7 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
           unCheckedChildren="🔆"
           onChange={() => setMode(mode === "light" ? "dark" : "light")}
           defaultChecked={mode === "dark"}
+          aria-label="Toggle color mode"
         />
         <Space style={{ marginLeft: "8px" }} size="middle">
           {user?.name && <Text strong>{user.name}</Text>}

@@ -7,7 +7,7 @@ const { Title } = Typography;
 
 export const TransactionShow = () => {
   const { query, result: record } = useShow();
-  const isLoading = query?.isLoading;
+  const { isLoading } = query;
 
   const categoryQuery = useOne({
     resource: "categories",
