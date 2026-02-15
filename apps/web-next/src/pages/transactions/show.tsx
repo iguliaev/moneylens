@@ -16,9 +16,9 @@ export const TransactionShow = () => {
     query: { isLoading: categoryIsLoading },
   } = useOne({
     resource: "categories",
-    id: record?.category_id || "",
+    id: record?.category_id ?? "",
     queryOptions: {
-      enabled: !!record,
+      enabled: !!record?.category_id,
     },
   });
 
@@ -27,9 +27,9 @@ export const TransactionShow = () => {
     query: { isLoading: bankAccountIsLoading },
   } = useOne({
     resource: "bank_accounts",
-    id: record?.bank_account_id || "",
+    id: record?.bank_account_id ?? "",
     queryOptions: {
-      enabled: !!record,
+      enabled: !!record?.bank_account_id,
     },
   });
 
