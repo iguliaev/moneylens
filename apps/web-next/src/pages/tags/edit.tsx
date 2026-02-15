@@ -5,7 +5,7 @@ export const TagEdit = () => {
   const { formProps, saveButtonProps, query } = useForm();
 
   const tagsData = query?.data?.data;
-  const isLoading = query.isLoading;
+  const isLoading = query?.isLoading ?? false;
 
   return (
     <Edit saveButtonProps={saveButtonProps}>

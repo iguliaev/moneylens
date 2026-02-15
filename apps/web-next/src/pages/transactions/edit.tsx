@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { Edit, useForm, useSelect } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
-import { Form, Input, DatePicker, Select } from "antd";
+import { Form, Input, DatePicker, Select, message } from "antd";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_OPTIONS,
@@ -17,7 +17,7 @@ export const TransactionEdit = () => {
   });
 
   const transactionsData = query?.data?.data;
-  const isLoading = query.isLoading;
+  const isLoading = query?.isLoading ?? false;
 
   // Extract tag IDs from the nested transaction_tags relationship
   const currentTagIds = useMemo(() => {
@@ -89,10 +89,16 @@ export const TransactionEdit = () => {
 
     // Then update tags via RPC
     if (id) {
-      await supabaseClient.rpc("set_transaction_tags", {
-        p_transaction_id: id as string,
-        p_tag_ids: tag_ids ?? [],
-      });
+      try {
+        await supabaseClient.rpc("set_transaction_tags", {
+          p_transaction_id: id as string,
+          p_tag_ids: tag_ids ?? [],
+        });
+      } catch (error) {
+        console.error("Failed to set transaction tags:", error);
+        // Optionally show user-friendly error message
+        message.error("Transaction saved but failed to update tags");
+      }
     }
   };
 

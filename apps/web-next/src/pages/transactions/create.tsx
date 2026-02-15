@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Create, useForm, useSelect } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
-import { Form, Input, DatePicker, Select } from "antd";
+import { Form, Input, DatePicker, Select, message } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { supabaseClient } from "../../utility";
@@ -60,10 +60,16 @@ export const TransactionCreate = () => {
     // Then set tags via RPC if we have a transaction ID
     const transactionId = (result as any)?.data?.id;
     if (transactionId && tag_ids?.length > 0) {
-      await supabaseClient.rpc("set_transaction_tags", {
-        p_transaction_id: transactionId,
-        p_tag_ids: tag_ids,
-      });
+      try {
+        await supabaseClient.rpc("set_transaction_tags", {
+          p_transaction_id: transactionId,
+          p_tag_ids: tag_ids,
+        });
+      } catch (error) {
+        console.error("Failed to set transaction tags:", error);
+        // Optionally show user-friendly error message
+        message.error("Transaction created but failed to set tags");
+      }
     }
   };
 

@@ -10,6 +10,7 @@ import {
   message,
 } from "antd";
 import { Show } from "@refinedev/antd";
+import { formatCurrency } from "../../utility";
 
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -67,10 +68,10 @@ const TYPE_COLORS: Record<TransactionType, string> = {
 };
 
 // === Utilities ===
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
+const formatCurrencyLocal = (amount: number) =>
+  new Intl.NumberFormat("en-GB", {
     style: "currency",
-    currency: "USD",
+    currency: "GBP",
   }).format(amount);
 
 const aggregateByCategory = (data: TransactionRow[]): CategorySummary[] => {
@@ -194,7 +195,7 @@ const TypeSummaryCards = ({
               title={TRANSACTION_TYPE_LABELS[type]}
               value={getAmount(type)}
               precision={2}
-              prefix="$"
+              formatter={(value) => formatCurrencyLocal(typeof value === 'number' ? value : 0)}
               loading={loading}
               valueStyle={{ color: TYPE_COLORS[type] }}
             />
@@ -228,7 +229,7 @@ const CategoryBreakdownTable = ({
       title: "Amount",
       dataIndex: "total",
       key: "total",
-      render: (value: number) => formatCurrency(value),
+      render: (value: number) => formatCurrencyLocal(value),
       align: "right" as const,
     },
   ];
@@ -249,7 +250,7 @@ const CategoryBreakdownTable = ({
               <Text strong>Total</Text>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={1} align="right">
-              <Text strong>{formatCurrency(total)}</Text>
+              <Text strong>{formatCurrencyLocal(total)}</Text>
             </Table.Summary.Cell>
           </Table.Summary.Row>
         );

@@ -19,6 +19,7 @@ import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
 } from "../../constants/transactionTypes";
+import { formatAmount } from "../../utility";
 
 /**
  * Custom date range filter mapper that outputs date-only strings (YYYY-MM-DD)
@@ -164,7 +165,7 @@ export const TransactionList = () => {
           dataIndex="amount"
           title="Amount"
           sorter
-          render={(value: number) => value?.toFixed(2)}
+          render={(value: number) => formatAmount(value)}
           filterDropdown={(props) => (
             <FilterDropdown {...props}>
               <InputNumber

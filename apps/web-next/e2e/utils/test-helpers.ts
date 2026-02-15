@@ -215,26 +215,27 @@ export async function cleanupReferenceDataForUser(userId: string) {
 
   try {
     await supabaseAdmin.from("transactions").delete().eq("user_id", userId);
-  } catch {
-    // noop
+  } catch (error) {
+    console.error(`Failed to delete transactions for user ${userId}:`, error);
+    // Depending on requirements, you might want to re-throw or handle differently
   }
 
   try {
     await supabaseAdmin.from("tags").delete().eq("user_id", userId);
-  } catch {
-    // noop
+  } catch (error) {
+    console.error(`Failed to delete tags for user ${userId}:`, error);
   }
 
   try {
     await supabaseAdmin.from("bank_accounts").delete().eq("user_id", userId);
-  } catch {
-    // noop
+  } catch (error) {
+    console.error(`Failed to delete bank accounts for user ${userId}:`, error);
   }
 
   try {
     await supabaseAdmin.from("categories").delete().eq("user_id", userId);
-  } catch {
-    // noop
+  } catch (error) {
+    console.error(`Failed to delete categories for user ${userId}:`, error);
   }
 }
 

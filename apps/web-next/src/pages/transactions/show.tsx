@@ -5,9 +5,9 @@ import {
   TagField,
   TextField,
   DateField,
-  NumberField,
 } from "@refinedev/antd";
 import { Typography } from "antd";
+import { formatCurrency } from "../../utility";
 
 const { Title } = Typography;
 
@@ -48,7 +48,7 @@ export const TransactionShow = () => {
       <Title level={5}>Category</Title>
       {categoryIsLoading ? <>Loading...</> : <>{categoryData?.name}</>}
       <Title level={5}>Amount</Title>
-      <NumberField value={record?.amount ?? ""} />
+      <TextField value={formatCurrency(record?.amount ?? 0, 'GBP')} />
       <Title level={5}>Bank Account</Title>
       {bankAccountIsLoading ? <>Loading...</> : <>{bankAccountData?.name}</>}
       <Title level={5}>Notes</Title>
