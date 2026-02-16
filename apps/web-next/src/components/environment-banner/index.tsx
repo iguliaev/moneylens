@@ -4,14 +4,14 @@ import { Alert } from "antd";
 /**
  * EnvironmentBanner - Displays a sticky banner at the top of the application
  * to indicate non-production environments.
- * 
+ *
  * Uses Ant Design Alert component with banner prop for consistency.
- * 
+ *
  * Z-Index Strategy:
  * - EnvironmentBanner uses zIndex: 2 (positioned above Header)
  * - Header uses zIndex: 1
  * - Banner positioned above Header in DOM, ensuring proper stacking
- * 
+ *
  * @returns Alert banner for staging/development, null for production
  */
 const EnvironmentBanner: React.FC = () => {

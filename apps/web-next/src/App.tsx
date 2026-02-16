@@ -178,51 +178,45 @@ function App() {
 
                 <Route
                   element={
-                    <Authenticated key="auth-pages" fallback={<Outlet />}>
+                    <Authenticated
+                      key="auth-pages"
+                      fallback={
+                        <>
+                          <EnvironmentBanner />
+                          <Outlet />
+                        </>
+                      }
+                    >
                       <NavigateToResource />
                     </Authenticated>
                   }
                 >
                   <Route
                     path="/login"
-                    element={
-                      <>
-                        <EnvironmentBanner />
-                        <AuthPage type="login" title={<ProjectTitle />} />
-                      </>
-                    }
+                    element={<AuthPage type="login" title={<ProjectTitle />} />}
                   />
                   <Route
                     path="/register"
                     element={
-                      <>
-                        <EnvironmentBanner />
-                        <AuthPage type="register" title={<ProjectTitle />} />
-                      </>
+                      <AuthPage type="register" title={<ProjectTitle />} />
                     }
                   />
                   <Route
                     path="/forgot-password"
                     element={
-                      <>
-                        <EnvironmentBanner />
-                        <AuthPage
-                          type="forgotPassword"
-                          title={<ProjectTitle />}
-                        />
-                      </>
+                      <AuthPage
+                        type="forgotPassword"
+                        title={<ProjectTitle />}
+                      />
                     }
                   />
                   <Route
                     path="/update-password"
                     element={
-                      <>
-                        <EnvironmentBanner />
-                        <AuthPage
-                          type="updatePassword"
-                          title={<ProjectTitle />}
-                        />
-                      </>
+                      <AuthPage
+                        type="updatePassword"
+                        title={<ProjectTitle />}
+                      />
                     }
                   />
                 </Route>
