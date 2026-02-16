@@ -41,6 +41,16 @@ Refine's hooks and components simplifies the development process and eliminates 
 - If you already have a server running, set `BASE_URL` to skip auto-start (e.g. `BASE_URL=http://localhost:5173 npm run test:e2e`).
 - In CI, start the server in a separate step and pass `BASE_URL` to reuse it; otherwise Playwright will launch `npm run dev` with a 120s timeout.
 
+## Environment Visual Indicator
+
+The application uses Ant Design Alert component with `banner` prop to display environment indicators:
+
+- **Development**: `type="info"` - Light blue background (#e6f7ff) with blue text, displays "🔧 DEVELOPMENT Environment" (triggered by `VITE_APP_ENV=development`)
+- **Staging**: `type="warning"` - Light yellow/orange background (#fffbe6) with orange text, displays "⚠️ STAGING Environment" (triggered by `VITE_APP_ENV=staging`)
+- **Production**: No banner displayed (clean UI)
+
+The colors are theme-aware and may adjust for dark mode based on Ant Design's theme configuration.
+
 ## Learn More
 
 To learn more about **Refine**, please check out the [Documentation](https://refine.dev/docs)

@@ -194,6 +194,42 @@ The project uses a two-environment deployment strategy tied to the branching mod
 
 - **Production Environment**: The `release` branch is manually synchronized with `main` when a feature set is ready for production. Pushing changes to the `release` branch automatically triggers a deployment to the production environment.
 
+### Environment Configuration
+
+#### Environment Variables
+
+The application uses the `VITE_APP_ENV` environment variable to control environment-specific behavior:
+
+- **`development`**: Local development environment
+- **`staging`**: Staging environment (displays visual indicator)
+- **`production`**: Production environment (no indicator)
+
+This variable should be set during the build/deployment process to ensure the correct environment indicator is displayed.
+
+#### Vercel Configuration
+
+To configure environment variables in Vercel:
+
+1. Navigate to your project in the Vercel dashboard
+2. Go to **Settings** → **Environment Variables**
+3. Add the following variable for each environment:
+
+   **Staging Environment:**
+   - Variable: `VITE_APP_ENV`
+   - Value: `staging`
+   - Environment: Select **Preview** (or specific branch if using branch-specific deployments)
+
+   **Production Environment:**
+   - Variable: `VITE_APP_ENV`
+   - Value: `production`
+   - Environment: Select **Production**
+
+4. Redeploy your application for the changes to take effect
+
+#### Visual Indicator
+
+When `VITE_APP_ENV=staging`, the application displays a yellow/orange banner at the top of the page indicating the staging environment. This helps prevent confusion between staging and production environments during testing and validation.
+
 ## License
 
 MIT
