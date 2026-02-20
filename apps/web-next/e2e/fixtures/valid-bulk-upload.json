@@ -1,0 +1,43 @@
+{
+  "categories": [
+    { "type": "spend", "name": "e2e-spend-cat", "description": "E2E spend category" },
+    { "type": "earn", "name": "e2e-earn-cat", "description": "E2E earn category" },
+    { "type": "save", "name": "e2e-save-cat", "description": "E2E save category" }
+  ],
+  "bank_accounts": [
+    { "name": "e2e-bank-account", "description": "E2E bank account" }
+  ],
+  "tags": [
+    { "name": "e2e-tag-1", "description": "E2E tag 1" },
+    { "name": "e2e-tag-2", "description": "E2E tag 2" }
+  ],
+  "transactions": [
+    {
+      "date": "2025-12-20",
+      "type": "spend",
+      "category": "e2e-spend-cat",
+      "bank_account": "e2e-bank-account",
+      "amount": 50.0,
+      "tags": ["e2e-tag-1", "e2e-tag-2"],
+      "notes": "E2E spend transaction"
+    },
+    {
+      "date": "2025-12-20",
+      "type": "earn",
+      "category": "e2e-earn-cat",
+      "bank_account": "e2e-bank-account",
+      "amount": 1000.0,
+      "tags": ["e2e-tag-1"],
+      "notes": "E2E earn transaction"
+    },
+    {
+      "date": "2025-12-20",
+      "type": "save",
+      "category": "e2e-save-cat",
+      "bank_account": "e2e-bank-account",
+      "amount": 200.0,
+      "tags": ["e2e-tag-2"],
+      "notes": "E2E save transaction"
+    }
+  ]
+}

@@ -180,6 +180,13 @@ export type Database = {
             referencedRelation: "transactions_spend"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "transaction_tags_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions_with_details"
+            referencedColumns: ["id"]
+          },
         ]
       }
       transactions: {
@@ -404,6 +411,55 @@ export type Database = {
           id: string | null
           notes: string | null
           tags: string[] | null
+          type: Database["public"]["Enums"]["transaction_type"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts_with_usage"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories_with_usage"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions_with_details: {
+        Row: {
+          amount: number | null
+          bank_account_id: string | null
+          bank_account_name: string | null
+          category_id: string | null
+          category_name: string | null
+          category_type: Database["public"]["Enums"]["transaction_type"] | null
+          created_at: string | null
+          date: string | null
+          id: string | null
+          notes: string | null
+          tag_ids: string[] | null
+          tag_names: string[] | null
           type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
           user_id: string | null
