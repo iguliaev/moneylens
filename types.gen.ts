@@ -37,6 +37,7 @@ export type Database = {
       bank_accounts: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -45,6 +46,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -53,6 +55,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -64,6 +67,7 @@ export type Database = {
       categories: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -73,6 +77,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -82,6 +87,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -94,6 +100,7 @@ export type Database = {
       tags: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -102,6 +109,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -110,6 +118,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -198,6 +207,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           date: string
+          deleted_at: string | null
           id: string
           notes: string | null
           tags: string[] | null
@@ -213,6 +223,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           date: string
+          deleted_at?: string | null
           id?: string
           notes?: string | null
           tags?: string[] | null
@@ -228,6 +239,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           date?: string
+          deleted_at?: string | null
           id?: string
           notes?: string | null
           tags?: string[] | null

@@ -28,6 +28,7 @@ import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import authProvider from "./authProvider";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import { supabaseClient } from "./utility";
+import { withSoftDelete } from "./utility/softDeleteDataProvider";
 import { DashboardPage } from "./pages/dashboard";
 import { TagList, TagCreate, TagEdit, TagShow } from "./pages/tags";
 import {
@@ -60,7 +61,7 @@ function App() {
         <ColorModeContextProvider>
           <AntdApp>
             <Refine
-              dataProvider={dataProvider(supabaseClient)}
+              dataProvider={withSoftDelete(dataProvider(supabaseClient), supabaseClient)}
               liveProvider={liveProvider(supabaseClient)}
               authProvider={authProvider}
               routerProvider={routerProvider}
