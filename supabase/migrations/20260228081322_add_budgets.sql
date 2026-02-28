@@ -32,11 +32,15 @@ CREATE INDEX IF NOT EXISTS idx_budgets_user_deleted ON public.budgets (user_id, 
 COMMENT ON TABLE public.budgets IS 'User-defined budgets tracking spending or savings targets.';
 
 -- updated_at trigger
+DROP TRIGGER IF EXISTS tg_budgets_updated_at ON public.budgets;
+
 CREATE TRIGGER tg_budgets_updated_at BEFORE
 UPDATE ON public.budgets FOR EACH ROW
 EXECUTE FUNCTION public.tg_set_updated_at ();
 
 -- user_id trigger
+DROP TRIGGER IF EXISTS tg_budgets_user_id ON public.budgets;
+
 CREATE TRIGGER tg_budgets_user_id BEFORE INSERT ON public.budgets FOR EACH ROW
 EXECUTE FUNCTION public.tg_set_user_id ();
 
@@ -82,6 +86,8 @@ COMMENT ON TABLE public.budget_tags IS 'Tags linked to a budget for progress tra
 -- budgets RLS
 ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS budgets_select ON public.budgets;
+
 CREATE POLICY budgets_select ON public.budgets FOR
 SELECT
     USING (
@@ -91,6 +97,8 @@ SELECT
         )
     );
 
+DROP POLICY IF EXISTS budgets_insert ON public.budgets;
+
 CREATE POLICY budgets_insert ON public.budgets FOR INSERT
 WITH
     CHECK (
@@ -99,6 +107,8 @@ WITH
                 auth.uid ()
         )
     );
+
+DROP POLICY IF EXISTS budgets_update ON public.budgets;
 
 CREATE POLICY budgets_update ON public.budgets FOR
 UPDATE USING (
@@ -114,6 +124,8 @@ WITH CHECK (
     )
 );
 
+DROP POLICY IF EXISTS budgets_delete ON public.budgets;
+
 CREATE POLICY budgets_delete ON public.budgets FOR DELETE USING (
     user_id = (
         SELECT
@@ -123,6 +135,8 @@ CREATE POLICY budgets_delete ON public.budgets FOR DELETE USING (
 
 -- budget_categories RLS (scoped via budget ownership)
 ALTER TABLE public.budget_categories ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS budget_categories_select ON public.budget_categories;
 
 CREATE POLICY budget_categories_select ON public.budget_categories FOR
 SELECT
@@ -140,6 +154,8 @@ SELECT
                 )
         )
     );
+
+DROP POLICY IF EXISTS budget_categories_insert ON public.budget_categories;
 
 CREATE POLICY budget_categories_insert ON public.budget_categories FOR INSERT
 WITH
@@ -171,6 +187,8 @@ WITH
         )
     );
 
+DROP POLICY IF EXISTS budget_categories_delete ON public.budget_categories;
+
 CREATE POLICY budget_categories_delete ON public.budget_categories FOR DELETE USING (
     EXISTS (
         SELECT
@@ -189,6 +207,8 @@ CREATE POLICY budget_categories_delete ON public.budget_categories FOR DELETE US
 -- budget_tags RLS (scoped via budget ownership)
 ALTER TABLE public.budget_tags ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS budget_tags_select ON public.budget_tags;
+
 CREATE POLICY budget_tags_select ON public.budget_tags FOR
 SELECT
     USING (
@@ -205,6 +225,8 @@ SELECT
                 )
         )
     );
+
+DROP POLICY IF EXISTS budget_tags_insert ON public.budget_tags;
 
 CREATE POLICY budget_tags_insert ON public.budget_tags FOR INSERT
 WITH
@@ -235,6 +257,8 @@ WITH
                 AND t.deleted_at IS NULL
         )
     );
+
+DROP POLICY IF EXISTS budget_tags_delete ON public.budget_tags;
 
 CREATE POLICY budget_tags_delete ON public.budget_tags FOR DELETE USING (
     EXISTS (
