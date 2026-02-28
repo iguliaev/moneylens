@@ -572,7 +572,39 @@ export async function seedTransactionsForUser(
   }
 }
 
-// Seed reference data with user-specific prefixes for identification
+// Helper to create a budget via UI
+export async function createBudget(
+  page: Page,
+  name: string,
+  type: string,
+  targetAmount: string,
+  description?: string
+) {
+  await page.goto("/budgets");
+  await page.getByRole("button", { name: /create/i }).click();
+  await expect(
+    page.getByRole("heading", { name: "Create Budget" })
+  ).toBeVisible();
+
+  await page.getByRole("textbox", { name: "* Name" }).fill(name);
+  if (description !== undefined) {
+    await page.getByRole("textbox", { name: "Description" }).fill(description);
+  }
+
+  await page.getByRole("combobox", { name: "* Type" }).click();
+  await page.getByTitle(new RegExp(`^${type}$`, "i")).click();
+
+  await page
+    .getByRole("spinbutton", { name: "* Target Amount" })
+    .fill(targetAmount);
+
+  await page.getByRole("button", { name: /save/i }).click();
+  await expect(page).toHaveURL(/\/budgets/);
+  await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: name, exact: true })
+  ).toBeVisible();
+}
 export async function seedReferenceDataWithPrefix(
   userId: string,
   prefix: string

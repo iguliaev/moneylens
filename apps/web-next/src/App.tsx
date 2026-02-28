@@ -5,6 +5,7 @@ import {
   TagsOutlined,
   SwapOutlined,
   SettingOutlined,
+  AimOutlined,
 } from "@ant-design/icons";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
@@ -37,6 +38,12 @@ import {
   TransactionEdit,
   TransactionShow,
 } from "./pages/transactions";
+import {
+  BudgetList,
+  BudgetCreate,
+  BudgetEdit,
+  BudgetShow,
+} from "./pages/budgets";
 
 import {
   BankAccountList,
@@ -61,7 +68,10 @@ function App() {
         <ColorModeContextProvider>
           <AntdApp>
             <Refine
-              dataProvider={withSoftDelete(dataProvider(supabaseClient), supabaseClient)}
+              dataProvider={withSoftDelete(
+                dataProvider(supabaseClient),
+                supabaseClient
+              )}
               liveProvider={liveProvider(supabaseClient)}
               authProvider={authProvider}
               routerProvider={routerProvider}
@@ -97,6 +107,17 @@ function App() {
                   create: "/categories/create",
                   edit: "/categories/edit/:id",
                   show: "/categories/show/:id",
+                },
+                {
+                  name: "budgets",
+                  list: "/budgets",
+                  create: "/budgets/create",
+                  edit: "/budgets/edit/:id",
+                  show: "/budgets/show/:id",
+                  meta: {
+                    label: "Budgets",
+                    icon: <AimOutlined />,
+                  },
                 },
                 {
                   name: "tags",
@@ -172,6 +193,13 @@ function App() {
                     <Route path="create" element={<TagCreate />} />
                     <Route path="edit/:id" element={<TagEdit />} />
                     <Route path="show/:id" element={<TagShow />} />
+                  </Route>
+
+                  <Route path="budgets">
+                    <Route index element={<BudgetList />} />
+                    <Route path="create" element={<BudgetCreate />} />
+                    <Route path="edit/:id" element={<BudgetEdit />} />
+                    <Route path="show/:id" element={<BudgetShow />} />
                   </Route>
 
                   <Route path="settings" element={<SettingsPage />} />
