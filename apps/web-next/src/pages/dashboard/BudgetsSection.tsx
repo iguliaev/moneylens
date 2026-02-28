@@ -48,9 +48,9 @@ export const BudgetsSection: React.FC = () => {
         </Space>
       }
       extra={
-        <a onClick={() => list("budgets")} style={{ cursor: "pointer" }}>
+        <Typography.Link onClick={() => list("budgets")}>
           Manage Budgets
-        </a>
+        </Typography.Link>
       }
     >
       {loading ? (
@@ -58,9 +58,9 @@ export const BudgetsSection: React.FC = () => {
       ) : budgets.length === 0 ? (
         <Text type="secondary">
           No budgets yet.{" "}
-          <a onClick={() => list("budgets")} style={{ cursor: "pointer" }}>
+          <Typography.Link onClick={() => list("budgets")}>
             Create one
-          </a>{" "}
+          </Typography.Link>{" "}
           to start tracking your spending and savings goals.
         </Text>
       ) : (

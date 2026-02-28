@@ -7,6 +7,7 @@ const SOFT_DELETE_RESOURCES = new Set([
   "categories",
   "bank_accounts",
   "tags",
+  "budgets",
 ]);
 
 /**

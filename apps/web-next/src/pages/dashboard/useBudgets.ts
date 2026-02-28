@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { message } from "antd";
 import { supabaseClient } from "../../utility";
 import { TransactionType } from "../../constants/transactionTypes";
 
@@ -22,8 +23,17 @@ export const useBudgets = () => {
   const fetchBudgets = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabaseClient.rpc("get_budget_progress");
-    if (!error && data) {
-      setBudgets(data as BudgetProgress[]);
+    if (error) {
+      message.error("Failed to load budgets");
+      console.error("get_budget_progress error:", error);
+    } else if (data) {
+      setBudgets(
+        (data as BudgetProgress[]).map((b) => ({
+          ...b,
+          target_amount: Number(b.target_amount),
+          current_amount: Number(b.current_amount),
+        }))
+      );
     }
     setLoading(false);
   }, []);

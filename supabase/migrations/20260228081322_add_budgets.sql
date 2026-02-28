@@ -18,9 +18,12 @@ CREATE TABLE IF NOT EXISTS
         end_date DATE,
         deleted_at TIMESTAMPTZ DEFAULT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        CONSTRAINT uq_budgets_user_name UNIQUE (user_id, NAME)
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_budgets_user_name_active
+    ON public.budgets (user_id, name)
+    WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_budgets_user ON public.budgets (user_id);
 
@@ -103,6 +106,12 @@ UPDATE USING (
         SELECT
             auth.uid ()
     )
+)
+WITH CHECK (
+    user_id = (
+        SELECT
+            auth.uid ()
+    )
 );
 
 CREATE POLICY budgets_delete ON public.budgets FOR DELETE USING (
@@ -146,6 +155,19 @@ WITH
                     SELECT
                         auth.uid ()
                 )
+        )
+        AND EXISTS (
+            SELECT
+                1
+            FROM
+                public.categories c
+            WHERE
+                c.id = category_id
+                AND c.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
+                AND c.deleted_at IS NULL
         )
     );
 
@@ -198,6 +220,19 @@ WITH
                     SELECT
                         auth.uid ()
                 )
+        )
+        AND EXISTS (
+            SELECT
+                1
+            FROM
+                public.tags t
+            WHERE
+                t.id = tag_id
+                AND t.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
+                AND t.deleted_at IS NULL
         )
     );
 
@@ -288,6 +323,8 @@ $$;
 
 COMMENT ON FUNCTION public.get_budget_progress () IS 'Returns all active budgets for the current user with the accumulated transaction amount.';
 
+GRANT EXECUTE ON FUNCTION public.get_budget_progress () TO authenticated;
+
 -- ============================================================================
 -- 6. budgets_with_linked view (for list page — shows category/tag counts)
 -- ============================================================================
@@ -312,16 +349,20 @@ SELECT
             COUNT(*)
         FROM
             public.budget_categories bc
+            JOIN public.categories c ON c.id = bc.category_id
         WHERE
             bc.budget_id = b.id
+            AND c.deleted_at IS NULL
     ) AS category_count,
     (
         SELECT
             COUNT(*)
         FROM
             public.budget_tags bt
+            JOIN public.tags t ON t.id = bt.tag_id
         WHERE
             bt.budget_id = b.id
+            AND t.deleted_at IS NULL
     ) AS tag_count
 FROM
     public.budgets b

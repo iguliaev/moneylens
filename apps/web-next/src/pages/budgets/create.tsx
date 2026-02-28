@@ -8,6 +8,8 @@ import { supabaseClient } from "../../utility";
 export const BudgetCreate = () => {
   const { formProps, saveButtonProps } = useForm();
 
+  const selectedType = Form.useWatch("type", formProps.form);
+
   const { query: categoriesQuery } = useList({
     resource: "categories",
     pagination: { mode: "off" },
@@ -22,11 +24,13 @@ export const BudgetCreate = () => {
 
   const categoryOptions = useMemo(
     () =>
-      categoriesQuery.data?.data?.map((c) => ({
-        label: `${c.name} (${c.type})`,
-        value: c.id as string,
-      })) ?? [],
-    [categoriesQuery.data]
+      categoriesQuery.data?.data
+        ?.filter((c) => !selectedType || c.type === selectedType)
+        .map((c) => ({
+          label: `${c.name} (${c.type})`,
+          value: c.id as string,
+        })) ?? [],
+    [categoriesQuery.data, selectedType]
   );
 
   const tagOptions = useMemo(
@@ -83,7 +87,10 @@ export const BudgetCreate = () => {
           <Input />
         </Form.Item>
         <Form.Item label="Type" name="type" rules={[{ required: true }]}>
-          <Select options={TRANSACTION_TYPE_OPTIONS} />
+          <Select
+            options={TRANSACTION_TYPE_OPTIONS}
+            onChange={() => formProps.form?.setFieldValue("category_ids", [])}
+          />
         </Form.Item>
         <Form.Item
           label="Target Amount"

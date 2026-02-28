@@ -15,6 +15,8 @@ export const BudgetEdit = () => {
 
   const budgetData = query?.data?.data;
 
+  const selectedType = Form.useWatch("type", formProps.form);
+
   const currentCategoryIds = useMemo(() => {
     const rows =
       (
@@ -46,11 +48,13 @@ export const BudgetEdit = () => {
 
   const categoryOptions = useMemo(
     () =>
-      categoriesQuery.data?.data?.map((c) => ({
-        label: `${c.name} (${c.type})`,
-        value: c.id as string,
-      })) ?? [],
-    [categoriesQuery.data]
+      categoriesQuery.data?.data
+        ?.filter((c) => !selectedType || c.type === selectedType)
+        .map((c) => ({
+          label: `${c.name} (${c.type})`,
+          value: c.id as string,
+        })) ?? [],
+    [categoriesQuery.data, selectedType]
   );
 
   const tagOptions = useMemo(
@@ -134,7 +138,10 @@ export const BudgetEdit = () => {
           <Input />
         </Form.Item>
         <Form.Item label="Type" name="type" rules={[{ required: true }]}>
-          <Select options={TRANSACTION_TYPE_OPTIONS} />
+          <Select
+            options={TRANSACTION_TYPE_OPTIONS}
+            onChange={() => formProps.form?.setFieldValue("category_ids", [])}
+          />
         </Form.Item>
         <Form.Item
           label="Target Amount"
