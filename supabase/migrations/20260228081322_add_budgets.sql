@@ -26,9 +26,9 @@ CREATE TABLE IF NOT EXISTS
         )
     );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_budgets_user_name_active
-    ON public.budgets (user_id, name)
-    WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_budgets_user_name_active ON public.budgets (user_id, NAME)
+WHERE
+    deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_budgets_user ON public.budgets (user_id);
 
@@ -122,12 +122,13 @@ UPDATE USING (
             auth.uid ()
     )
 )
-WITH CHECK (
-    user_id = (
-        SELECT
-            auth.uid ()
-    )
-);
+WITH
+    CHECK (
+        user_id = (
+            SELECT
+                auth.uid ()
+        )
+    );
 
 DROP POLICY IF EXISTS budgets_delete ON public.budgets;
 
@@ -366,7 +367,8 @@ $$;
 
 COMMENT ON FUNCTION public.get_budget_progress () IS 'Returns all active budgets for the current user with the accumulated transaction amount.';
 
-GRANT EXECUTE ON FUNCTION public.get_budget_progress () TO authenticated;
+GRANT
+EXECUTE ON FUNCTION public.get_budget_progress () TO authenticated;
 
 -- ============================================================================
 -- 6. budgets_with_linked view (for list page — shows category/tag counts)

@@ -150,7 +150,10 @@ test.describe("Budgets", () => {
 
     // Select the seeded "Groceries" spend category
     await page.getByRole("combobox", { name: "Categories" }).click();
-    await page.getByTitle(/Groceries/i).first().click();
+    await page
+      .getByTitle(/Groceries/i)
+      .first()
+      .click();
     await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: /save/i }).click();

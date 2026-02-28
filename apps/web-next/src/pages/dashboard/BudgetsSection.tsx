@@ -49,7 +49,11 @@ export const BudgetsSection: React.FC = () => {
         </Space>
       }
       extra={
-        <Button type="link" style={{ padding: 0 }} onClick={() => list("budgets")}>
+        <Button
+          type="link"
+          style={{ padding: 0 }}
+          onClick={() => list("budgets")}
+        >
           Manage Budgets
         </Button>
       }
@@ -59,7 +63,11 @@ export const BudgetsSection: React.FC = () => {
       ) : budgets.length === 0 ? (
         <Text type="secondary">
           No budgets yet.{" "}
-          <Button type="link" style={{ padding: 0, height: "auto" }} onClick={() => list("budgets")}>
+          <Button
+            type="link"
+            style={{ padding: 0, height: "auto" }}
+            onClick={() => list("budgets")}
+          >
             Create one
           </Button>{" "}
           to start tracking your spending and savings goals.
