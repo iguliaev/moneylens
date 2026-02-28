@@ -273,6 +273,46 @@ OR REPLACE FUNCTION public.get_budget_progress () RETURNS TABLE (
 ) LANGUAGE SQL SECURITY INVOKER
 SET
     search_path = '' AS $$
+    -- Collect all (budget_id, tx_id, amount) pairs that qualify.
+    -- UNION (not UNION ALL) deduplicates transactions that match both a
+    -- category link and a tag link, so each transaction is counted once.
+    WITH budget_txns AS (
+        -- transactions matched via a linked category
+        SELECT bc.budget_id, tx.id AS tx_id, tx.amount
+        FROM public.budgets b
+        JOIN public.budget_categories bc ON bc.budget_id = b.id
+        JOIN public.transactions tx
+            ON  tx.category_id  = bc.category_id
+            AND tx.user_id      = b.user_id
+            AND tx.type         = b.type
+            AND tx.deleted_at  IS NULL
+            AND (b.start_date IS NULL OR tx.date >= b.start_date)
+            AND (b.end_date   IS NULL OR tx.date <= b.end_date)
+        WHERE b.user_id     = auth.uid()
+          AND b.deleted_at IS NULL
+
+        UNION
+
+        -- transactions matched via a linked tag
+        SELECT bt.budget_id, tx.id AS tx_id, tx.amount
+        FROM public.budgets b
+        JOIN public.budget_tags bt ON bt.budget_id = b.id
+        JOIN public.transaction_tags tt ON tt.tag_id = bt.tag_id
+        JOIN public.transactions tx
+            ON  tx.id           = tt.transaction_id
+            AND tx.user_id      = b.user_id
+            AND tx.type         = b.type
+            AND tx.deleted_at  IS NULL
+            AND (b.start_date IS NULL OR tx.date >= b.start_date)
+            AND (b.end_date   IS NULL OR tx.date <= b.end_date)
+        WHERE b.user_id     = auth.uid()
+          AND b.deleted_at IS NULL
+    ),
+    budget_amounts AS (
+        SELECT budget_id, SUM(amount) AS current_amount
+        FROM budget_txns
+        GROUP BY budget_id
+    )
     SELECT
         b.id,
         b.name,
@@ -281,42 +321,12 @@ SET
         b.target_amount,
         b.start_date,
         b.end_date,
-        COALESCE(
-            (
-                SELECT SUM(t.amount)
-                FROM (
-                    SELECT DISTINCT tx.id, tx.amount
-                    FROM public.transactions tx
-                    WHERE tx.user_id = auth.uid()
-                      AND tx.type = b.type
-                      AND tx.deleted_at IS NULL
-                      AND (b.start_date IS NULL OR tx.date >= b.start_date)
-                      AND (b.end_date   IS NULL OR tx.date <= b.end_date)
-                      AND (
-                          -- matches a linked category
-                          tx.category_id IN (
-                              SELECT bc.category_id
-                              FROM public.budget_categories bc
-                              WHERE bc.budget_id = b.id
-                          )
-                          OR
-                          -- matches a linked tag
-                          EXISTS (
-                              SELECT 1
-                              FROM public.transaction_tags tt
-                              JOIN public.budget_tags bt ON bt.tag_id = tt.tag_id
-                              WHERE tt.transaction_id = tx.id
-                                AND bt.budget_id = b.id
-                          )
-                      )
-                ) t
-            ),
-            0
-        ) AS current_amount,
+        COALESCE(ba.current_amount, 0) AS current_amount,
         b.created_at,
         b.updated_at
     FROM public.budgets b
-    WHERE b.user_id = auth.uid()
+    LEFT JOIN budget_amounts ba ON ba.budget_id = b.id
+    WHERE b.user_id     = auth.uid()
       AND b.deleted_at IS NULL
     ORDER BY b.created_at DESC;
 $$;
