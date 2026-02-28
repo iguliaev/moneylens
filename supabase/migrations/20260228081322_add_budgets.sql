@@ -1,0 +1,329 @@
+-- ============================================================================
+-- Migration: 20260228081322_add_budgets.sql
+-- Purpose: Add Budgets feature — lets users define spending/savings targets
+--          linked to categories and/or tags, with progress tracked automatically.
+-- ============================================================================
+-- ============================================================================
+-- 1. budgets table
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS
+    public.budgets (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+        user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+        NAME TEXT NOT NULL,
+        description TEXT,
+        TYPE transaction_type NOT NULL,
+        target_amount NUMERIC(12, 2) NOT NULL CHECK (target_amount > 0),
+        start_date DATE,
+        end_date DATE,
+        deleted_at TIMESTAMPTZ DEFAULT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT uq_budgets_user_name UNIQUE (user_id, NAME)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_budgets_user ON public.budgets (user_id);
+
+CREATE INDEX IF NOT EXISTS idx_budgets_user_deleted ON public.budgets (user_id, deleted_at);
+
+COMMENT ON TABLE public.budgets IS 'User-defined budgets tracking spending or savings targets.';
+
+-- updated_at trigger
+CREATE TRIGGER tg_budgets_updated_at BEFORE
+UPDATE ON public.budgets FOR EACH ROW
+EXECUTE FUNCTION public.tg_set_updated_at ();
+
+-- user_id trigger
+CREATE TRIGGER tg_budgets_user_id BEFORE INSERT ON public.budgets FOR EACH ROW
+EXECUTE FUNCTION public.tg_set_user_id ();
+
+-- ============================================================================
+-- 2. budget_categories junction table
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS
+    public.budget_categories (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+        budget_id UUID NOT NULL REFERENCES public.budgets (id) ON DELETE CASCADE,
+        category_id UUID NOT NULL REFERENCES public.categories (id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT uq_budget_category UNIQUE (budget_id, category_id)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_budget_categories_budget ON public.budget_categories (budget_id);
+
+CREATE INDEX IF NOT EXISTS idx_budget_categories_category ON public.budget_categories (category_id);
+
+COMMENT ON TABLE public.budget_categories IS 'Categories linked to a budget for progress tracking.';
+
+-- ============================================================================
+-- 3. budget_tags junction table
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS
+    public.budget_tags (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+        budget_id UUID NOT NULL REFERENCES public.budgets (id) ON DELETE CASCADE,
+        tag_id UUID NOT NULL REFERENCES public.tags (id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT uq_budget_tag UNIQUE (budget_id, tag_id)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_budget_tags_budget ON public.budget_tags (budget_id);
+
+CREATE INDEX IF NOT EXISTS idx_budget_tags_tag ON public.budget_tags (tag_id);
+
+COMMENT ON TABLE public.budget_tags IS 'Tags linked to a budget for progress tracking.';
+
+-- ============================================================================
+-- 4. Row Level Security
+-- ============================================================================
+-- budgets RLS
+ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY budgets_select ON public.budgets FOR
+SELECT
+    USING (
+        user_id = (
+            SELECT
+                auth.uid ()
+        )
+    );
+
+CREATE POLICY budgets_insert ON public.budgets FOR INSERT
+WITH
+    CHECK (
+        user_id = (
+            SELECT
+                auth.uid ()
+        )
+    );
+
+CREATE POLICY budgets_update ON public.budgets FOR
+UPDATE USING (
+    user_id = (
+        SELECT
+            auth.uid ()
+    )
+);
+
+CREATE POLICY budgets_delete ON public.budgets FOR DELETE USING (
+    user_id = (
+        SELECT
+            auth.uid ()
+    )
+);
+
+-- budget_categories RLS (scoped via budget ownership)
+ALTER TABLE public.budget_categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY budget_categories_select ON public.budget_categories FOR
+SELECT
+    USING (
+        EXISTS (
+            SELECT
+                1
+            FROM
+                public.budgets b
+            WHERE
+                b.id = budget_id
+                AND b.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
+        )
+    );
+
+CREATE POLICY budget_categories_insert ON public.budget_categories FOR INSERT
+WITH
+    CHECK (
+        EXISTS (
+            SELECT
+                1
+            FROM
+                public.budgets b
+            WHERE
+                b.id = budget_id
+                AND b.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
+        )
+    );
+
+CREATE POLICY budget_categories_delete ON public.budget_categories FOR DELETE USING (
+    EXISTS (
+        SELECT
+            1
+        FROM
+            public.budgets b
+        WHERE
+            b.id = budget_id
+            AND b.user_id = (
+                SELECT
+                    auth.uid ()
+            )
+    )
+);
+
+-- budget_tags RLS (scoped via budget ownership)
+ALTER TABLE public.budget_tags ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY budget_tags_select ON public.budget_tags FOR
+SELECT
+    USING (
+        EXISTS (
+            SELECT
+                1
+            FROM
+                public.budgets b
+            WHERE
+                b.id = budget_id
+                AND b.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
+        )
+    );
+
+CREATE POLICY budget_tags_insert ON public.budget_tags FOR INSERT
+WITH
+    CHECK (
+        EXISTS (
+            SELECT
+                1
+            FROM
+                public.budgets b
+            WHERE
+                b.id = budget_id
+                AND b.user_id = (
+                    SELECT
+                        auth.uid ()
+                )
+        )
+    );
+
+CREATE POLICY budget_tags_delete ON public.budget_tags FOR DELETE USING (
+    EXISTS (
+        SELECT
+            1
+        FROM
+            public.budgets b
+        WHERE
+            b.id = budget_id
+            AND b.user_id = (
+                SELECT
+                    auth.uid ()
+            )
+    )
+);
+
+-- ============================================================================
+-- 5. get_budget_progress() RPC
+--    Returns all non-deleted budgets for the current user with current_amount.
+--    A transaction contributes if its category_id matches any linked category
+--    OR any of its tags (via transaction_tags) match any linked tag.
+--    DISTINCT on transaction id prevents double-counting.
+-- ============================================================================
+CREATE
+OR REPLACE FUNCTION public.get_budget_progress () RETURNS TABLE (
+    id UUID,
+    NAME TEXT,
+    description TEXT,
+    TYPE transaction_type,
+    target_amount NUMERIC,
+    start_date DATE,
+    end_date DATE,
+    current_amount NUMERIC,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+) LANGUAGE SQL SECURITY INVOKER
+SET
+    search_path = '' AS $$
+    SELECT
+        b.id,
+        b.name,
+        b.description,
+        b.type,
+        b.target_amount,
+        b.start_date,
+        b.end_date,
+        COALESCE(
+            (
+                SELECT SUM(t.amount)
+                FROM (
+                    SELECT DISTINCT tx.id, tx.amount
+                    FROM public.transactions tx
+                    WHERE tx.user_id = auth.uid()
+                      AND tx.type = b.type
+                      AND tx.deleted_at IS NULL
+                      AND (b.start_date IS NULL OR tx.date >= b.start_date)
+                      AND (b.end_date   IS NULL OR tx.date <= b.end_date)
+                      AND (
+                          -- matches a linked category
+                          tx.category_id IN (
+                              SELECT bc.category_id
+                              FROM public.budget_categories bc
+                              WHERE bc.budget_id = b.id
+                          )
+                          OR
+                          -- matches a linked tag
+                          EXISTS (
+                              SELECT 1
+                              FROM public.transaction_tags tt
+                              JOIN public.budget_tags bt ON bt.tag_id = tt.tag_id
+                              WHERE tt.transaction_id = tx.id
+                                AND bt.budget_id = b.id
+                          )
+                      )
+                ) t
+            ),
+            0
+        ) AS current_amount,
+        b.created_at,
+        b.updated_at
+    FROM public.budgets b
+    WHERE b.user_id = auth.uid()
+      AND b.deleted_at IS NULL
+    ORDER BY b.created_at DESC;
+$$;
+
+COMMENT ON FUNCTION public.get_budget_progress () IS 'Returns all active budgets for the current user with the accumulated transaction amount.';
+
+-- ============================================================================
+-- 6. budgets_with_linked view (for list page — shows category/tag counts)
+-- ============================================================================
+CREATE OR REPLACE VIEW
+    public.budgets_with_linked
+WITH
+    (security_invoker = TRUE) AS
+SELECT
+    b.id,
+    b.user_id,
+    b.name,
+    b.description,
+    b.type,
+    b.target_amount,
+    b.start_date,
+    b.end_date,
+    b.deleted_at,
+    b.created_at,
+    b.updated_at,
+    (
+        SELECT
+            COUNT(*)
+        FROM
+            public.budget_categories bc
+        WHERE
+            bc.budget_id = b.id
+    ) AS category_count,
+    (
+        SELECT
+            COUNT(*)
+        FROM
+            public.budget_tags bt
+        WHERE
+            bt.budget_id = b.id
+    ) AS tag_count
+FROM
+    public.budgets b
+WHERE
+    b.deleted_at IS NULL;
