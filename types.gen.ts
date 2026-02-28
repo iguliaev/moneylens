@@ -1,6 +1,3 @@
-WARN: environment variable is unset: SITE_URL
-WARN: environment variable is unset: SITE_URL
-Connecting to db 5432
 export type Json =
   | string
   | number
