@@ -10,6 +10,7 @@ import {
   message,
 } from "antd";
 import { Show } from "@refinedev/antd";
+import { BudgetsSection } from "./BudgetsSection";
 
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
@@ -371,7 +372,10 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <Show title="Dashboard" headerButtons={() => null}>
-      <Tabs items={tabItems} defaultActiveKey="yearly" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <Tabs items={tabItems} defaultActiveKey="yearly" />
+        <BudgetsSection />
+      </div>
     </Show>
   );
 };

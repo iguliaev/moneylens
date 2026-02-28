@@ -37,6 +37,7 @@ export type Database = {
       bank_accounts: {
         Row: {
           created_at: string;
+          deleted_at: string | null;
           description: string | null;
           id: string;
           name: string;
@@ -45,6 +46,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          deleted_at?: string | null;
           description?: string | null;
           id?: string;
           name: string;
@@ -53,6 +55,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          deleted_at?: string | null;
           description?: string | null;
           id?: string;
           name?: string;
@@ -61,9 +64,152 @@ export type Database = {
         };
         Relationships: [];
       };
+      budget_categories: {
+        Row: {
+          budget_id: string;
+          category_id: string;
+          created_at: string;
+          id: string;
+        };
+        Insert: {
+          budget_id: string;
+          category_id: string;
+          created_at?: string;
+          id?: string;
+        };
+        Update: {
+          budget_id?: string;
+          category_id?: string;
+          created_at?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "budget_categories_budget_id_fkey";
+            columns: ["budget_id"];
+            isOneToOne: false;
+            referencedRelation: "budgets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "budget_categories_budget_id_fkey";
+            columns: ["budget_id"];
+            isOneToOne: false;
+            referencedRelation: "budgets_with_linked";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "budget_categories_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "budget_categories_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories_with_usage";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      budget_tags: {
+        Row: {
+          budget_id: string;
+          created_at: string;
+          id: string;
+          tag_id: string;
+        };
+        Insert: {
+          budget_id: string;
+          created_at?: string;
+          id?: string;
+          tag_id: string;
+        };
+        Update: {
+          budget_id?: string;
+          created_at?: string;
+          id?: string;
+          tag_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "budget_tags_budget_id_fkey";
+            columns: ["budget_id"];
+            isOneToOne: false;
+            referencedRelation: "budgets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "budget_tags_budget_id_fkey";
+            columns: ["budget_id"];
+            isOneToOne: false;
+            referencedRelation: "budgets_with_linked";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "budget_tags_tag_id_fkey";
+            columns: ["tag_id"];
+            isOneToOne: false;
+            referencedRelation: "tags";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "budget_tags_tag_id_fkey";
+            columns: ["tag_id"];
+            isOneToOne: false;
+            referencedRelation: "tags_with_usage";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      budgets: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          description: string | null;
+          end_date: string | null;
+          id: string;
+          name: string;
+          start_date: string | null;
+          target_amount: number;
+          type: Database["public"]["Enums"]["transaction_type"];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          description?: string | null;
+          end_date?: string | null;
+          id?: string;
+          name: string;
+          start_date?: string | null;
+          target_amount: number;
+          type: Database["public"]["Enums"]["transaction_type"];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          description?: string | null;
+          end_date?: string | null;
+          id?: string;
+          name?: string;
+          start_date?: string | null;
+          target_amount?: number;
+          type?: Database["public"]["Enums"]["transaction_type"];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       categories: {
         Row: {
           created_at: string | null;
+          deleted_at: string | null;
           description: string | null;
           id: string;
           name: string;
@@ -73,6 +219,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string | null;
+          deleted_at?: string | null;
           description?: string | null;
           id?: string;
           name: string;
@@ -82,6 +229,7 @@ export type Database = {
         };
         Update: {
           created_at?: string | null;
+          deleted_at?: string | null;
           description?: string | null;
           id?: string;
           name?: string;
@@ -94,6 +242,7 @@ export type Database = {
       tags: {
         Row: {
           created_at: string;
+          deleted_at: string | null;
           description: string | null;
           id: string;
           name: string;
@@ -102,6 +251,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          deleted_at?: string | null;
           description?: string | null;
           id?: string;
           name: string;
@@ -110,6 +260,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          deleted_at?: string | null;
           description?: string | null;
           id?: string;
           name?: string;
@@ -198,6 +349,7 @@ export type Database = {
           category_id: string | null;
           created_at: string;
           date: string;
+          deleted_at: string | null;
           id: string;
           notes: string | null;
           tags: string[] | null;
@@ -213,6 +365,7 @@ export type Database = {
           category_id?: string | null;
           created_at?: string;
           date: string;
+          deleted_at?: string | null;
           id?: string;
           notes?: string | null;
           tags?: string[] | null;
@@ -228,6 +381,7 @@ export type Database = {
           category_id?: string | null;
           created_at?: string;
           date?: string;
+          deleted_at?: string | null;
           id?: string;
           notes?: string | null;
           tags?: string[] | null;
@@ -277,6 +431,54 @@ export type Database = {
           name: string | null;
           updated_at: string | null;
           user_id: string | null;
+        };
+        Relationships: [];
+      };
+      budgets_with_linked: {
+        Row: {
+          category_count: number | null;
+          created_at: string | null;
+          deleted_at: string | null;
+          description: string | null;
+          end_date: string | null;
+          id: string | null;
+          name: string | null;
+          start_date: string | null;
+          tag_count: number | null;
+          target_amount: number | null;
+          type: Database["public"]["Enums"]["transaction_type"] | null;
+          updated_at: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          category_count?: never;
+          created_at?: string | null;
+          deleted_at?: string | null;
+          description?: string | null;
+          end_date?: string | null;
+          id?: string | null;
+          name?: string | null;
+          start_date?: string | null;
+          tag_count?: never;
+          target_amount?: number | null;
+          type?: Database["public"]["Enums"]["transaction_type"] | null;
+          updated_at?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          category_count?: never;
+          created_at?: string | null;
+          deleted_at?: string | null;
+          description?: string | null;
+          end_date?: string | null;
+          id?: string | null;
+          name?: string | null;
+          start_date?: string | null;
+          tag_count?: never;
+          target_amount?: number | null;
+          type?: Database["public"]["Enums"]["transaction_type"] | null;
+          updated_at?: string | null;
+          user_id?: string | null;
         };
         Relationships: [];
       };
@@ -588,6 +790,21 @@ export type Database = {
         Returns: {
           in_use_count: number;
           ok: boolean;
+        }[];
+      };
+      get_budget_progress: {
+        Args: never;
+        Returns: {
+          created_at: string;
+          current_amount: number;
+          description: string;
+          end_date: string;
+          id: string;
+          name: string;
+          start_date: string;
+          target_amount: number;
+          type: Database["public"]["Enums"]["transaction_type"];
+          updated_at: string;
         }[];
       };
       get_transaction_tags: {
