@@ -67,14 +67,9 @@ export const BudgetEdit = () => {
   );
 
   useEffect(() => {
-    if (formProps.form) {
-      if (currentCategoryIds.length > 0) {
-        formProps.form.setFieldValue("category_ids", currentCategoryIds);
-      }
-      if (currentTagIds.length > 0) {
-        formProps.form.setFieldValue("tag_ids", currentTagIds);
-      }
-    }
+    if (!formProps.form) return;
+    formProps.form.setFieldValue("category_ids", currentCategoryIds);
+    formProps.form.setFieldValue("tag_ids", currentTagIds);
   }, [currentCategoryIds, currentTagIds, formProps.form]);
 
   const handleFinish = async (values: Record<string, unknown>) => {

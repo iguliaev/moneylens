@@ -18,7 +18,12 @@ CREATE TABLE IF NOT EXISTS
         end_date DATE,
         deleted_at TIMESTAMPTZ DEFAULT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CHECK (
+            start_date IS NULL
+            OR end_date IS NULL
+            OR start_date <= end_date
+        )
     );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_budgets_user_name_active
@@ -301,10 +306,12 @@ SET
     -- UNION (not UNION ALL) deduplicates transactions that match both a
     -- category link and a tag link, so each transaction is counted once.
     WITH budget_txns AS (
-        -- transactions matched via a linked category
+        -- transactions matched via a linked category (non-deleted categories only)
         SELECT bc.budget_id, tx.id AS tx_id, tx.amount
         FROM public.budgets b
         JOIN public.budget_categories bc ON bc.budget_id = b.id
+        JOIN public.categories cat ON cat.id = bc.category_id
+                                   AND cat.deleted_at IS NULL
         JOIN public.transactions tx
             ON  tx.category_id  = bc.category_id
             AND tx.user_id      = b.user_id
@@ -317,10 +324,12 @@ SET
 
         UNION
 
-        -- transactions matched via a linked tag
+        -- transactions matched via a linked tag (non-deleted tags only)
         SELECT bt.budget_id, tx.id AS tx_id, tx.amount
         FROM public.budgets b
         JOIN public.budget_tags bt ON bt.budget_id = b.id
+        JOIN public.tags tg ON tg.id = bt.tag_id
+                            AND tg.deleted_at IS NULL
         JOIN public.transaction_tags tt ON tt.tag_id = bt.tag_id
         JOIN public.transactions tx
             ON  tx.id           = tt.transaction_id

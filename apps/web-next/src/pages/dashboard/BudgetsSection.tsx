@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Button,
   Card,
   Col,
   Progress,
@@ -48,9 +49,9 @@ export const BudgetsSection: React.FC = () => {
         </Space>
       }
       extra={
-        <Typography.Link onClick={() => list("budgets")}>
+        <Button type="link" style={{ padding: 0 }} onClick={() => list("budgets")}>
           Manage Budgets
-        </Typography.Link>
+        </Button>
       }
     >
       {loading ? (
@@ -58,9 +59,9 @@ export const BudgetsSection: React.FC = () => {
       ) : budgets.length === 0 ? (
         <Text type="secondary">
           No budgets yet.{" "}
-          <Typography.Link onClick={() => list("budgets")}>
+          <Button type="link" style={{ padding: 0, height: "auto" }} onClick={() => list("budgets")}>
             Create one
-          </Typography.Link>{" "}
+          </Button>{" "}
           to start tracking your spending and savings goals.
         </Text>
       ) : (
@@ -97,7 +98,9 @@ export const BudgetsSection: React.FC = () => {
                       percent={percent}
                       status={
                         percent >= 100
-                          ? "success"
+                          ? budget.type === "spend"
+                            ? "exception"
+                            : "success"
                           : PROGRESS_STATUS[budget.type]
                       }
                       format={() => `${percent}%`}

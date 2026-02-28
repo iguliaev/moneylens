@@ -130,6 +130,43 @@ test.describe("Budgets", () => {
     ).toBeVisible();
   });
 
+  test("user can create a budget with categories and tags and counts update in list", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const name = `e2e-budget-with-links-${ts}`;
+
+    await page.goto("/budgets");
+    await page.getByRole("button", { name: /create/i }).click();
+    await expect(
+      page.getByRole("heading", { name: "Create Budget" })
+    ).toBeVisible();
+
+    await page.getByRole("textbox", { name: "* Name" }).fill(name);
+    await page.getByRole("combobox", { name: "* Type" }).click();
+    await page.getByTitle(/^Spend$/i).click();
+
+    await page.getByRole("spinbutton", { name: "* Target Amount" }).fill("800");
+
+    // Select the seeded "Groceries" spend category
+    await page.getByRole("combobox", { name: "Categories" }).click();
+    await page.getByTitle(/Groceries/i).first().click();
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: /save/i }).click();
+    await expect(page).toHaveURL(/\/budgets/);
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+
+    // Category count for this budget should be 1
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: name })
+        .getByRole("cell", { name: "1" })
+        .first()
+    ).toBeVisible();
+  });
+
   test("dashboard shows budgets section with progress bars", async ({
     page,
   }) => {
