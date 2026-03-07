@@ -1,0 +1,61 @@
+{
+  "skill_name": "pr-reviewer",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Please review the PR comments at https://github.com/iguliaev/moneylens/pull/97 and give me a structured report assessing which concerns are valid and proposing fixes.",
+      "expected_output": "A structured report covering all 8 inline review comments, each assessed as VALID/INVALID/INFORMATIONAL, with proposed fixes for valid ones and suggested PR replies for invalid ones. Includes a prioritized action item list.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "covers-all-comments",
+          "name": "Covers all 8 inline comments",
+          "description": "The report mentions all 8 inline comments from the PR (soft-delete unique index, budget_categories RLS, budget_tags RLS, budgets_with_linked soft-delete counts, accessibility issue, hard-delete in list.tsx, edit type filter, E2E test coverage)"
+        },
+        {
+          "id": "valid-invalid-labels",
+          "name": "Each comment labeled VALID, INVALID, or INFORMATIONAL",
+          "description": "Every comment in the report has a clear VALID, INVALID, or INFORMATIONAL classification"
+        },
+        {
+          "id": "fixes-for-valid",
+          "name": "Proposed fixes include code snippets for valid concerns",
+          "description": "Valid concerns are accompanied by concrete code snippets or specific actionable instructions, not just vague advice"
+        },
+        {
+          "id": "action-items-section",
+          "name": "Action items section present",
+          "description": "The report ends with a prioritized numbered list of action items"
+        },
+        {
+          "id": "reads-source-files",
+          "name": "References actual file content (not just comments)",
+          "description": "The assessment mentions specifics from the actual source files (e.g. migration SQL, tsx component code), showing the skill actually read local files"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I got some review feedback on my PR https://github.com/iguliaev/moneylens/pull/97 — can you check which comments are actually worth fixing vs which ones I can dismiss?",
+      "expected_output": "Same structured report triggered by casual phrasing. Should still fetch comments, assess against source code, and clearly separate must-fix from dismissible concerns.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "casual-trigger-works",
+          "name": "Skill activates from casual phrasing",
+          "description": "The skill ran and produced a report (not a refusal or misunderstanding)"
+        },
+        {
+          "id": "separates-valid-from-dismissible",
+          "name": "Clearly separates valid from dismissible/invalid",
+          "description": "The output makes it obvious which comments the user should act on vs which they can close/dismiss"
+        },
+        {
+          "id": "action-items-section",
+          "name": "Action items section present",
+          "description": "The report ends with a prioritized numbered list of action items"
+        }
+      ]
+    }
+  ]
+}
