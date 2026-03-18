@@ -61,6 +61,11 @@ import { SettingsPage } from "./pages/settings";
 import { ProjectTitle } from "./components/title";
 import { Header, EnvironmentBanner } from "./components";
 
+const I18N_TRANSLATIONS: Record<string, string> = {
+  "documentTitle.default": "MoneyLens",
+  "documentTitle.suffix": " | MoneyLens",
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -76,6 +81,21 @@ function App() {
               authProvider={authProvider}
               routerProvider={routerProvider}
               notificationProvider={useNotificationProvider}
+              i18nProvider={{
+                translate: (
+                  key: string,
+                  options?: object | string,
+                  defaultValue?: string
+                ) => {
+                  if (Object.hasOwn(I18N_TRANSLATIONS, key))
+                    return I18N_TRANSLATIONS[key];
+                  const fallback =
+                    typeof options === "string" ? options : defaultValue;
+                  return fallback ?? key;
+                },
+                changeLocale: () => Promise.resolve(),
+                getLocale: () => "en",
+              }}
               options={{
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
