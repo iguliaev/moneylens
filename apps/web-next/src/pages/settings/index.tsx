@@ -67,6 +67,7 @@ interface BulkUploadResult {
 
 interface DataResetResult {
   success: boolean;
+  budgets_deleted?: number;
   transactions_deleted: number;
   categories_deleted: number;
   tags_deleted: number;
@@ -361,6 +362,9 @@ const DataResetSection: React.FC = () => {
             description={
               <List size="small">
                 <List.Item>
+                  • {result.budgets_deleted ?? 0} budgets deleted
+                </List.Item>
+                <List.Item>
                   • {result.transactions_deleted} transactions deleted
                 </List.Item>
                 <List.Item>
@@ -418,7 +422,7 @@ const DataResetSection: React.FC = () => {
       >
         <Alert
           message="Warning"
-          description="This will permanently delete ALL your transactions, categories, tags, and bank accounts. This action cannot be undone."
+          description="This will permanently delete ALL your budgets, transactions, categories, tags, and bank accounts. This action cannot be undone."
           type="warning"
           showIcon
         />
