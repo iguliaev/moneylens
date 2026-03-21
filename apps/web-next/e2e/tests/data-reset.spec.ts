@@ -50,7 +50,7 @@ test.describe("Data Reset", () => {
     await expect(page.getByText(/data reset complete/i)).toBeVisible();
 
     // Verify counts are shown
-    await expect(page.getByText(/budgets deleted/i)).toBeVisible();
+    await expect(page.getByText(/•\s*\d+\s+budgets deleted/i)).toBeVisible();
     await expect(page.getByText(/transactions deleted/i)).toBeVisible();
     await expect(page.getByText(/categories deleted/i)).toBeVisible();
     await expect(page.getByText(/tags deleted/i)).toBeVisible();
@@ -172,7 +172,7 @@ test.describe("Data Reset", () => {
       .click();
 
     await expect(page.getByText(/data reset complete/i)).toBeVisible();
-    await expect(page.getByText(/budgets deleted/i)).toBeVisible();
+    await expect(page.getByText(/•\s*1\s+budgets deleted/i)).toBeVisible();
 
     const { data: budgets } = await supabaseAdmin
       .from("budgets")
