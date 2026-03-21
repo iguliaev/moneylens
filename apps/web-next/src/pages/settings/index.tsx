@@ -67,6 +67,7 @@ interface BulkUploadResult {
 
 interface DataResetResult {
   success: boolean;
+  budgets_deleted: number;
   transactions_deleted: number;
   categories_deleted: number;
   tags_deleted: number;
@@ -360,6 +361,9 @@ const DataResetSection: React.FC = () => {
             message="Data Reset Complete"
             description={
               <List size="small">
+                <List.Item>
+                  • {result.budgets_deleted} budgets deleted
+                </List.Item>
                 <List.Item>
                   • {result.transactions_deleted} transactions deleted
                 </List.Item>
