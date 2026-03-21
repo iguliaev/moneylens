@@ -5,6 +5,7 @@ import {
   loginUser,
   cleanupReferenceDataForUser,
   seedReferenceDataForUser,
+  createBudget,
   createTransactionWithoutTags,
   supabaseAdmin,
 } from "../utils/test-helpers";
@@ -49,6 +50,7 @@ test.describe("Data Reset", () => {
     await expect(page.getByText(/data reset complete/i)).toBeVisible();
 
     // Verify counts are shown
+    await expect(page.getByText(/•\s*\d+\s+budgets deleted/i)).toBeVisible();
     await expect(page.getByText(/transactions deleted/i)).toBeVisible();
     await expect(page.getByText(/categories deleted/i)).toBeVisible();
     await expect(page.getByText(/tags deleted/i)).toBeVisible();
@@ -149,5 +151,42 @@ test.describe("Data Reset", () => {
       .eq("user_id", testUser.userId);
 
     expect(categories).toHaveLength(0);
+  });
+
+  test("data reset removes all budgets and clears dashboard", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const budgetName = `e2e-reset-budget-${ts}`;
+
+    await createBudget(page, budgetName, "Spend", "250", "Reset me");
+
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: budgetName })).toBeVisible();
+
+    await page.goto("/settings");
+    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: /reset.*data/i }).click();
+    await page
+      .getByRole("button", { name: /yes.*delete.*everything/i })
+      .click();
+
+    await expect(page.getByText(/data reset complete/i)).toBeVisible();
+    await expect(page.getByText(/•\s*1\s+budgets deleted/i)).toBeVisible();
+
+    const { data: budgets } = await supabaseAdmin
+      .from("budgets")
+      .select("id")
+      .eq("user_id", testUser.userId);
+
+    expect(budgets).toHaveLength(0);
+
+    await page.goto("/");
+    await expect(
+      page.getByText(/no budgets yet/i)
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: budgetName })
+    ).not.toBeVisible();
   });
 });

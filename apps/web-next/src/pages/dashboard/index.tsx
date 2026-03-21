@@ -15,6 +15,7 @@ import { BudgetsSection } from "./BudgetsSection";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { supabaseClient } from "../../utility";
+import type { Tables } from "../../types/database.types";
 import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
@@ -25,7 +26,6 @@ const { Text, Title } = Typography;
 
 // === Types ===
 interface CategorySummary {
-  category_id: string;
   category_name: string;
   type: TransactionType;
   total: number;
@@ -36,17 +36,23 @@ interface TypeSummary {
   total: number;
 }
 
-interface TransactionRow {
-  type: TransactionType;
-  category_id: string;
-  categories: { name: string } | { name: string }[] | null;
-  amount: number;
-}
-
 interface PeriodStats {
   typeSummary: TypeSummary[];
   categorySummary: CategorySummary[];
 }
+
+type Period = "month" | "year";
+
+type MonthlyTotalsRow = Pick<Tables<"view_monthly_totals">, "month" | "total" | "type">;
+type YearlyTotalsRow = Pick<Tables<"view_yearly_totals">, "year" | "total" | "type">;
+type MonthlyCategoryTotalsRow = Pick<
+  Tables<"view_monthly_category_totals">,
+  "category" | "month" | "total" | "type"
+>;
+type YearlyCategoryTotalsRow = Pick<
+  Tables<"view_yearly_category_totals">,
+  "category" | "year" | "total" | "type"
+>;
 
 // === Constants ===
 const currentYear = dayjs().year();
@@ -74,36 +80,98 @@ const formatCurrencyLocal = (amount: number) =>
     currency: "GBP",
   }).format(amount);
 
-const aggregateByCategory = (data: TransactionRow[]): CategorySummary[] => {
-  const categoryMap = new Map<string, CategorySummary>();
+const isTransactionType = (value: string | null): value is TransactionType =>
+  value !== null && Object.values(TRANSACTION_TYPES).includes(value as TransactionType);
 
-  data.forEach((t) => {
-    const key = t.category_id;
-    if (!key) return;
+const mapTypeSummary = (rows: (MonthlyTotalsRow | YearlyTotalsRow)[]): TypeSummary[] =>
+  rows.flatMap((row) =>
+    isTransactionType(row.type)
+      ? [
+          {
+            type: row.type,
+            total: Number(row.total) || 0,
+          },
+        ]
+      : []
+  );
 
-    // Handle both single object and array (Supabase join result)
-    const categoryName = Array.isArray(t.categories)
-      ? t.categories[0]?.name
-      : t.categories?.name;
+const mapCategorySummary = (
+  rows: (MonthlyCategoryTotalsRow | YearlyCategoryTotalsRow)[]
+): CategorySummary[] =>
+  rows.flatMap((row) =>
+    isTransactionType(row.type)
+      ? [
+          {
+            category_name: row.category || "Unknown",
+            type: row.type,
+            total: Number(row.total) || 0,
+          },
+        ]
+      : []
+  );
 
-    const existing = categoryMap.get(key);
-    if (existing) {
-      existing.total += Number(t.amount);
-    } else {
-      categoryMap.set(key, {
-        category_id: t.category_id,
-        category_name: categoryName || "Unknown",
-        type: t.type,
-        total: Number(t.amount),
-      });
-    }
-  });
+const fetchYearStats = async (
+  startDate: string,
+  endDate: string
+): Promise<PeriodStats> => {
+  const [typeResponse, categoryResponse] = await Promise.all([
+    supabaseClient
+      .from("view_yearly_totals")
+      .select("type, total, year")
+      .gte("year", startDate)
+      .lt("year", endDate),
+    supabaseClient
+      .from("view_yearly_category_totals")
+      .select("category, type, total, year")
+      .gte("year", startDate)
+      .lt("year", endDate),
+  ]);
 
-  return Array.from(categoryMap.values());
+  if (typeResponse.error) throw typeResponse.error;
+  if (categoryResponse.error) throw categoryResponse.error;
+
+  return {
+    typeSummary: mapTypeSummary(typeResponse.data || []),
+    categorySummary: mapCategorySummary(categoryResponse.data || []),
+  };
+};
+
+const fetchMonthStats = async (
+  startDate: string,
+  endDate: string
+): Promise<PeriodStats> => {
+  const [typeResponse, categoryResponse] = await Promise.all([
+    supabaseClient
+      .from("view_monthly_totals")
+      .select("type, total, month")
+      .gte("month", startDate)
+      .lt("month", endDate),
+    supabaseClient
+      .from("view_monthly_category_totals")
+      .select("category, type, total, month")
+      .gte("month", startDate)
+      .lt("month", endDate),
+  ]);
+
+  if (typeResponse.error) throw typeResponse.error;
+  if (categoryResponse.error) throw categoryResponse.error;
+
+  return {
+    typeSummary: mapTypeSummary(typeResponse.data || []),
+    categorySummary: mapCategorySummary(categoryResponse.data || []),
+  };
 };
 
 // === Data Fetching Hook ===
-const usePeriodStats = (startDate: string, endDate: string) => {
+const usePeriodStats = ({
+  period,
+  startDate,
+  endDate,
+}: {
+  period: Period;
+  startDate: string;
+  endDate: string;
+}) => {
   const [stats, setStats] = useState<PeriodStats>({
     typeSummary: [],
     categorySummary: [],
@@ -117,41 +185,13 @@ const usePeriodStats = (startDate: string, endDate: string) => {
       setLoading(true);
 
       try {
-        // Fetch totals by type in parallel
-        const typePromises = Object.values(TRANSACTION_TYPES).map(
-          async (type) => {
-            const { data, error } = await supabaseClient.rpc(
-              "sum_transactions_amount",
-              {
-                p_from: startDate,
-                p_to: endDate,
-                p_type: type,
-              }
-            );
-            if (error) throw error;
-            return { type, total: Number(data) || 0 };
-          }
-        );
-
-        // Fetch category breakdown
-        const { data: categoryData, error: categoryError } =
-          await supabaseClient
-            .from("transactions")
-            .select("type, category_id, categories(name), amount")
-            .gte("date", startDate)
-            .lte("date", endDate);
-
-        if (categoryError) throw categoryError;
-
-        const [typeSummary] = await Promise.all([Promise.all(typePromises)]);
+        const nextStats =
+          period === "year"
+            ? await fetchYearStats(startDate, endDate)
+            : await fetchMonthStats(startDate, endDate);
 
         if (!cancelled) {
-          setStats({
-            typeSummary,
-            categorySummary: aggregateByCategory(
-              (categoryData as TransactionRow[]) || []
-            ),
-          });
+          setStats(nextStats);
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -170,7 +210,7 @@ const usePeriodStats = (startDate: string, endDate: string) => {
     return () => {
       cancelled = true;
     };
-  }, [startDate, endDate]);
+  }, [endDate, period, startDate]);
 
   return { ...stats, loading };
 };
@@ -240,7 +280,7 @@ const CategoryBreakdownTable = ({
     <Table
       dataSource={filteredData}
       columns={columns}
-      rowKey="category_id"
+      rowKey={(row) => `${row.type}-${row.category_name}`}
       loading={loading}
       pagination={false}
       size="small"
@@ -290,7 +330,11 @@ export const DashboardPage: React.FC = () => {
   // Compute date ranges
   const yearDateRange = {
     start: dayjs().year(selectedYear).startOf("year").format("YYYY-MM-DD"),
-    end: dayjs().year(selectedYear).endOf("year").format("YYYY-MM-DD"),
+    end: dayjs()
+      .year(selectedYear)
+      .startOf("year")
+      .add(1, "year")
+      .format("YYYY-MM-DD"),
   };
 
   const monthDateRange = {
@@ -302,13 +346,22 @@ export const DashboardPage: React.FC = () => {
     end: dayjs()
       .year(selectedYear)
       .month(selectedMonth)
-      .endOf("month")
+      .startOf("month")
+      .add(1, "month")
       .format("YYYY-MM-DD"),
   };
 
   // Fetch data using custom hook
-  const yearStats = usePeriodStats(yearDateRange.start, yearDateRange.end);
-  const monthStats = usePeriodStats(monthDateRange.start, monthDateRange.end);
+  const yearStats = usePeriodStats({
+    period: "year",
+    startDate: yearDateRange.start,
+    endDate: yearDateRange.end,
+  });
+  const monthStats = usePeriodStats({
+    period: "month",
+    startDate: monthDateRange.start,
+    endDate: monthDateRange.end,
+  });
 
   const tabItems = [
     {
