@@ -110,6 +110,58 @@ const mapCategorySummary = (
       : []
   );
 
+const fetchYearStats = async (
+  startDate: string,
+  endDate: string
+): Promise<PeriodStats> => {
+  const [typeResponse, categoryResponse] = await Promise.all([
+    supabaseClient
+      .from("view_yearly_totals")
+      .select("type, total, year")
+      .gte("year", startDate)
+      .lt("year", endDate),
+    supabaseClient
+      .from("view_yearly_category_totals")
+      .select("category, type, total, year")
+      .gte("year", startDate)
+      .lt("year", endDate),
+  ]);
+
+  if (typeResponse.error) throw typeResponse.error;
+  if (categoryResponse.error) throw categoryResponse.error;
+
+  return {
+    typeSummary: mapTypeSummary(typeResponse.data || []),
+    categorySummary: mapCategorySummary(categoryResponse.data || []),
+  };
+};
+
+const fetchMonthStats = async (
+  startDate: string,
+  endDate: string
+): Promise<PeriodStats> => {
+  const [typeResponse, categoryResponse] = await Promise.all([
+    supabaseClient
+      .from("view_monthly_totals")
+      .select("type, total, month")
+      .gte("month", startDate)
+      .lt("month", endDate),
+    supabaseClient
+      .from("view_monthly_category_totals")
+      .select("category, type, total, month")
+      .gte("month", startDate)
+      .lt("month", endDate),
+  ]);
+
+  if (typeResponse.error) throw typeResponse.error;
+  if (categoryResponse.error) throw categoryResponse.error;
+
+  return {
+    typeSummary: mapTypeSummary(typeResponse.data || []),
+    categorySummary: mapCategorySummary(categoryResponse.data || []),
+  };
+};
+
 // === Data Fetching Hook ===
 const usePeriodStats = ({
   period,
@@ -133,35 +185,13 @@ const usePeriodStats = ({
       setLoading(true);
 
       try {
-        const totalsView =
-          period === "year" ? "view_yearly_totals" : "view_monthly_totals";
-        const categoryTotalsView =
+        const nextStats =
           period === "year"
-            ? "view_yearly_category_totals"
-            : "view_monthly_category_totals";
-        const periodColumn = period;
-
-        const [typeResponse, categoryResponse] = await Promise.all([
-          supabaseClient
-            .from(totalsView)
-            .select(`type, total, ${periodColumn}`)
-            .gte(periodColumn, startDate)
-            .lt(periodColumn, endDate),
-          supabaseClient
-            .from(categoryTotalsView)
-            .select(`category, type, total, ${periodColumn}`)
-            .gte(periodColumn, startDate)
-            .lt(periodColumn, endDate),
-        ]);
-
-        if (typeResponse.error) throw typeResponse.error;
-        if (categoryResponse.error) throw categoryResponse.error;
+            ? await fetchYearStats(startDate, endDate)
+            : await fetchMonthStats(startDate, endDate);
 
         if (!cancelled) {
-          setStats({
-            typeSummary: mapTypeSummary(typeResponse.data || []),
-            categorySummary: mapCategorySummary(categoryResponse.data || []),
-          });
+          setStats(nextStats);
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
