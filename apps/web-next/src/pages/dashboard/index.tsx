@@ -44,8 +44,14 @@ interface PeriodStats {
 
 type Period = "month" | "year";
 
-type MonthlyTotalsRow = Pick<Tables<"view_monthly_totals">, "month" | "total" | "type">;
-type YearlyTotalsRow = Pick<Tables<"view_yearly_totals">, "year" | "total" | "type">;
+type MonthlyTotalsRow = Pick<
+  Tables<"view_monthly_totals">,
+  "month" | "total" | "type"
+>;
+type YearlyTotalsRow = Pick<
+  Tables<"view_yearly_totals">,
+  "year" | "total" | "type"
+>;
 type MonthlyCategoryTotalsRow = Pick<
   Tables<"view_monthly_category_totals">,
   "category" | "month" | "total" | "type"
@@ -82,9 +88,12 @@ const formatCurrencyLocal = (amount: number) =>
   }).format(amount);
 
 const isTransactionType = (value: string | null): value is TransactionType =>
-  value !== null && Object.values(TRANSACTION_TYPES).includes(value as TransactionType);
+  value !== null &&
+  Object.values(TRANSACTION_TYPES).includes(value as TransactionType);
 
-const mapTypeSummary = (rows: (MonthlyTotalsRow | YearlyTotalsRow)[]): TypeSummary[] =>
+const mapTypeSummary = (
+  rows: (MonthlyTotalsRow | YearlyTotalsRow)[]
+): TypeSummary[] =>
   rows.flatMap((row) =>
     isTransactionType(row.type)
       ? [

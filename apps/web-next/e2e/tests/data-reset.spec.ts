@@ -182,9 +182,7 @@ test.describe("Data Reset", () => {
     expect(budgets).toHaveLength(0);
 
     await page.goto("/");
-    await expect(
-      page.getByText(/no budgets yet/i)
-    ).toBeVisible();
+    await expect(page.getByText(/no budgets yet/i)).toBeVisible();
     await expect(
       page.getByRole("heading", { name: budgetName })
     ).not.toBeVisible();

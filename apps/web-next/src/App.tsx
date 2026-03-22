@@ -66,7 +66,6 @@ const I18N_TRANSLATIONS: Record<string, string> = {
   "documentTitle.suffix": " | MoneyLens",
 };
 
-
 function App() {
   return (
     <BrowserRouter>
