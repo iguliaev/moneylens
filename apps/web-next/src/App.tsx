@@ -13,7 +13,6 @@ import {
   AuthPage,
   ErrorComponent,
   ThemedLayout,
-  ThemedSider,
   useNotificationProvider,
 } from "@refinedev/antd";
 import "@refinedev/antd/dist/reset.css";
@@ -25,8 +24,7 @@ import routerProvider, {
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
 import { dataProvider, liveProvider } from "@refinedev/supabase";
-import { App as AntdApp, Menu } from "antd";
-import type { ComponentProps, FC } from "react";
+import { App as AntdApp } from "antd";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import authProvider from "./authProvider";
 import { ColorModeContextProvider } from "./contexts/color-mode";
@@ -68,26 +66,6 @@ const I18N_TRANSLATIONS: Record<string, string> = {
   "documentTitle.suffix": " | MoneyLens",
 };
 
-const AppSider: FC<ComponentProps<typeof ThemedSider>> = (props) => (
-  <ThemedSider
-    {...props}
-    render={({ items, logout }) => {
-      const menuItems = Array.isArray(items) ? items : [items];
-
-      return [
-        ...menuItems.slice(0, 1),
-        <Menu.Divider key="divider-dashboard" />,
-        ...menuItems.slice(1, 3),
-        <Menu.Divider key="divider-budgets" />,
-        ...menuItems.slice(3, 6),
-        <Menu.Divider key="divider-tags" />,
-        ...menuItems.slice(6, 7),
-        <Menu.Divider key="divider-settings" />,
-        logout,
-      ].filter(Boolean);
-    }}
-  />
-);
 
 function App() {
   return (
@@ -202,11 +180,7 @@ function App() {
                       fallback={<CatchAllNavigate to="/login" />}
                     >
                       <EnvironmentBanner />
-                      <ThemedLayout
-                        Header={Header}
-                        Title={ProjectTitle}
-                        Sider={AppSider}
-                      >
+                      <ThemedLayout Header={Header} Title={ProjectTitle}>
                         <Outlet />
                       </ThemedLayout>
                     </Authenticated>
@@ -298,7 +272,7 @@ function App() {
                 <Route
                   element={
                     <Authenticated key="catch-all">
-                      <ThemedLayout Sider={AppSider}>
+                      <ThemedLayout>
                         <Outlet />
                       </ThemedLayout>
                     </Authenticated>
