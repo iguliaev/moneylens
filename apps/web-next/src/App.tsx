@@ -13,6 +13,7 @@ import {
   AuthPage,
   ErrorComponent,
   ThemedLayout,
+  ThemedSider,
   useNotificationProvider,
 } from "@refinedev/antd";
 import "@refinedev/antd/dist/reset.css";
@@ -24,7 +25,8 @@ import routerProvider, {
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
 import { dataProvider, liveProvider } from "@refinedev/supabase";
-import { App as AntdApp } from "antd";
+import { App as AntdApp, Menu } from "antd";
+import type { ComponentProps, FC } from "react";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import authProvider from "./authProvider";
 import { ColorModeContextProvider } from "./contexts/color-mode";
@@ -65,6 +67,27 @@ const I18N_TRANSLATIONS: Record<string, string> = {
   "documentTitle.default": "MoneyLens",
   "documentTitle.suffix": " | MoneyLens",
 };
+
+const AppSider: FC<ComponentProps<typeof ThemedSider>> = (props) => (
+  <ThemedSider
+    {...props}
+    render={({ items, logout }) => {
+      const menuItems = Array.isArray(items) ? items : [items];
+
+      return [
+        ...menuItems.slice(0, 1),
+        <Menu.Divider key="divider-dashboard" />,
+        ...menuItems.slice(1, 3),
+        <Menu.Divider key="divider-budgets" />,
+        ...menuItems.slice(3, 6),
+        <Menu.Divider key="divider-tags" />,
+        ...menuItems.slice(6, 7),
+        <Menu.Divider key="divider-settings" />,
+        logout,
+      ].filter(Boolean);
+    }}
+  />
+);
 
 function App() {
   return (
@@ -122,13 +145,6 @@ function App() {
                   },
                 },
                 {
-                  name: "categories",
-                  list: "/categories",
-                  create: "/categories/create",
-                  edit: "/categories/edit/:id",
-                  show: "/categories/show/:id",
-                },
-                {
                   name: "budgets",
                   list: "/budgets",
                   create: "/budgets/create",
@@ -140,17 +156,12 @@ function App() {
                   },
                 },
                 {
-                  name: "tags",
-                  list: "/tags",
-                  create: "/tags/create",
-                  edit: "/tags/edit/:id",
-                  show: "/tags/show/:id",
-                  meta: {
-                    label: "Tags",
-                    icon: <TagsOutlined />,
-                  },
+                  name: "categories",
+                  list: "/categories",
+                  create: "/categories/create",
+                  edit: "/categories/edit/:id",
+                  show: "/categories/show/:id",
                 },
-
                 {
                   name: "bank_accounts", // Database table name
                   list: "/bank-accounts",
@@ -160,6 +171,17 @@ function App() {
                   meta: {
                     label: "Bank Accounts",
                     icon: <BankOutlined />,
+                  },
+                },
+                {
+                  name: "tags",
+                  list: "/tags",
+                  create: "/tags/create",
+                  edit: "/tags/edit/:id",
+                  show: "/tags/show/:id",
+                  meta: {
+                    label: "Tags",
+                    icon: <TagsOutlined />,
                   },
                 },
                 {
@@ -180,7 +202,11 @@ function App() {
                       fallback={<CatchAllNavigate to="/login" />}
                     >
                       <EnvironmentBanner />
-                      <ThemedLayout Header={Header} Title={ProjectTitle}>
+                      <ThemedLayout
+                        Header={Header}
+                        Title={ProjectTitle}
+                        Sider={AppSider}
+                      >
                         <Outlet />
                       </ThemedLayout>
                     </Authenticated>
@@ -272,7 +298,7 @@ function App() {
                 <Route
                   element={
                     <Authenticated key="catch-all">
-                      <ThemedLayout>
+                      <ThemedLayout Sider={AppSider}>
                         <Outlet />
                       </ThemedLayout>
                     </Authenticated>
