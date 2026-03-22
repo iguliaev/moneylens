@@ -1,0 +1,66 @@
+name: Database / Supabase change
+description: Propose a schema, RLS, migration, or SQL-layer change.
+title: "db: "
+labels:
+  - database
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for schema changes, new migrations, RLS updates, view changes, or Supabase-side work.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      placeholder: The current transaction summary view does not support grouping by tag.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_change
+    attributes:
+      label: Proposed database change
+      placeholder: Add a transaction_tags junction table and update reporting views to join against it.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Expected impact
+      options:
+        - label: Requires a new migration
+        - label: Changes existing schema
+        - label: Changes views or functions
+        - label: Updates RLS policies
+        - label: Requires seed updates
+        - label: Requires regenerated TypeScript types
+
+  - type: textarea
+    id: security
+    attributes:
+      label: User isolation / security considerations
+      description: Call out any `auth.uid()` scoping, RLS, or function security concerns.
+      placeholder: Ensure all user-facing queries stay scoped by auth.uid() and new functions use SECURITY INVOKER.
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollout
+    attributes:
+      label: Rollout and testing plan
+      description: Mention migration flow, pgTAP coverage, and any app changes.
+      placeholder: |
+        - Create migration in supabase/migrations
+        - Apply locally with supabase migration up
+        - Run supabase test db
+        - Regenerate types.gen.ts if schema changes
+    validations:
+      required: true
+
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risks or open questions
+      placeholder: Backfill requirements, performance concerns, compatibility with existing views, etc.
