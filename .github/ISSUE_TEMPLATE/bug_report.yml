@@ -1,0 +1,92 @@
+name: Bug report
+description: Report broken behavior in the app, auth flow, dashboard, or data flows.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug report. Please include enough detail for someone else to reproduce the problem quickly.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the current behavior and why it is incorrect.
+      placeholder: When I open the dashboard, the budgets section is empty even though budgets exist.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: The dashboard should show existing budgets for the signed-in user.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide a minimal, reliable reproduction.
+      placeholder: |
+        1. Sign in as a test user
+        2. Create a budget
+        3. Go to Dashboard
+        4. Observe the missing budget card
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - apps/web-next
+        - dashboard
+        - transactions
+        - budgets
+        - categories
+        - bank accounts
+        - tags
+        - authentication
+        - supabase/database
+        - e2e tests
+        - deployment
+        - unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - local
+        - staging
+        - production
+        - preview deployment
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / client
+      description: If relevant, include browser and version.
+      placeholder: Chrome 134, Safari 18, mobile Safari, etc.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots, errors, or logs
+      description: Paste error output or attach screenshots if helpful.
+      render: shell
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      placeholder: Related issue, suspected regression, recent migration, etc.
