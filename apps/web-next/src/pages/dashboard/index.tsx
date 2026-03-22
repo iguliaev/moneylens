@@ -2,6 +2,7 @@ import {
   Card,
   Col,
   Row,
+  type TableColumnsType,
   Typography,
   Select,
   Statistic,
@@ -257,20 +258,24 @@ const CategoryBreakdownTable = ({
   loading: boolean;
   type: TransactionType;
 }) => {
-  const filteredData = data
-    .filter((d) => d.type === type)
-    .sort((a, b) => b.total - a.total);
+  const filteredData = data.filter((d) => d.type === type);
 
-  const columns = [
+  const columns: TableColumnsType<CategorySummary> = [
     {
       title: "Category",
       dataIndex: "category_name",
       key: "category_name",
+      sorter: (a: CategorySummary, b: CategorySummary) =>
+        a.category_name.localeCompare(b.category_name),
+      sortDirections: ["ascend", "descend"],
     },
     {
       title: "Amount",
       dataIndex: "total",
       key: "total",
+      sorter: (a: CategorySummary, b: CategorySummary) => a.total - b.total,
+      defaultSortOrder: "descend",
+      sortDirections: ["descend", "ascend"],
       render: (value: number) => formatCurrencyLocal(value),
       align: "right" as const,
     },
