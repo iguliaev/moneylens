@@ -287,10 +287,14 @@ const CategoryBreakdownTable = ({
       columns={columns}
       rowKey={(row) => `${row.type}-${row.category_name}`}
       loading={loading}
-      pagination={false}
+      pagination={{
+        pageSize: 10,
+        hideOnSinglePage: true,
+        showSizeChanger: false,
+      }}
       size="small"
-      summary={(pageData) => {
-        const total = pageData.reduce((sum, row) => sum + row.total, 0);
+      summary={() => {
+        const total = filteredData.reduce((sum, row) => sum + row.total, 0);
         return (
           <Table.Summary.Row>
             <Table.Summary.Cell index={0}>
