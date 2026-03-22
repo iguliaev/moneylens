@@ -35,7 +35,7 @@ jobs:
 
     - name: Get Deployment URL
       id: deployment
-      run: echo "::set-output name=url::$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} -m ${{ github.sha }} | grep -v 'Fetched' | awk '{print $2}')"
+      run: echo "url=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} -m ${{ github.sha }} | grep -v 'Fetched' | awk '{print $2}')" >> $GITHUB_OUTPUT
 
     - name: Run E2E tests against preview
       env:
