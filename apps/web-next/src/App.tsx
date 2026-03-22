@@ -66,6 +66,7 @@ const I18N_TRANSLATIONS: Record<string, string> = {
   "documentTitle.suffix": " | MoneyLens",
 };
 
+
 function App() {
   return (
     <BrowserRouter>
@@ -122,13 +123,6 @@ function App() {
                   },
                 },
                 {
-                  name: "categories",
-                  list: "/categories",
-                  create: "/categories/create",
-                  edit: "/categories/edit/:id",
-                  show: "/categories/show/:id",
-                },
-                {
                   name: "budgets",
                   list: "/budgets",
                   create: "/budgets/create",
@@ -140,17 +134,12 @@ function App() {
                   },
                 },
                 {
-                  name: "tags",
-                  list: "/tags",
-                  create: "/tags/create",
-                  edit: "/tags/edit/:id",
-                  show: "/tags/show/:id",
-                  meta: {
-                    label: "Tags",
-                    icon: <TagsOutlined />,
-                  },
+                  name: "categories",
+                  list: "/categories",
+                  create: "/categories/create",
+                  edit: "/categories/edit/:id",
+                  show: "/categories/show/:id",
                 },
-
                 {
                   name: "bank_accounts", // Database table name
                   list: "/bank-accounts",
@@ -160,6 +149,17 @@ function App() {
                   meta: {
                     label: "Bank Accounts",
                     icon: <BankOutlined />,
+                  },
+                },
+                {
+                  name: "tags",
+                  list: "/tags",
+                  create: "/tags/create",
+                  edit: "/tags/edit/:id",
+                  show: "/tags/show/:id",
+                  meta: {
+                    label: "Tags",
+                    icon: <TagsOutlined />,
                   },
                 },
                 {
