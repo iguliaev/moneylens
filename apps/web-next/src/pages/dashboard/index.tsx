@@ -2,6 +2,7 @@ import {
   Card,
   Col,
   Row,
+  type TableColumnsType,
   Typography,
   Select,
   Statistic,
@@ -43,8 +44,14 @@ interface PeriodStats {
 
 type Period = "month" | "year";
 
-type MonthlyTotalsRow = Pick<Tables<"view_monthly_totals">, "month" | "total" | "type">;
-type YearlyTotalsRow = Pick<Tables<"view_yearly_totals">, "year" | "total" | "type">;
+type MonthlyTotalsRow = Pick<
+  Tables<"view_monthly_totals">,
+  "month" | "total" | "type"
+>;
+type YearlyTotalsRow = Pick<
+  Tables<"view_yearly_totals">,
+  "year" | "total" | "type"
+>;
 type MonthlyCategoryTotalsRow = Pick<
   Tables<"view_monthly_category_totals">,
   "category" | "month" | "total" | "type"
@@ -81,9 +88,12 @@ const formatCurrencyLocal = (amount: number) =>
   }).format(amount);
 
 const isTransactionType = (value: string | null): value is TransactionType =>
-  value !== null && Object.values(TRANSACTION_TYPES).includes(value as TransactionType);
+  value !== null &&
+  Object.values(TRANSACTION_TYPES).includes(value as TransactionType);
 
-const mapTypeSummary = (rows: (MonthlyTotalsRow | YearlyTotalsRow)[]): TypeSummary[] =>
+const mapTypeSummary = (
+  rows: (MonthlyTotalsRow | YearlyTotalsRow)[]
+): TypeSummary[] =>
   rows.flatMap((row) =>
     isTransactionType(row.type)
       ? [
@@ -257,20 +267,24 @@ const CategoryBreakdownTable = ({
   loading: boolean;
   type: TransactionType;
 }) => {
-  const filteredData = data
-    .filter((d) => d.type === type)
-    .sort((a, b) => b.total - a.total);
+  const filteredData = data.filter((d) => d.type === type);
 
-  const columns = [
+  const columns: TableColumnsType<CategorySummary> = [
     {
       title: "Category",
       dataIndex: "category_name",
       key: "category_name",
+      sorter: (a: CategorySummary, b: CategorySummary) =>
+        a.category_name.localeCompare(b.category_name),
+      sortDirections: ["ascend", "descend"],
     },
     {
       title: "Amount",
       dataIndex: "total",
       key: "total",
+      sorter: (a: CategorySummary, b: CategorySummary) => a.total - b.total,
+      defaultSortOrder: "descend",
+      sortDirections: ["descend", "ascend"],
       render: (value: number) => formatCurrencyLocal(value),
       align: "right" as const,
     },
@@ -282,10 +296,14 @@ const CategoryBreakdownTable = ({
       columns={columns}
       rowKey={(row) => `${row.type}-${row.category_name}`}
       loading={loading}
-      pagination={false}
+      pagination={{
+        pageSize: 10,
+        hideOnSinglePage: true,
+        showSizeChanger: false,
+      }}
       size="small"
-      summary={(pageData) => {
-        const total = pageData.reduce((sum, row) => sum + row.total, 0);
+      summary={() => {
+        const total = filteredData.reduce((sum, row) => sum + row.total, 0);
         return (
           <Table.Summary.Row>
             <Table.Summary.Cell index={0}>

@@ -1,0 +1,76 @@
+name: Feature request
+description: Propose a new capability or product improvement.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for product or engineering improvements that add value beyond a bug fix.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Explain the user or developer pain point first.
+      placeholder: Users cannot quickly compare monthly spending by category from the dashboard.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: Add a category breakdown chart with month/year switching on the dashboard.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: A separate reports page, exporting CSV, or leaving this to manual filtering.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - dashboard
+        - transactions
+        - budgets
+        - categories
+        - bank accounts
+        - tags
+        - authentication
+        - supabase/database
+        - developer experience
+        - deployment
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Expected impact
+      options:
+        - low
+        - medium
+        - high
+    validations:
+      required: true
+
+  - type: textarea
+    id: users
+    attributes:
+      label: Who benefits and how?
+      placeholder: End users reviewing spending trends, admins managing seed data, developers maintaining tests.
+    validations:
+      required: true
+
+  - type: textarea
+    id: success
+    attributes:
+      label: What does success look like?
+      placeholder: Users can see category totals by month without leaving the dashboard.

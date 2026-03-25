@@ -1,0 +1,44 @@
+name: Chore / maintenance
+description: Track cleanup, refactors, dependency updates, or repo maintenance work.
+title: "chore: "
+labels:
+  - chore
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What needs to be done?
+      placeholder: Update Node version references, clean up duplicate helpers, or align repo tooling.
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why is this needed now?
+      placeholder: Reduce maintenance burden, unblock future work, address warnings, or improve consistency.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - small
+        - medium
+        - large
+    validations:
+      required: true
+
+  - type: textarea
+    id: areas
+    attributes:
+      label: Affected files or areas
+      placeholder: apps/web-next, supabase/migrations, scripts, GitHub workflows, docs, etc.
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks or follow-up work
+      placeholder: Potential regressions, migration concerns, rollout notes, or adjacent cleanup.

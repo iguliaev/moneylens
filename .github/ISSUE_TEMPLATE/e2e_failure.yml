@@ -1,0 +1,69 @@
+name: E2E test failure
+description: Report a failing Playwright test or flaky test behavior.
+title: "test: "
+labels:
+  - test
+  - e2e
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when an existing Playwright test fails locally, in CI, or intermittently.
+
+  - type: input
+    id: test_name
+    attributes:
+      label: Failing test name
+      placeholder: data-reset.spec.ts - user can reset all data
+    validations:
+      required: true
+
+  - type: input
+    id: command
+    attributes:
+      label: Command used
+      placeholder: cd apps/web-next && npm run test:e2e -- tests/data-reset.spec.ts --reporter=json
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Failure frequency
+      options:
+        - always
+        - intermittent
+        - only in CI
+        - only locally
+    validations:
+      required: true
+
+  - type: textarea
+    id: failure_output
+    attributes:
+      label: Failure output
+      description: Paste the relevant error, timeout, assertion, or stack trace.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: suspected_cause
+    attributes:
+      label: Suspected cause
+      placeholder: Timing issue, shared test state, missing seed data, flaky selector, auth redirect, etc.
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction notes
+      placeholder: |
+        - Browser used
+        - Whether Supabase was freshly reset
+        - Whether the failure persists with headed mode
+
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Artifacts
+      description: Link screenshots, traces, videos, or CI jobs if available.
