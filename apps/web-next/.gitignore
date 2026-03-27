@@ -14,6 +14,13 @@ dist-ssr
 *.local
 test-results
 
+# Vite cache
+.vite
+
+# Playwright test results
+playwright-report
+test-results.json
+
 # Editor directories and files
 
 .vscode/_
