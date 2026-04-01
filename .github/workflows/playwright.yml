@@ -57,7 +57,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: playwright-report
-        path: playwright-report/
+        path: apps/web-next/playwright-report/
         retention-days: 2
       
     - name: Upload test videos
@@ -65,5 +65,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: playwright-videos
-        path: test-results/
+        path: apps/web-next/test-results/
         retention-days: 2
