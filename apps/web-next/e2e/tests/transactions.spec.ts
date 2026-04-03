@@ -192,6 +192,9 @@ test.describe("Transactions", () => {
           .getByText(new RegExp(toType, "i"))
           .click();
 
+        // Wait for the table to finish loading after the tab switches the data filter
+        await page.waitForLoadState("networkidle");
+
         // Verify the edited transaction row
         const editedRow = getTransactionRow(page, {
           note: newNote,
@@ -373,11 +376,7 @@ test.describe("Transactions", () => {
 
     // Change to earn type
     await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
-    const earnOption = page
-      .locator(".ant-select-dropdown:visible")
-      .getByTitle(new RegExp("^earn$", "i"));
-    await earnOption.waitFor({ state: "visible" });
-    await earnOption.click();
+    await page.getByTitle(new RegExp("^earn$", "i")).click();
     await expect(
       page.locator(".ant-select-selection-item").filter({ hasText: /^earn$/i })
     ).toBeVisible();
@@ -395,11 +394,7 @@ test.describe("Transactions", () => {
 
     // Change to save type
     await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
-    const saveOption = page
-      .locator(".ant-select-dropdown:visible")
-      .getByTitle(new RegExp("^save$", "i"));
-    await saveOption.waitFor({ state: "visible" });
-    await saveOption.click();
+    await page.getByTitle(new RegExp("^save$", "i")).click();
     await expect(
       page.locator(".ant-select-selection-item").filter({ hasText: /^save$/i })
     ).toBeVisible();
