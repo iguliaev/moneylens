@@ -139,10 +139,12 @@ test.describe("Transactions", () => {
         await waitForFormReady(page, "transaction-edit-form");
         await page.waitForLoadState("networkidle");
 
-        // Change date
-        await page.getByLabel("Date").click();
-        await page.keyboard.press("Control+A"); // Select all (works on both Mac/Win)
+        // Change date: fill() focuses + clears the input; Enter confirms the date
+        // and closes the calendar popup cleanly before we touch the next field.
+        // Without Enter, the popup can close on the next click and discard the
+        // typed value intermittently on slow CI runners.
         await page.getByLabel("Date").fill(newDate);
+        await page.keyboard.press("Enter");
 
         // Change type
         await page
@@ -190,20 +192,22 @@ test.describe("Transactions", () => {
           page.getByRole("heading", { name: "Transactions" })
         ).toBeVisible();
 
-        // Switch to the new type's tab
+        // Switch to the new type's tab.
+        // When toType is "spend" (the default tab), the list already loaded
+        // spend data on redirect — clicking the already-selected tab fires no
+        // new request, so waitForResponse would time out. networkidle handles
+        // both cases cleanly:
+        //   - tab already selected ("spend"): networkidle resolves immediately
+        //   - tab changed: React synchronously starts the Supabase fetch on
+        //     click, networkidle waits for that request to finish
         await page
           .getByRole("radiogroup", { name: "segmented control" })
           .getByText(new RegExp(toType, "i"))
           .click();
-
-        // Wait for the table to finish loading after the tab switches the data filter
         await page.waitForLoadState("networkidle");
-        // Also wait for at least one data row to render, since networkidle fires
-        // when the fetch completes but React may not have committed the update yet.
-        // Use ant-table-row to skip the hidden measure row Ant Design always inserts.
-        await expect(page.locator("tr.ant-table-row").first()).toBeVisible();
 
-        // Verify the edited transaction row
+        // Verify the edited transaction row.
+        // Extended timeout guards against slow CI re-renders after networkidle.
         const editedRow = getTransactionRow(page, {
           note: newNote,
           date: newDate,
@@ -211,7 +215,7 @@ test.describe("Transactions", () => {
           amount: toAmount,
           bankAccount: "Secondary Account",
         });
-        await expect(editedRow).toBeVisible();
+        await expect(editedRow).toBeVisible({ timeout: 15000 });
       });
     }
   );
