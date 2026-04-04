@@ -1,6 +1,6 @@
 ---
-name: End-to-End Test Implementation
-description: Implement, fix, or refactor end-to-end Playwright tests for the web-next application. Use when asked to write tests, add coverage, fix flaky tests, or update tests after a feature change. Trigger phrases: "write e2e tests for X", "add playwright tests", "test this feature", "this test is failing/flaky", "update tests for the new X page".
+name: e2e-tests
+description: Implement, fix, or refactor end-to-end Playwright tests for the web-next application. Use when asked to write tests, add coverage, fix flaky tests, or update tests after a feature change. Trigger phrases - "write e2e tests for X", "add playwright tests", "test this feature", "this test is failing/flaky", "update tests for the new X page".
 ---
 
 # End-to-End Test Implementation
