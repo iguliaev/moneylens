@@ -1,15 +1,13 @@
 export const formatCurrency = (
   amount: number | string,
-  currency = "USD"
+  currency = "GBP"
 ): string => {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: currency,
   }).format(num);
 };
 
-export const formatAmount = (amount: number | string): string => {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return num.toFixed(2);
-};
+/** @deprecated Use formatCurrency instead */
+export const formatAmount = formatCurrency;

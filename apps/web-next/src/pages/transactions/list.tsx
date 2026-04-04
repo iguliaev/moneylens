@@ -18,8 +18,10 @@ import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
+  TRANSACTION_TYPE_HEX,
+  TransactionType,
 } from "../../constants/transactionTypes";
-import { formatAmount } from "../../utility";
+import { formatCurrency } from "../../utility";
 
 /**
  * Custom date range filter mapper that outputs date-only strings (YYYY-MM-DD)
@@ -168,7 +170,16 @@ export const TransactionList = () => {
           dataIndex="amount"
           title="Amount"
           sorter
-          render={(value: number) => formatAmount(value)}
+          render={(value: number) => (
+            <span
+              style={{
+                color: TRANSACTION_TYPE_HEX[transactionType as TransactionType],
+                fontWeight: 500,
+              }}
+            >
+              {formatCurrency(value)}
+            </span>
+          )}
           filterDropdown={(props) => (
             <FilterDropdown {...props}>
               <InputNumber
@@ -223,7 +234,7 @@ export const TransactionList = () => {
           key="notes"
           dataIndex="notes"
           title="Notes"
-          render={(value: string) => value || ""}
+          render={(value: string) => value || "—"}
         />
         <Table.Column
           title="Actions"

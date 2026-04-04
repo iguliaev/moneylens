@@ -9,17 +9,26 @@ import {
   Table,
   Tabs,
   message,
+  theme,
 } from "antd";
+import {
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  SaveOutlined,
+} from "@ant-design/icons";
 import { Show } from "@refinedev/antd";
 import { BudgetsSection } from "./BudgetsSection";
+import { TrendChart } from "./TrendChart";
 
 import { useEffect, useState } from "react";
+import React from "react";
 import dayjs from "dayjs";
 import { supabaseClient } from "../../utility";
 import type { Tables } from "../../types/database.types";
 import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
+  TRANSACTION_TYPE_HEX,
   TransactionType,
 } from "../../constants/transactionTypes";
 
@@ -73,12 +82,6 @@ const monthOptions = Array.from({ length: 12 }, (_, i) => ({
   label: dayjs().month(i).format("MMMM"),
   value: i,
 }));
-
-const TYPE_COLORS: Record<TransactionType, string> = {
-  earn: "#3f8600",
-  spend: "#cf1322",
-  save: "#1890ff",
-};
 
 // === Utilities ===
 const formatCurrencyLocal = (amount: number) =>
@@ -225,7 +228,49 @@ const usePeriodStats = ({
   return { ...stats, loading };
 };
 
-// === Components ===
+/** Fetches all monthly totals for a given year for the trend chart. */
+const useYearlyMonthlyTrend = (year: number) => {
+  const [rows, setRows] = useState<MonthlyTotalsRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+
+    const startDate = dayjs().year(year).startOf("year").format("YYYY-MM-DD");
+    const endDate = dayjs()
+      .year(year)
+      .startOf("year")
+      .add(1, "year")
+      .format("YYYY-MM-DD");
+
+    supabaseClient
+      .from("view_monthly_totals")
+      .select("month, type, total")
+      .gte("month", startDate)
+      .lt("month", endDate)
+      .then(({ data, error }) => {
+        if (!cancelled) {
+          if (!error && data) setRows(data as MonthlyTotalsRow[]);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [year]);
+
+  return { rows, loading };
+};
+
+
+const TYPE_ICONS: Record<TransactionType, React.ReactNode> = {
+  earn: <ArrowUpOutlined />,
+  spend: <ArrowDownOutlined />,
+  save: <SaveOutlined />,
+};
+
 const TypeSummaryCards = ({
   data,
   loading,
@@ -233,6 +278,7 @@ const TypeSummaryCards = ({
   data: TypeSummary[];
   loading: boolean;
 }) => {
+  const { token } = theme.useToken();
   const getAmount = (type: TransactionType) =>
     data.find((d) => d.type === type)?.total ?? 0;
 
@@ -240,16 +286,32 @@ const TypeSummaryCards = ({
     <Row gutter={[16, 16]}>
       {Object.values(TRANSACTION_TYPES).map((type) => (
         <Col xs={24} sm={8} key={type}>
-          <Card>
+          <Card
+            style={{
+              borderTop: `3px solid ${TRANSACTION_TYPE_HEX[type]}`,
+              borderRadius: token.borderRadiusLG,
+            }}
+          >
             <Statistic
-              title={TRANSACTION_TYPE_LABELS[type]}
+              title={
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ color: TRANSACTION_TYPE_HEX[type], fontSize: 16 }}>
+                    {TYPE_ICONS[type]}
+                  </span>
+                  {TRANSACTION_TYPE_LABELS[type]}
+                </span>
+              }
               value={getAmount(type)}
               precision={2}
               formatter={(value) =>
                 formatCurrencyLocal(typeof value === "number" ? value : 0)
               }
               loading={loading}
-              valueStyle={{ color: TYPE_COLORS[type] }}
+              valueStyle={{
+                color: TRANSACTION_TYPE_HEX[type],
+                fontSize: 22,
+                fontWeight: 600,
+              }}
             />
           </Card>
         </Col>
@@ -380,6 +442,7 @@ export const DashboardPage: React.FC = () => {
     startDate: monthDateRange.start,
     endDate: monthDateRange.end,
   });
+  const monthlyTrend = useYearlyMonthlyTrend(selectedYear);
 
   const tabItems = [
     {
@@ -400,6 +463,9 @@ export const DashboardPage: React.FC = () => {
             data={yearStats.typeSummary}
             loading={yearStats.loading}
           />
+          <Card title="Monthly Trend" size="small">
+            <TrendChart data={monthlyTrend.rows} loading={monthlyTrend.loading} />
+          </Card>
           <CategoryBreakdownSection
             data={yearStats.categorySummary}
             loading={yearStats.loading}
