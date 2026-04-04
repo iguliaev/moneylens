@@ -65,7 +65,7 @@ test.describe("Categories", () => {
 
     // Change category type
     const newCategoryType = "save";
-    await page.getByText(new RegExp(categoryType, "i")).click();
+    await page.getByRole("combobox", { name: /type/i }).click({ force: true });
     await page.getByTitle(new RegExp(newCategoryType, "i")).click();
     await expect(
       page.locator("#root").getByTitle(new RegExp(newCategoryType, "i"))
