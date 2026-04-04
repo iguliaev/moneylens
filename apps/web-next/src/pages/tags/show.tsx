@@ -1,8 +1,7 @@
 import { useShow } from "@refinedev/core";
-import { Show, TextField, DateField } from "@refinedev/antd";
-import { Typography } from "antd";
-
-const { Title } = Typography;
+import { Show } from "@refinedev/antd";
+import { Descriptions } from "antd";
+import dayjs from "dayjs";
 
 export const TagShow = () => {
   const { query, result: record } = useShow();
@@ -10,14 +9,29 @@ export const TagShow = () => {
 
   return (
     <Show isLoading={isLoading}>
-      <Title level={5}>Name</Title>
-      <TextField value={record?.name} />
-      <Title level={5}>Description</Title>
-      <TextField value={record?.description} />
-      <Title level={5}>Created At</Title>
-      <DateField value={record?.created_at} />
-      <Title level={5}>Updated At</Title>
-      <DateField value={record?.updated_at} />
+      <Descriptions
+        column={1}
+        layout="horizontal"
+        colon
+        labelStyle={{ fontWeight: 500, minWidth: 130, color: "inherit" }}
+      >
+        <Descriptions.Item label="Name">
+          {(record?.name as string) ?? "—"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Description">
+          {(record?.description as string) || "—"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Created At">
+          {record?.created_at
+            ? dayjs(record.created_at as string).format("DD MMM YYYY")
+            : "—"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Updated At">
+          {record?.updated_at
+            ? dayjs(record.updated_at as string).format("DD MMM YYYY")
+            : "—"}
+        </Descriptions.Item>
+      </Descriptions>
     </Show>
   );
 };

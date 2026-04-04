@@ -1,4 +1,3 @@
-import { RefineThemes } from "@refinedev/antd";
 import { ConfigProvider, theme } from "antd";
 import {
   type PropsWithChildren,
@@ -15,6 +14,26 @@ type ColorModeContextType = {
 export const ColorModeContext = createContext<ColorModeContextType>(
   {} as ColorModeContextType
 );
+
+/** MoneyLens design token overrides applied on top of Ant Design defaults. */
+const MONEYLENS_TOKENS = {
+  token: {
+    colorPrimary: "#4f46e5",        // indigo — distinctive, not generic blue
+    colorSuccess: "#16a34a",        // green  — earn
+    colorError: "#dc2626",          // red    — spend
+    colorInfo: "#2563eb",           // blue   — save
+    colorWarning: "#d97706",
+    borderRadius: 6,
+    fontFamily:
+      "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSize: 14,
+  },
+  components: {
+    Card: { borderRadiusLG: 8 },
+    Table: { borderRadiusLG: 8 },
+    Statistic: { contentFontSize: 24 },
+  },
+};
 
 export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
   children,
@@ -33,27 +52,18 @@ export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
     window.localStorage.setItem("colorMode", mode);
   }, [mode]);
 
-  const setColorMode = () => {
-    if (mode === "light") {
-      setMode("dark");
-    } else {
-      setMode("light");
-    }
-  };
-
   const { darkAlgorithm, defaultAlgorithm } = theme;
 
   return (
     <ColorModeContext.Provider
       value={{
-        setMode: setColorMode,
+        setMode,
         mode,
       }}
     >
       <ConfigProvider
-        // you can change the theme colors here. example: ...RefineThemes.Magenta,
         theme={{
-          ...RefineThemes.Blue,
+          ...MONEYLENS_TOKENS,
           algorithm: mode === "light" ? defaultAlgorithm : darkAlgorithm,
         }}
       >

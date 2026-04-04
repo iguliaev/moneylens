@@ -10,15 +10,10 @@ import {
 import { Table, Space, Tag } from "antd";
 import {
   TRANSACTION_TYPE_LABELS,
+  TRANSACTION_TYPE_COLORS,
   TransactionType,
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
-
-const TYPE_COLORS: Record<TransactionType, string> = {
-  earn: "green",
-  spend: "red",
-  save: "blue",
-};
 
 export const BudgetList = () => {
   const invalidate = useInvalidate();
@@ -36,7 +31,7 @@ export const BudgetList = () => {
           dataIndex="type"
           title="Type"
           render={(value: TransactionType) => (
-            <Tag color={TYPE_COLORS[value]}>
+            <Tag color={TRANSACTION_TYPE_COLORS[value]}>
               {TRANSACTION_TYPE_LABELS[value]}
             </Tag>
           )}

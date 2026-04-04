@@ -9,23 +9,20 @@ import {
   Space,
   Tag,
   Typography,
+  theme,
 } from "antd";
 import { AimOutlined } from "@ant-design/icons";
 import { useNavigation } from "@refinedev/core";
 import { useBudgets } from "./useBudgets";
 import {
   TRANSACTION_TYPE_LABELS,
+  TRANSACTION_TYPE_COLORS,
+  TRANSACTION_TYPE_HEX,
   TransactionType,
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
 
 const { Text, Title } = Typography;
-
-const TYPE_COLORS: Record<TransactionType, string> = {
-  earn: "green",
-  spend: "red",
-  save: "blue",
-};
 
 const PROGRESS_STATUS: Record<
   TransactionType,
@@ -39,6 +36,7 @@ const PROGRESS_STATUS: Record<
 export const BudgetsSection: React.FC = () => {
   const { budgets, loading } = useBudgets();
   const { list } = useNavigation();
+  const { token } = theme.useToken();
 
   return (
     <Card
@@ -75,6 +73,7 @@ export const BudgetsSection: React.FC = () => {
       ) : (
         <Row gutter={[16, 16]}>
           {budgets.map((budget) => {
+            const remaining = budget.target_amount - budget.current_amount;
             const percent =
               budget.target_amount > 0
                 ? Math.min(
@@ -87,13 +86,19 @@ export const BudgetsSection: React.FC = () => {
 
             return (
               <Col xs={24} sm={12} lg={8} key={budget.id}>
-                <Card size="small">
+                <Card
+                  size="small"
+                  style={{
+                    borderTop: `3px solid ${TRANSACTION_TYPE_HEX[budget.type]}`,
+                    borderRadius: token.borderRadiusLG,
+                  }}
+                >
                   <Space direction="vertical" style={{ width: "100%" }}>
                     <Space>
                       <Title level={5} style={{ margin: 0 }}>
                         {budget.name}
                       </Title>
-                      <Tag color={TYPE_COLORS[budget.type]}>
+                      <Tag color={TRANSACTION_TYPE_COLORS[budget.type]}>
                         {TRANSACTION_TYPE_LABELS[budget.type]}
                       </Tag>
                     </Space>
@@ -111,22 +116,34 @@ export const BudgetsSection: React.FC = () => {
                             : "success"
                           : PROGRESS_STATUS[budget.type]
                       }
-                      format={() => `${percent}%`}
                     />
                     <Space
                       style={{ justifyContent: "space-between", width: "100%" }}
                     >
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {formatCurrency(budget.current_amount, "GBP")} of{" "}
-                        {formatCurrency(budget.target_amount, "GBP")}
+                        {formatCurrency(budget.current_amount)} of{" "}
+                        {formatCurrency(budget.target_amount)}
                       </Text>
-                      {(budget.start_date || budget.end_date) && (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {budget.start_date ?? "—"} →{" "}
-                          {budget.end_date ?? "ongoing"}
-                        </Text>
-                      )}
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: 12,
+                          color:
+                            remaining < 0
+                              ? TRANSACTION_TYPE_HEX.spend
+                              : token.colorTextSecondary,
+                        }}
+                      >
+                        {remaining >= 0
+                          ? `${formatCurrency(remaining)} left`
+                          : `${formatCurrency(Math.abs(remaining))} over`}
+                      </Text>
                     </Space>
+                    {(budget.start_date || budget.end_date) && (
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        {budget.start_date ?? "—"} → {budget.end_date ?? "ongoing"}
+                      </Text>
+                    )}
                   </Space>
                 </Card>
               </Col>
