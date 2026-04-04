@@ -132,8 +132,12 @@ test.describe("Transactions", () => {
           page.getByRole("heading", { name: "Edit Transaction" })
         ).toBeVisible();
 
-        // Wait for form to finish loading initial data
+        // Wait for form to finish loading initial data AND background queries
+        // (e.g. categories for the current type) to settle before touching dropdowns.
+        // Without this, the in-flight categories fetch can cause a React re-render
+        // that detaches Type dropdown options mid-click.
         await waitForFormReady(page, "transaction-edit-form");
+        await page.waitForLoadState("networkidle");
 
         // Change date
         await page.getByLabel("Date").click();
@@ -194,6 +198,10 @@ test.describe("Transactions", () => {
 
         // Wait for the table to finish loading after the tab switches the data filter
         await page.waitForLoadState("networkidle");
+        // Also wait for at least one data row to render, since networkidle fires
+        // when the fetch completes but React may not have committed the update yet.
+        // Use ant-table-row to skip the hidden measure row Ant Design always inserts.
+        await expect(page.locator("tr.ant-table-row").first()).toBeVisible();
 
         // Verify the edited transaction row
         const editedRow = getTransactionRow(page, {
@@ -373,6 +381,12 @@ test.describe("Transactions", () => {
     await expect(
       page.getByRole("heading", { name: "Edit Transaction" })
     ).toBeVisible();
+
+    // Wait for the form and all background queries (initial categories fetch) to
+    // settle before touching any dropdown — otherwise the in-flight categories
+    // query causes a React re-render that detaches Type dropdown options mid-click.
+    await waitForFormReady(page, "transaction-edit-form");
+    await page.waitForLoadState("networkidle");
 
     // Change to earn type
     await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
