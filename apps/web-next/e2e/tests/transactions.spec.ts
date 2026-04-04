@@ -192,24 +192,22 @@ test.describe("Transactions", () => {
           page.getByRole("heading", { name: "Transactions" })
         ).toBeVisible();
 
-        // Switch to the new type's tab and wait for the API response it triggers.
-        // Using Promise.all ensures we start listening BEFORE the click so we
-        // never miss the response. This is more reliable than networkidle, which
-        // can fire in the brief gap before the new Supabase query fires and
-        // would then match stale cached rows instead of fresh data.
-        await Promise.all([
-          page.waitForResponse(
-            (resp) =>
-              resp.url().includes("transactions_with_details") && resp.ok(),
-            { timeout: 20000 }
-          ),
-          page
-            .getByRole("radiogroup", { name: "segmented control" })
-            .getByText(new RegExp(toType, "i"))
-            .click(),
-        ]);
+        // Switch to the new type's tab.
+        // When toType is "spend" (the default tab), the list already loaded
+        // spend data on redirect — clicking the already-selected tab fires no
+        // new request, so waitForResponse would time out. networkidle handles
+        // both cases cleanly:
+        //   - tab already selected ("spend"): networkidle resolves immediately
+        //   - tab changed: React synchronously starts the Supabase fetch on
+        //     click, networkidle waits for that request to finish
+        await page
+          .getByRole("radiogroup", { name: "segmented control" })
+          .getByText(new RegExp(toType, "i"))
+          .click();
+        await page.waitForLoadState("networkidle");
 
-        // Verify the edited transaction row
+        // Verify the edited transaction row.
+        // Extended timeout guards against slow CI re-renders after networkidle.
         const editedRow = getTransactionRow(page, {
           note: newNote,
           date: newDate,
@@ -217,7 +215,7 @@ test.describe("Transactions", () => {
           amount: toAmount,
           bankAccount: "Secondary Account",
         });
-        await expect(editedRow).toBeVisible();
+        await expect(editedRow).toBeVisible({ timeout: 15000 });
       });
     }
   );

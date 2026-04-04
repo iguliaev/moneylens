@@ -128,6 +128,7 @@ export const TransactionList = () => {
   return (
     <List>
       <Segmented
+        aria-label="segmented control"
         options={Object.values(TRANSACTION_TYPES).map((type) => ({
           label: TRANSACTION_TYPE_LABELS[type],
           value: type,
