@@ -139,10 +139,12 @@ test.describe("Transactions", () => {
         await waitForFormReady(page, "transaction-edit-form");
         await page.waitForLoadState("networkidle");
 
-        // Change date
-        await page.getByLabel("Date").click();
-        await page.keyboard.press("Control+A"); // Select all (works on both Mac/Win)
+        // Change date: fill() focuses + clears the input; Enter confirms the date
+        // and closes the calendar popup cleanly before we touch the next field.
+        // Without Enter, the popup can close on the next click and discard the
+        // typed value intermittently on slow CI runners.
         await page.getByLabel("Date").fill(newDate);
+        await page.keyboard.press("Enter");
 
         // Change type
         await page
@@ -190,18 +192,22 @@ test.describe("Transactions", () => {
           page.getByRole("heading", { name: "Transactions" })
         ).toBeVisible();
 
-        // Switch to the new type's tab
-        await page
-          .getByRole("radiogroup", { name: "segmented control" })
-          .getByText(new RegExp(toType, "i"))
-          .click();
-
-        // Wait for the table to finish loading after the tab switches the data filter
-        await page.waitForLoadState("networkidle");
-        // Also wait for at least one data row to render, since networkidle fires
-        // when the fetch completes but React may not have committed the update yet.
-        // Use ant-table-row to skip the hidden measure row Ant Design always inserts.
-        await expect(page.locator("tr.ant-table-row").first()).toBeVisible();
+        // Switch to the new type's tab and wait for the API response it triggers.
+        // Using Promise.all ensures we start listening BEFORE the click so we
+        // never miss the response. This is more reliable than networkidle, which
+        // can fire in the brief gap before the new Supabase query fires and
+        // would then match stale cached rows instead of fresh data.
+        await Promise.all([
+          page.waitForResponse(
+            (resp) =>
+              resp.url().includes("transactions_with_details") && resp.ok(),
+            { timeout: 20000 }
+          ),
+          page
+            .getByRole("radiogroup", { name: "segmented control" })
+            .getByText(new RegExp(toType, "i"))
+            .click(),
+        ]);
 
         // Verify the edited transaction row
         const editedRow = getTransactionRow(page, {
