@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Button,
   Card,
@@ -16,16 +15,12 @@ import { useBudgets } from "./useBudgets";
 import {
   TRANSACTION_TYPE_LABELS,
   TransactionType,
+  TYPE_COLORS,
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
+import { useCurrency } from "../../contexts/currency";
 
 const { Text, Title } = Typography;
-
-const TYPE_COLORS: Record<TransactionType, string> = {
-  earn: "green",
-  spend: "red",
-  save: "blue",
-};
 
 const PROGRESS_STATUS: Record<
   TransactionType,
@@ -36,9 +31,10 @@ const PROGRESS_STATUS: Record<
   save: "success",
 };
 
-export const BudgetsSection: React.FC = () => {
+export const BudgetsSection = () => {
   const { budgets, loading } = useBudgets();
   const { list } = useNavigation();
+  const { currency } = useCurrency();
 
   return (
     <Card
@@ -117,8 +113,8 @@ export const BudgetsSection: React.FC = () => {
                       style={{ justifyContent: "space-between", width: "100%" }}
                     >
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {formatCurrency(budget.current_amount, "GBP")} of{" "}
-                        {formatCurrency(budget.target_amount, "GBP")}
+                        {formatCurrency(budget.current_amount, currency)} of{" "}
+                        {formatCurrency(budget.target_amount, currency)}
                       </Text>
                       {(budget.start_date || budget.end_date) && (
                         <Text type="secondary" style={{ fontSize: 12 }}>

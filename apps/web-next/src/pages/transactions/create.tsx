@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { Create, useForm, useSelect } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
-import { Form, Input, DatePicker, Select, message } from "antd";
+import { Form, DatePicker, Select, InputNumber, Input, message } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { supabaseClient } from "../../utility";
@@ -122,12 +122,15 @@ export const TransactionCreate = () => {
           label="Amount"
           name={["amount"]}
           rules={[
+            { required: true },
             {
-              required: true,
+              type: "number",
+              min: 0.01,
+              message: "Amount must be greater than 0",
             },
           ]}
         >
-          <Input />
+          <InputNumber min={0.01} precision={2} style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item
           label="Bank Account"

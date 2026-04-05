@@ -6,13 +6,13 @@
 
 ## Phase 1: Foundation (Quick wins)
 
-- [ ] Fix hardcoded currency — consolidate GBP/USD mismatch, add user currency preference via context/hook
-- [ ] Fix transaction amount input to use `<InputNumber>` instead of `<Input>`
-- [ ] Add React error boundaries at layout level and per page
-- [ ] Consolidate duplicated `TYPE_COLORS` constant into `constants/transactionTypes.ts`
-- [ ] Fix `ColorModeContext.setMode` — make it accept a string parameter or rename to `toggleMode`
-- [ ] Standardize tags pagination to `{ mode: "off" }` in `TransactionEdit` (currently uses `pageSize: 1000`)
-- [ ] Remove unnecessary `import React from "react"` in files that don't use it directly
+- [x] Fix hardcoded currency — consolidate GBP/USD mismatch, add user currency preference via context/hook
+- [x] Fix transaction amount input to use `<InputNumber>` instead of `<Input>`
+- [x] Add React error boundaries at layout level and per page
+- [x] Consolidate duplicated `TYPE_COLORS` constant into `constants/transactionTypes.ts`
+- [x] Fix `ColorModeContext.setMode` — make it accept a string parameter or rename to `toggleMode`
+- [x] Standardize tags pagination to `{ mode: "off" }` in `TransactionEdit` (currently uses `pageSize: 1000`)
+- [x] Remove unnecessary `import React from "react"` in files that don't use it directly
 
 ---
 
