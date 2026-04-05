@@ -426,22 +426,22 @@ test.describe("Transactions", () => {
     await page.getByText("Savings");
   });
 
-  test("transaction amount field rejects zero or negative values", async ({
+  test("transaction amount field rejects zero but allows negative values", async ({
     page,
   }) => {
     await page.goto("/transactions/create");
 
-    // Enter zero — don't need other required fields, all errors show on submit
+    // Enter zero — should be rejected
     await page.getByLabel("Amount").fill("0");
     await page.getByLabel("Amount").blur();
-
-    // Attempt to save
     await page.getByRole("button", { name: /save/i }).click();
 
-    // Should stay on create page and show amount validation error
     await expect(page).toHaveURL(/\/transactions\/create/);
-    await expect(
-      page.getByText("Amount must be greater than 0")
-    ).toBeVisible();
+    await expect(page.getByText("Amount cannot be zero")).toBeVisible();
+
+    // Clear and enter a negative — the field should accept it (no validation error)
+    await page.getByLabel("Amount").fill("-50");
+    await page.getByLabel("Amount").blur();
+    await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
 });

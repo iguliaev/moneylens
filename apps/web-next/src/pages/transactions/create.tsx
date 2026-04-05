@@ -124,9 +124,10 @@ export const TransactionCreate = () => {
           rules={[
             { required: true },
             {
-              type: "number",
-              min: 0.01,
-              message: "Amount must be greater than 0",
+              validator: (_, value) =>
+                value === null || value === undefined || value === 0
+                  ? Promise.reject(new Error("Amount cannot be zero"))
+                  : Promise.resolve(),
             },
           ]}
         >
