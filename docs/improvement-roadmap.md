@@ -47,6 +47,20 @@
 
 ---
 
+## Phase 4b: User Settings (Backend)
+
+> **Context**: Currency preference is currently stored in `localStorage` only — it is device-local and lost on sign-in from another device. This phase persists user settings to Supabase so preferences roam with the account.
+
+- [ ] Create `user_settings` table: `user_id` (FK → `auth.users`), `currency` (text, default `'GBP'`), `date_format` (text), `created_at`, `updated_at`
+- [ ] Enable RLS on `user_settings` — users can only read/write their own row
+- [ ] Create `get_or_create_user_settings()` DB function to upsert the default row on first access
+- [ ] Expose settings via a Supabase RPC or direct table read in `CurrencyContext`
+- [ ] On app load, fetch settings from DB and seed `CurrencyContext` (fall back to `localStorage` while loading)
+- [ ] On currency change in Settings, persist to DB (and keep `localStorage` as offline cache)
+- [ ] Extend `user_settings` with `date_format` and wire it to date display across the app
+
+---
+
 ## Phase 5: Polish
 
 - [ ] Responsive mobile design (card-based transaction list, collapsible sidebar)
