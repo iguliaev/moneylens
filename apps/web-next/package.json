@@ -46,6 +46,7 @@
     "start": "refine start",
     "refine": "refine",
     "test:e2e": "playwright test",
+    "test:e2e:ci": "PLAYWRIGHT_HTML_OPEN=never playwright test --reporter=list",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "lint": "eslint",

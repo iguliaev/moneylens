@@ -431,28 +431,14 @@ test.describe("Transactions", () => {
   }) => {
     await page.goto("/transactions/create");
 
-    // Fill date
-    await page.getByLabel("Date").fill(e2eCurrentMonthDate());
-
-    // Select type
-    await page.getByRole("combobox", { name: "* Type" }).click();
-    await page.getByTitle(/^spend$/i).click();
-
-    // Select category
-    await page.getByRole("combobox", { name: "* Category" }).click();
-    await page.getByTitle(/^Groceries$/i).click();
-
-    // Enter zero as amount (invalid)
+    // Enter zero — don't need other required fields, all errors show on submit
     await page.getByLabel("Amount").fill("0");
-
-    // Select bank account
-    await page.getByRole("combobox", { name: "* Bank Account" }).click();
-    await page.getByTitle(/^Main Account$/i).click();
+    await page.getByLabel("Amount").blur();
 
     // Attempt to save
     await page.getByRole("button", { name: /save/i }).click();
 
-    // Should stay on create page and show validation error
+    // Should stay on create page and show amount validation error
     await expect(page).toHaveURL(/\/transactions\/create/);
     await expect(
       page.getByText("Amount must be greater than 0")

@@ -130,7 +130,7 @@ export const TransactionCreate = () => {
             },
           ]}
         >
-          <InputNumber min={0.01} precision={2} style={{ width: "100%" }} />
+          <InputNumber precision={2} style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item
           label="Bank Account"
