@@ -1,23 +1,19 @@
-import React from "react";
 import { useShow } from "@refinedev/core";
 import { Show, TextField, DateField, NumberField } from "@refinedev/antd";
 import { Tag, Typography } from "antd";
 import {
   TRANSACTION_TYPE_LABELS,
   TransactionType,
+  TYPE_COLORS,
 } from "../../constants/transactionTypes";
+import { useCurrency } from "../../contexts/currency";
 
 const { Title } = Typography;
-
-const TYPE_COLORS: Record<TransactionType, string> = {
-  earn: "green",
-  spend: "red",
-  save: "blue",
-};
 
 export const BudgetShow = () => {
   const { query, result: record } = useShow();
   const { isLoading } = query;
+  const { currency } = useCurrency();
 
   const type = record?.type as TransactionType | undefined;
 
@@ -34,7 +30,7 @@ export const BudgetShow = () => {
       <Title level={5}>Target Amount</Title>
       <NumberField
         value={record?.target_amount ?? 0}
-        options={{ style: "currency", currency: "GBP" }}
+        options={{ style: "currency", currency }}
       />
       <Title level={5}>Start Date</Title>
       <DateField value={record?.start_date} />

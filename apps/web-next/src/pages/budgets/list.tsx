@@ -1,4 +1,3 @@
-import React from "react";
 import { BaseRecord, useInvalidate } from "@refinedev/core";
 import {
   useTable,
@@ -11,17 +10,14 @@ import { Table, Space, Tag } from "antd";
 import {
   TRANSACTION_TYPE_LABELS,
   TransactionType,
+  TYPE_COLORS,
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
-
-const TYPE_COLORS: Record<TransactionType, string> = {
-  earn: "green",
-  spend: "red",
-  save: "blue",
-};
+import { useCurrency } from "../../contexts/currency";
 
 export const BudgetList = () => {
   const invalidate = useInvalidate();
+  const { currency } = useCurrency();
 
   const { tableProps } = useTable({
     syncWithLocation: true,
@@ -44,7 +40,7 @@ export const BudgetList = () => {
         <Table.Column
           dataIndex="target_amount"
           title="Target"
-          render={(value: number) => formatCurrency(value, "GBP")}
+          render={(value: number) => formatCurrency(value, currency)}
           align="right"
         />
         <Table.Column dataIndex="start_date" title="Start Date" />

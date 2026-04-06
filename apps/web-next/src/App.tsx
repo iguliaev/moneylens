@@ -28,6 +28,7 @@ import { App as AntdApp } from "antd";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import authProvider from "./authProvider";
 import { ColorModeContextProvider } from "./contexts/color-mode";
+import { CurrencyContextProvider } from "./contexts/currency";
 import { supabaseClient } from "./utility";
 import { withSoftDelete } from "./utility/softDeleteDataProvider";
 import { DashboardPage } from "./pages/dashboard";
@@ -59,7 +60,7 @@ import {
 } from "./pages/categories";
 import { SettingsPage } from "./pages/settings";
 import { ProjectTitle } from "./components/title";
-import { Header, EnvironmentBanner } from "./components";
+import { Header, EnvironmentBanner, ErrorBoundary } from "./components";
 
 const I18N_TRANSLATIONS: Record<string, string> = {
   "documentTitle.default": "MoneyLens",
@@ -71,7 +72,8 @@ function App() {
     <BrowserRouter>
       <RefineKbarProvider>
         <ColorModeContextProvider>
-          <AntdApp>
+          <CurrencyContextProvider>
+            <AntdApp>
             <Refine
               dataProvider={withSoftDelete(
                 dataProvider(supabaseClient),
@@ -180,7 +182,9 @@ function App() {
                     >
                       <EnvironmentBanner />
                       <ThemedLayout Header={Header} Title={ProjectTitle}>
-                        <Outlet />
+                        <ErrorBoundary>
+                          <Outlet />
+                        </ErrorBoundary>
                       </ThemedLayout>
                     </Authenticated>
                   }
@@ -285,6 +289,7 @@ function App() {
               <DocumentTitleHandler />
             </Refine>
           </AntdApp>
+          </CurrencyContextProvider>
         </ColorModeContextProvider>
       </RefineKbarProvider>
     </BrowserRouter>

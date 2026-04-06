@@ -6,13 +6,13 @@
 
 ## Phase 1: Foundation (Quick wins)
 
-- [ ] Fix hardcoded currency — consolidate GBP/USD mismatch, add user currency preference via context/hook
-- [ ] Fix transaction amount input to use `<InputNumber>` instead of `<Input>`
-- [ ] Add React error boundaries at layout level and per page
-- [ ] Consolidate duplicated `TYPE_COLORS` constant into `constants/transactionTypes.ts`
-- [ ] Fix `ColorModeContext.setMode` — make it accept a string parameter or rename to `toggleMode`
-- [ ] Standardize tags pagination to `{ mode: "off" }` in `TransactionEdit` (currently uses `pageSize: 1000`)
-- [ ] Remove unnecessary `import React from "react"` in files that don't use it directly
+- [x] Fix hardcoded currency — consolidate GBP/USD mismatch, add user currency preference via context/hook
+- [x] Fix transaction amount input to use `<InputNumber>` instead of `<Input>`
+- [x] Add React error boundaries at layout level and per page
+- [x] Consolidate duplicated `TYPE_COLORS` constant into `constants/transactionTypes.ts`
+- [x] Fix `ColorModeContext.setMode` — make it accept a string parameter or rename to `toggleMode`
+- [x] Standardize tags pagination to `{ mode: "off" }` in `TransactionEdit` (currently uses `pageSize: 1000`)
+- [x] Remove unnecessary `import React from "react"` in files that don't use it directly
 
 ---
 
@@ -44,6 +44,20 @@
 - [ ] Budget trajectory: "at this rate you'll exceed by day X"
 - [ ] Recurring transaction support (mark transactions as recurring, upcoming bills dashboard section)
 - [ ] User profile page (display name, currency preference, date format, avatar)
+
+---
+
+## Phase 4b: User Settings (Backend)
+
+> **Context**: Currency preference is currently stored in `localStorage` only — it is device-local and lost on sign-in from another device. This phase persists user settings to Supabase so preferences roam with the account.
+
+- [ ] Create `user_settings` table: `user_id` (FK → `auth.users`), `currency` (text, default `'GBP'`), `date_format` (text), `created_at`, `updated_at`
+- [ ] Enable RLS on `user_settings` — users can only read/write their own row
+- [ ] Create `get_or_create_user_settings()` DB function to upsert the default row on first access
+- [ ] Expose settings via a Supabase RPC or direct table read in `CurrencyContext`
+- [ ] On app load, fetch settings from DB and seed `CurrencyContext` (fall back to `localStorage` while loading)
+- [ ] On currency change in Settings, persist to DB (and keep `localStorage` as offline cache)
+- [ ] Extend `user_settings` with `date_format` and wire it to date display across the app
 
 ---
 

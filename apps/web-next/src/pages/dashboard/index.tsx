@@ -13,7 +13,8 @@ import {
 import { Show } from "@refinedev/antd";
 import { BudgetsSection } from "./BudgetsSection";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FC } from "react";
+import { useCurrency } from "../../contexts/currency";
 import dayjs from "dayjs";
 import { supabaseClient } from "../../utility";
 import type { Tables } from "../../types/database.types";
@@ -21,6 +22,7 @@ import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
   TransactionType,
+  TYPE_VALUE_COLORS,
 } from "../../constants/transactionTypes";
 
 const { Text, Title } = Typography;
@@ -74,17 +76,13 @@ const monthOptions = Array.from({ length: 12 }, (_, i) => ({
   value: i,
 }));
 
-const TYPE_COLORS: Record<TransactionType, string> = {
-  earn: "#3f8600",
-  spend: "#cf1322",
-  save: "#1890ff",
-};
+const TYPE_COLORS = TYPE_VALUE_COLORS;
 
 // === Utilities ===
-const formatCurrencyLocal = (amount: number) =>
-  new Intl.NumberFormat("en-GB", {
+const formatCurrencyLocal = (amount: number, currency: string) =>
+  new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency: "GBP",
+    currency,
   }).format(amount);
 
 const isTransactionType = (value: string | null): value is TransactionType =>
@@ -233,6 +231,7 @@ const TypeSummaryCards = ({
   data: TypeSummary[];
   loading: boolean;
 }) => {
+  const { currency } = useCurrency();
   const getAmount = (type: TransactionType) =>
     data.find((d) => d.type === type)?.total ?? 0;
 
@@ -246,7 +245,7 @@ const TypeSummaryCards = ({
               value={getAmount(type)}
               precision={2}
               formatter={(value) =>
-                formatCurrencyLocal(typeof value === "number" ? value : 0)
+                formatCurrencyLocal(typeof value === "number" ? value : 0, currency)
               }
               loading={loading}
               valueStyle={{ color: TYPE_COLORS[type] }}
@@ -267,6 +266,7 @@ const CategoryBreakdownTable = ({
   loading: boolean;
   type: TransactionType;
 }) => {
+  const { currency } = useCurrency();
   const filteredData = data.filter((d) => d.type === type);
 
   const columns: TableColumnsType<CategorySummary> = [
@@ -285,7 +285,7 @@ const CategoryBreakdownTable = ({
       sorter: (a: CategorySummary, b: CategorySummary) => a.total - b.total,
       defaultSortOrder: "descend",
       sortDirections: ["descend", "ascend"],
-      render: (value: number) => formatCurrencyLocal(value),
+      render: (value: number) => formatCurrencyLocal(value, currency),
       align: "right" as const,
     },
   ];
@@ -310,7 +310,7 @@ const CategoryBreakdownTable = ({
               <Text strong>Total</Text>
             </Table.Summary.Cell>
             <Table.Summary.Cell index={1} align="right">
-              <Text strong>{formatCurrencyLocal(total)}</Text>
+              <Text strong>{formatCurrencyLocal(total, currency)}</Text>
             </Table.Summary.Cell>
           </Table.Summary.Row>
         );
@@ -341,7 +341,7 @@ const CategoryBreakdownSection = ({
 );
 
 // === Main Component ===
-export const DashboardPage: React.FC = () => {
+export const DashboardPage: FC = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().month());
 

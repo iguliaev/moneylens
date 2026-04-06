@@ -425,4 +425,23 @@ test.describe("Transactions", () => {
     // Should show save categories (Savings)
     await page.getByText("Savings");
   });
+
+  test("transaction amount field rejects zero but allows negative values", async ({
+    page,
+  }) => {
+    await page.goto("/transactions/create");
+
+    // Enter zero — should be rejected
+    await page.getByLabel("Amount").fill("0");
+    await page.getByLabel("Amount").blur();
+    await page.getByRole("button", { name: /save/i }).click();
+
+    await expect(page).toHaveURL(/\/transactions\/create/);
+    await expect(page.getByText("Amount cannot be zero")).toBeVisible();
+
+    // Clear and enter a negative — the field should accept it (no validation error)
+    await page.getByLabel("Amount").fill("-50");
+    await page.getByLabel("Amount").blur();
+    await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
+  });
 });

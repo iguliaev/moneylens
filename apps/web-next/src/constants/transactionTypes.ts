@@ -27,3 +27,17 @@ export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   [TRANSACTION_TYPES.SPEND]: "Spend",
   [TRANSACTION_TYPES.SAVE]: "Save",
 };
+
+// Named Ant Design colours for Tag, Progress, and other AntD components
+export const TYPE_COLORS: Record<TransactionType, string> = {
+  [TRANSACTION_TYPES.EARN]: "green",
+  [TRANSACTION_TYPES.SPEND]: "red",
+  [TRANSACTION_TYPES.SAVE]: "blue",
+};
+
+// Hex colours for CSS style properties (e.g. Statistic.valueStyle)
+export const TYPE_VALUE_COLORS: Record<TransactionType, string> = {
+  [TRANSACTION_TYPES.EARN]: "#3f8600",
+  [TRANSACTION_TYPES.SPEND]: "#cf1322",
+  [TRANSACTION_TYPES.SAVE]: "#1890ff",
+};

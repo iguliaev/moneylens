@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Card,
   Typography,
@@ -10,15 +10,21 @@ import {
   Modal,
   message,
   Divider,
+  Select,
 } from "antd";
 import {
   UploadOutlined,
   DeleteOutlined,
   FileTextOutlined,
+  GlobalOutlined,
 } from "@ant-design/icons";
 import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import { supabaseClient } from "../../utility";
 import { Show } from "@refinedev/antd";
+import {
+  useCurrency,
+  SUPPORTED_CURRENCIES,
+} from "../../contexts/currency";
 
 const { Paragraph } = Typography;
 
@@ -119,7 +125,7 @@ const getUploadSummary = (payload: BulkUploadPayload): string => {
 };
 
 // === Components ===
-const BulkUploadSection: React.FC = () => {
+const BulkUploadSection = () => {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -316,7 +322,7 @@ const BulkUploadSection: React.FC = () => {
   );
 };
 
-const DataResetSection: React.FC = () => {
+const DataResetSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [result, setResult] = useState<DataResetResult | null>(null);
@@ -432,9 +438,31 @@ const DataResetSection: React.FC = () => {
 };
 
 // === Main Component ===
-export const SettingsPage: React.FC = () => {
+const CurrencySection = () => {
+  const { currency, setCurrency } = useCurrency();
+
+  return (
+    <Card title="Currency" extra={<GlobalOutlined />}>
+      <Paragraph type="secondary">
+        Choose the currency used to display amounts across the app.
+      </Paragraph>
+      <Select
+        value={currency}
+        onChange={setCurrency}
+        options={SUPPORTED_CURRENCIES}
+        style={{ width: 280 }}
+      />
+    </Card>
+  );
+};
+
+export const SettingsPage = () => {
   return (
     <Show title="Settings" headerButtons={() => null}>
+      <CurrencySection />
+
+      <Divider />
+
       <BulkUploadSection />
 
       <Divider />
