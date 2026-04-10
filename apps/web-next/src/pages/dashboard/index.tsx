@@ -171,6 +171,29 @@ const fetchMonthStats = async (
 };
 
 // === Data Fetching Hook ===
+const fetchPrevTypeSummary = async (
+  period: Period,
+  prevStart: string,
+  prevEnd: string
+): Promise<TypeSummary[]> => {
+  if (period === "year") {
+    const { data, error } = await supabaseClient
+      .from("view_yearly_totals")
+      .select("type, total, year")
+      .gte("year", prevStart)
+      .lt("year", prevEnd);
+    if (error) throw error;
+    return mapTypeSummary(data || []);
+  }
+  const { data, error } = await supabaseClient
+    .from("view_monthly_totals")
+    .select("type, total, month")
+    .gte("month", prevStart)
+    .lt("month", prevEnd);
+  if (error) throw error;
+  return mapTypeSummary(data || []);
+};
+
 const usePeriodStats = ({
   period,
   startDate,
@@ -184,22 +207,33 @@ const usePeriodStats = ({
     typeSummary: [],
     categorySummary: [],
   });
+  const [previousTypeSummary, setPreviousTypeSummary] = useState<TypeSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
+    const prevStart = dayjs(startDate)
+      .subtract(1, period === "year" ? "year" : "month")
+      .format("YYYY-MM-DD");
+    const prevEnd = dayjs(endDate)
+      .subtract(1, period === "year" ? "year" : "month")
+      .format("YYYY-MM-DD");
+
     const fetchData = async () => {
       setLoading(true);
 
       try {
-        const nextStats =
+        const [nextStats, prevSummary] = await Promise.all([
           period === "year"
-            ? await fetchYearStats(startDate, endDate)
-            : await fetchMonthStats(startDate, endDate);
+            ? fetchYearStats(startDate, endDate)
+            : fetchMonthStats(startDate, endDate),
+          fetchPrevTypeSummary(period, prevStart, prevEnd),
+        ]);
 
         if (!cancelled) {
           setStats(nextStats);
+          setPreviousTypeSummary(prevSummary);
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -220,39 +254,94 @@ const usePeriodStats = ({
     };
   }, [endDate, period, startDate]);
 
-  return { ...stats, loading };
+  return { ...stats, previousTypeSummary, loading };
 };
 
 // === Components ===
+const TrendBadge = ({
+  current,
+  previous,
+}: {
+  current: number;
+  previous: number;
+}) => {
+  if (previous === 0) return null;
+  const pct = ((current - previous) / Math.abs(previous)) * 100;
+  const isUp = pct >= 0;
+  return (
+    <Text
+      style={{
+        fontSize: 12,
+        color: isUp ? "#52c41a" : "#ff4d4f",
+        display: "block",
+        marginTop: 4,
+      }}
+    >
+      {isUp ? "↑" : "↓"} {Math.abs(pct).toFixed(1)}% vs prev period
+    </Text>
+  );
+};
+
 const TypeSummaryCards = ({
   data,
+  previousData,
   loading,
 }: {
   data: TypeSummary[];
+  previousData: TypeSummary[];
   loading: boolean;
 }) => {
   const { currency } = useCurrency();
-  const getAmount = (type: TransactionType) =>
-    data.find((d) => d.type === type)?.total ?? 0;
+  const getAmount = (type: TransactionType, source: TypeSummary[] = data) =>
+    source.find((d) => d.type === type)?.total ?? 0;
+
+  const earnings = getAmount(TRANSACTION_TYPES.EARN);
+  const spending = getAmount(TRANSACTION_TYPES.SPEND);
+  const netIncome = earnings - spending;
+  const prevEarnings = getAmount(TRANSACTION_TYPES.EARN, previousData);
+  const prevSpending = getAmount(TRANSACTION_TYPES.SPEND, previousData);
+  const prevNetIncome = prevEarnings - prevSpending;
 
   return (
     <Row gutter={[16, 16]}>
-      {Object.values(TRANSACTION_TYPES).map((type) => (
-        <Col xs={24} sm={8} key={type}>
-          <Card>
-            <Statistic
-              title={TRANSACTION_TYPE_LABELS[type]}
-              value={getAmount(type)}
-              precision={2}
-              formatter={(value) =>
-                formatCurrencyLocal(typeof value === "number" ? value : 0, currency)
-              }
-              loading={loading}
-              valueStyle={{ color: TYPE_COLORS[type] }}
-            />
-          </Card>
-        </Col>
-      ))}
+      {Object.values(TRANSACTION_TYPES).map((type) => {
+        const current = getAmount(type);
+        const previous = getAmount(type, previousData);
+        return (
+          <Col xs={24} sm={12} lg={6} key={type}>
+            <Card>
+              <Statistic
+                title={TRANSACTION_TYPE_LABELS[type]}
+                value={current}
+                precision={2}
+                formatter={(value) =>
+                  formatCurrencyLocal(typeof value === "number" ? value : 0, currency)
+                }
+                loading={loading}
+                valueStyle={{ color: TYPE_COLORS[type] }}
+              />
+              {!loading && <TrendBadge current={current} previous={previous} />}
+            </Card>
+          </Col>
+        );
+      })}
+      <Col xs={24} sm={12} lg={6}>
+        <Card>
+          <Statistic
+            title="Net Income"
+            value={netIncome}
+            precision={2}
+            formatter={(value) =>
+              formatCurrencyLocal(typeof value === "number" ? value : 0, currency)
+            }
+            loading={loading}
+            valueStyle={{ color: netIncome >= 0 ? "#52c41a" : "#ff4d4f" }}
+          />
+          {!loading && (
+            <TrendBadge current={netIncome} previous={prevNetIncome} />
+          )}
+        </Card>
+      </Col>
     </Row>
   );
 };
@@ -398,6 +487,7 @@ export const DashboardPage: FC = () => {
           </div>
           <TypeSummaryCards
             data={yearStats.typeSummary}
+            previousData={yearStats.previousTypeSummary}
             loading={yearStats.loading}
           />
           <CategoryBreakdownSection
@@ -430,6 +520,7 @@ export const DashboardPage: FC = () => {
           </div>
           <TypeSummaryCards
             data={monthStats.typeSummary}
+            previousData={monthStats.previousTypeSummary}
             loading={monthStats.loading}
           />
           <CategoryBreakdownSection

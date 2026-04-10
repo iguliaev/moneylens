@@ -11,6 +11,7 @@ import {
 } from "antd";
 import { AimOutlined } from "@ant-design/icons";
 import { useNavigation } from "@refinedev/core";
+import { useEffect, useState } from "react";
 import { useBudgets } from "./useBudgets";
 import {
   TRANSACTION_TYPE_LABELS,
@@ -35,6 +36,14 @@ export const BudgetsSection = () => {
   const { budgets, loading } = useBudgets();
   const { list } = useNavigation();
   const { currency } = useCurrency();
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    if (!loading && budgets.length > 0) {
+      const timer = setTimeout(() => setAnimated(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, budgets.length]);
 
   return (
     <Card
@@ -99,7 +108,7 @@ export const BudgetsSection = () => {
                       </Text>
                     )}
                     <Progress
-                      percent={percent}
+                      percent={animated ? percent : 0}
                       status={
                         percent >= 100
                           ? budget.type === "spend"
