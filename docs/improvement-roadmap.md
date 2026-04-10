@@ -27,11 +27,11 @@
 
 ## Phase 3: Data Visualization
 
-- [ ] Add net income card to dashboard (earnings − spending)
+- [x] Add net income card to dashboard (earnings − spending)
 - [ ] Add category donut/pie charts to dashboard
 - [ ] Add spending trend line/bar chart (last 6–12 months)
-- [ ] Add month-over-month comparison with trend arrows (↑↓) on summary cards
-- [ ] Animate budget progress bars
+- [x] Add month-over-month comparison with trend arrows (↑↓) on summary cards
+- [x] Animate budget progress bars
 - [ ] Surface unused DB views: `view_tagged_type_totals`, `view_monthly_tagged_type_totals`
 
 ---
