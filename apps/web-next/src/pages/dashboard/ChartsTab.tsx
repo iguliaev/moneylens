@@ -1,16 +1,15 @@
-import { useEffect, useState } from "react";
-import { Card, Col, Row, Select, Typography, message } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import { Card, Col, Row, Segmented, Select, Typography, message } from "antd";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  PieChart,
-  Pie,
-  Cell,
   ResponsiveContainer,
 } from "recharts";
 import dayjs from "dayjs";
@@ -67,6 +66,20 @@ interface TagTotal {
   total: number;
 }
 
+interface CategorySpendPoint {
+  month: string;     // display label "Jan 25"
+  monthKey: string;  // sort key "2025-01"
+  category: string;
+  total: number;
+}
+
+interface TagSpendPoint {
+  month: string;
+  monthKey: string;
+  tag: string;
+  total: number;
+}
+
 const isTransactionType = (v: string | null): v is TransactionType =>
   v !== null &&
   Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
@@ -76,6 +89,8 @@ const useChartsData = (startDate: string, endDate: string) => {
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [categories, setCategories] = useState<CategoryTotal[]>([]);
   const [tags, setTags] = useState<TagTotal[]>([]);
+  const [categorySpendByMonth, setCategorySpendByMonth] = useState<CategorySpendPoint[]>([]);
+  const [tagSpendByMonth, setTagSpendByMonth] = useState<TagSpendPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -119,27 +134,51 @@ const useChartsData = (startDate: string, endDate: string) => {
         }
         setTrend(Object.values(trendMap));
 
-        // Aggregate categories across months
+        // Aggregate categories across months (for donut / summary use)
         const catMap: Record<string, CategoryTotal> = {};
+        const catSpend: CategorySpendPoint[] = [];
         for (const row of catRes.data ?? []) {
           if (!isTransactionType(row.type)) continue;
           const key = `${row.type}__${row.category ?? "Unknown"}`;
           if (!catMap[key]) catMap[key] = { category: row.category ?? "Unknown", type: row.type, total: 0 };
           catMap[key].total += Number(row.total) || 0;
+
+          // Monthly spend breakdown for trendline
+          if (row.type === TRANSACTION_TYPES.SPEND && row.month) {
+            catSpend.push({
+              month: dayjs(row.month).format("MMM YY"),
+              monthKey: dayjs(row.month).format("YYYY-MM"),
+              category: row.category ?? "Unknown",
+              total: Number(row.total) || 0,
+            });
+          }
         }
         setCategories(Object.values(catMap));
+        setCategorySpendByMonth(catSpend);
 
         // Explode tags array and aggregate per tag+type
         const tagMap: Record<string, TagTotal> = {};
+        const tagSpend: TagSpendPoint[] = [];
         for (const row of tagRes.data ?? []) {
           if (!isTransactionType(row.type) || !row.tags?.length) continue;
           for (const tag of row.tags) {
             const key = `${row.type}__${tag}`;
             if (!tagMap[key]) tagMap[key] = { tag, type: row.type, total: 0 };
             tagMap[key].total += Number(row.total) || 0;
+
+            // Monthly spend breakdown for trendline
+            if (row.type === TRANSACTION_TYPES.SPEND && row.month) {
+              tagSpend.push({
+                month: dayjs(row.month).format("MMM YY"),
+                monthKey: dayjs(row.month).format("YYYY-MM"),
+                tag,
+                total: Number(row.total) || 0,
+              });
+            }
           }
         }
         setTags(Object.values(tagMap).sort((a, b) => b.total - a.total));
+        setTagSpendByMonth(tagSpend);
       } catch (err) {
         console.error("Error fetching chart data:", err);
         if (!cancelled) message.error("Failed to load chart data");
@@ -152,7 +191,7 @@ const useChartsData = (startDate: string, endDate: string) => {
     return () => { cancelled = true; };
   }, [startDate, endDate]);
 
-  return { trend, categories, tags, loading };
+  return { trend, categories, tags, categorySpendByMonth, tagSpendByMonth, loading };
 };
 
 // === Sub-components ===
@@ -191,44 +230,98 @@ const TrendChart = ({
   );
 };
 
-const CategoryDonut = ({
-  title,
-  data,
+const SpendingTrendlineChart = ({
+  categorySpendByMonth,
+  tagSpendByMonth,
   currency,
 }: {
-  title: string;
-  data: { name: string; value: number }[];
+  categorySpendByMonth: CategorySpendPoint[];
+  tagSpendByMonth: TagSpendPoint[];
   currency: string;
 }) => {
+  const { Text } = Typography;
+  const [mode, setMode] = useState<"category" | "tag">("category");
+  const [selected, setSelected] = useState<string[]>([]);
   const fmt = CurrencyTooltipFormatter(currency);
+
+  const itemPool = useMemo(() => {
+    const totals: Record<string, number> = {};
+    if (mode === "category") {
+      for (const p of categorySpendByMonth) totals[p.category] = (totals[p.category] ?? 0) + p.total;
+    } else {
+      for (const p of tagSpendByMonth) totals[p.tag] = (totals[p.tag] ?? 0) + p.total;
+    }
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([k]) => k);
+  }, [mode, categorySpendByMonth, tagSpendByMonth]);
+
+  useEffect(() => {
+    setSelected(itemPool.slice(0, 5));
+  }, [itemPool]);
+
+  const chartData = useMemo(() => {
+    const monthInfo = new Map<string, string>(); // monthKey -> label
+    const itemByMonth: Record<string, Record<string, number>> = {}; // item -> monthKey -> total
+    const points = mode === "category" ? categorySpendByMonth : tagSpendByMonth;
+
+    for (const p of points) {
+      const key = mode === "category" ? (p as CategorySpendPoint).category : (p as TagSpendPoint).tag;
+      monthInfo.set(p.monthKey, p.month);
+      if (!itemByMonth[key]) itemByMonth[key] = {};
+      itemByMonth[key][p.monthKey] = (itemByMonth[key][p.monthKey] ?? 0) + p.total;
+    }
+
+    return [...monthInfo.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([monthKey, month]) => {
+        const row: Record<string, string | number> = { month };
+        for (const item of selected) row[item] = itemByMonth[item]?.[monthKey] ?? 0;
+        return row;
+      });
+  }, [mode, categorySpendByMonth, tagSpendByMonth, selected]);
+
+  const hasData = chartData.length > 0 && selected.length > 0;
+  const label = mode === "category" ? "categories" : "tags";
+
   return (
-    <Card title={title} style={{ height: "100%" }}>
-      {data.length === 0 ? (
-        <Text type="secondary">No data</Text>
+    <Card title="Spending Trendline">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <Segmented
+          options={["Category", "Tag"]}
+          value={mode === "category" ? "Category" : "Tag"}
+          onChange={(v) => setMode(v === "Category" ? "category" : "tag")}
+        />
+        <Select
+          mode="multiple"
+          style={{ flex: 1, minWidth: 200 }}
+          placeholder={`Select ${label}`}
+          options={itemPool.map((k) => ({ label: k, value: k }))}
+          value={selected}
+          onChange={setSelected}
+          maxTagCount="responsive"
+        />
+      </div>
+      {!hasData ? (
+        <Text type="secondary">No spending data for the selected {label} in this period.</Text>
       ) : (
-        <ResponsiveContainer width="100%" height={220}>
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius="52%"
-              outerRadius="75%"
-              dataKey="value"
-              paddingAngle={2}
-            >
-              {data.map((_, i) => (
-                <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
-              ))}
-            </Pie>
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+            <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11 }} width={72} />
             <Tooltip formatter={fmt} />
-            <Legend
-              layout="vertical"
-              align="right"
-              verticalAlign="middle"
-              wrapperStyle={{ fontSize: 12 }}
-            />
-          </PieChart>
+            <Legend wrapperStyle={{ fontSize: 13 }} />
+            {selected.map((item, i) => (
+              <Line
+                key={item}
+                type="monotone"
+                dataKey={item}
+                stroke={DONUT_COLORS[i % DONUT_COLORS.length]}
+                strokeWidth={2.5}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            ))}
+          </LineChart>
         </ResponsiveContainer>
       )}
     </Card>
@@ -285,13 +378,7 @@ export const ChartsTab = () => {
   const startDate = dayjs().year(startYear).month(startMonth).startOf("month").format("YYYY-MM-DD");
   const endDate = dayjs().year(endYear).month(endMonth).startOf("month").add(1, "month").format("YYYY-MM-DD");
 
-  const { trend, categories, tags, loading } = useChartsData(startDate, endDate);
-
-  const donutData = (type: TransactionType) =>
-    categories
-      .filter((c) => c.type === type)
-      .sort((a, b) => b.total - a.total)
-      .map((c) => ({ name: c.category, value: c.total }));
+  const { trend, tags, categorySpendByMonth, tagSpendByMonth, loading } = useChartsData(startDate, endDate);
 
   const tagData = (type: TransactionType) =>
     tags.filter((t) => t.type === type).slice(0, 10);
@@ -315,25 +402,16 @@ export const ChartsTab = () => {
         <TrendChart data={trend} currency={currency} />
       )}
 
-      {/* Category donuts */}
-      <div>
-        <Title level={5} style={{ marginBottom: 12 }}>By Category</Title>
-        <Row gutter={[16, 16]}>
-          {Object.values(TRANSACTION_TYPES).map((type) => (
-            <Col xs={24} md={8} key={type}>
-              {loading ? (
-                <Card loading style={{ height: 280 }} />
-              ) : (
-                <CategoryDonut
-                  title={TRANSACTION_TYPE_LABELS[type]}
-                  data={donutData(type)}
-                  currency={currency}
-                />
-              )}
-            </Col>
-          ))}
-        </Row>
-      </div>
+      {/* Spending trendline (by category or tag) */}
+      {loading ? (
+        <Card loading style={{ height: 380 }} />
+      ) : (
+        <SpendingTrendlineChart
+          categorySpendByMonth={categorySpendByMonth}
+          tagSpendByMonth={tagSpendByMonth}
+          currency={currency}
+        />
+      )}
 
       {/* Tag analytics */}
       <div>
