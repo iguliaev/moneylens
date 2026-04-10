@@ -207,7 +207,7 @@ const usePeriodStats = ({
     typeSummary: [],
     categorySummary: [],
   });
-  const [previousTypeSummary, setPreviousTypeSummary] = useState<TypeSummary[]>([]);
+  const [previousTypeSummary, setPreviousTypeSummary] = useState<TypeSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -230,7 +230,7 @@ const usePeriodStats = ({
             : fetchMonthStats(startDate, endDate),
           fetchPrevTypeSummary(period, prevStart, prevEnd).catch((err) => {
             console.error("Error fetching previous period summary:", err);
-            return [] as TypeSummary[];
+            return null as TypeSummary[] | null;
           }),
         ]);
 
@@ -283,9 +283,10 @@ const TrendBadge = ({
   }
 
   if (previous === 0) {
+    const isPositive = current > 0;
     return (
-      <Text style={{ ...baseStyle, color: "#52c41a" }}>
-        ↑ New vs prev period
+      <Text style={{ ...baseStyle, color: isPositive ? "#52c41a" : "#ff4d4f" }}>
+        {isPositive ? "↑" : "↓"} New vs prev period
       </Text>
     );
   }
@@ -314,7 +315,7 @@ const TypeSummaryCards = ({
   loading,
 }: {
   data: TypeSummary[];
-  previousData: TypeSummary[];
+  previousData: TypeSummary[] | null;
   loading: boolean;
 }) => {
   const { currency } = useCurrency();
@@ -324,15 +325,15 @@ const TypeSummaryCards = ({
   const earnings = getAmount(TRANSACTION_TYPES.EARN);
   const spending = getAmount(TRANSACTION_TYPES.SPEND);
   const netIncome = earnings - spending;
-  const prevEarnings = getAmount(TRANSACTION_TYPES.EARN, previousData);
-  const prevSpending = getAmount(TRANSACTION_TYPES.SPEND, previousData);
+  const prevEarnings = getAmount(TRANSACTION_TYPES.EARN, previousData ?? []);
+  const prevSpending = getAmount(TRANSACTION_TYPES.SPEND, previousData ?? []);
   const prevNetIncome = prevEarnings - prevSpending;
 
   return (
     <Row gutter={[16, 16]}>
       {Object.values(TRANSACTION_TYPES).map((type) => {
         const current = getAmount(type);
-        const previous = getAmount(type, previousData);
+        const previous = getAmount(type, previousData ?? []);
         return (
           <Col xs={24} sm={12} lg={6} key={type}>
             <Card>
@@ -346,7 +347,9 @@ const TypeSummaryCards = ({
                 loading={loading}
                 valueStyle={{ color: TYPE_COLORS[type] }}
               />
-              {!loading && <TrendBadge current={current} previous={previous} />}
+              {!loading && previousData !== null && (
+                <TrendBadge current={current} previous={previous} />
+              )}
             </Card>
           </Col>
         );
@@ -363,7 +366,7 @@ const TypeSummaryCards = ({
             loading={loading}
             valueStyle={{ color: netIncome > 0 ? "#52c41a" : netIncome < 0 ? "#ff4d4f" : undefined }}
           />
-          {!loading && (
+          {!loading && previousData !== null && (
             <TrendBadge current={netIncome} previous={prevNetIncome} />
           )}
         </Card>
