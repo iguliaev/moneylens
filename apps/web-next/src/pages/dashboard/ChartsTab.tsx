@@ -313,7 +313,7 @@ const SpendingTrendlineChart = ({
             {selected.map((item, i) => (
               <Line
                 key={item}
-                type="linear"
+                type="monotone"
                 dataKey={item}
                 stroke={DONUT_COLORS[i % DONUT_COLORS.length]}
                 strokeWidth={2.5}
