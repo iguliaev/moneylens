@@ -25,7 +25,7 @@ import {
 const { Text, Title } = Typography;
 
 // === Constants ===
-const DONUT_COLORS = [
+const CHART_COLORS = [
   "#1677ff",
   "#52c41a",
   "#ff4d4f",
@@ -274,7 +274,11 @@ const SpendingTrendlineChart = ({
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([monthKey, month]) => {
         const row: Record<string, string | number> = { month };
-        for (const item of selected) row[item] = itemByMonth[item]?.[monthKey] ?? 0;
+        // Use safe keys (k0, k1, …) instead of raw names to avoid Recharts
+        // path-resolver treating dots/brackets in names as nested accessors.
+        for (let i = 0; i < selected.length; i++) {
+          row[`k${i}`] = itemByMonth[selected[i]]?.[monthKey] ?? 0;
+        }
         return row;
       });
   }, [mode, categorySpendByMonth, tagSpendByMonth, selected]);
@@ -314,8 +318,9 @@ const SpendingTrendlineChart = ({
               <Line
                 key={item}
                 type="monotone"
-                dataKey={item}
-                stroke={DONUT_COLORS[i % DONUT_COLORS.length]}
+                dataKey={`k${i}`}
+                name={item}
+                stroke={CHART_COLORS[i % CHART_COLORS.length]}
                 strokeWidth={2.5}
                 dot={false}
                 activeDot={{ r: 4 }}
