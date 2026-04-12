@@ -134,7 +134,7 @@ const useChartsData = (startDate: string, endDate: string) => {
         }
         setTrend(Object.values(trendMap));
 
-        // Aggregate categories across months (for donut / summary use)
+        // Aggregate categories across months for summary totals and category-based chart data
         const catMap: Record<string, CategoryTotal> = {};
         const catSpend: CategorySpendPoint[] = [];
         for (const row of catRes.data ?? []) {
