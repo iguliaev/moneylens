@@ -12,6 +12,7 @@ import {
 } from "antd";
 import { Show } from "@refinedev/antd";
 import { BudgetsSection } from "./BudgetsSection";
+import { ChartsTab } from "./ChartsTab";
 
 import { useEffect, useState, type FC } from "react";
 import { useCurrency } from "../../contexts/currency";
@@ -558,6 +559,11 @@ export const DashboardPage: FC = () => {
           />
         </div>
       ),
+    },
+    {
+      key: "charts",
+      label: "📊 Charts",
+      children: <ChartsTab />,
     },
   ];
 
