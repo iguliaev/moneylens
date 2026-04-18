@@ -10,41 +10,15 @@ import {
   TagField,
   FilterDropdown,
   getDefaultFilter,
-  type MapValueEvent,
 } from "@refinedev/antd";
 import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
-import { useState, type Key } from "react";
+import { useState } from "react";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
 } from "../../constants/transactionTypes";
 import { formatAmount } from "../../utility";
-
-/**
- * Custom date range filter mapper that outputs date-only strings (YYYY-MM-DD)
- * instead of ISO timestamps to avoid timezone conversion issues.
- * Use this for DATE columns (not TIMESTAMP) in the database.
- */
-const dateOnlyFilterMapper = (selectedKeys: Key[], event: MapValueEvent) => {
-  if (!selectedKeys || selectedKeys.length === 0) {
-    return selectedKeys;
-  }
-
-  if (event === "value") {
-    return selectedKeys.map((key) =>
-      typeof key === "string" ? dayjs(key) : key
-    );
-  }
-
-  if (event === "onChange" && selectedKeys.every(dayjs.isDayjs)) {
-    return selectedKeys.map((date) =>
-      (date as unknown as dayjs.Dayjs).format("YYYY-MM-DD")
-    );
-  }
-
-  return selectedKeys;
-};
 
 const commonSelectOptions = {
   sorters: [{ field: "name", order: "asc" as const }],
@@ -80,7 +54,7 @@ export const TransactionList = () => {
     TRANSACTION_TYPES.SPEND
   );
 
-  const { tableProps, filters } = useTable({
+  const { tableProps, filters, setFilters } = useTable({
     syncWithLocation: true,
     resource: "transactions_with_details",
     sorters: {
@@ -142,12 +116,39 @@ export const TransactionList = () => {
           title="Date"
           sorter
           render={(value: string) => <DateField value={value} />}
-          filterDropdown={(props) => (
-            <FilterDropdown {...props} mapValue={dateOnlyFilterMapper}>
-              <DatePicker.RangePicker />
-            </FilterDropdown>
-          )}
-          defaultFilteredValue={getDefaultFilter("date", filters, "between")}
+          filterDropdown={({ confirm, clearFilters, close }) => {
+            const defaultVal = getDefaultFilter("date", filters, "between");
+            const defaultDates =
+              Array.isArray(defaultVal) && defaultVal.length === 2
+                ? ([dayjs(defaultVal[0] as string), dayjs(defaultVal[1] as string)] as [dayjs.Dayjs, dayjs.Dayjs])
+                : undefined;
+            return (
+              <div style={{ padding: 8 }}>
+                <DatePicker.RangePicker
+                  defaultValue={defaultDates}
+                  onChange={(dates) => {
+                    if (dates && dates[0] && dates[1]) {
+                      setFilters([
+                        {
+                          field: "date",
+                          operator: "between",
+                          value: [
+                            dates[0].format("YYYY-MM-DD"),
+                            dates[1].format("YYYY-MM-DD"),
+                          ],
+                        },
+                      ]);
+                      confirm({ closeDropdown: true });
+                    } else {
+                      if (clearFilters) clearFilters();
+                      setFilters([{ field: "date", operator: "between", value: undefined }]);
+                      close();
+                    }
+                  }}
+                />
+              </div>
+            );
+          }}
         />
         <Table.Column
           key="category_id"
