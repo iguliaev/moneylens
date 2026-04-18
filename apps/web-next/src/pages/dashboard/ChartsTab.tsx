@@ -54,12 +54,6 @@ interface TrendPoint {
   save: number;
 }
 
-interface CategoryTotal {
-  category: string;
-  type: TransactionType;
-  total: number;
-}
-
 interface TagTotal {
   tag: string;
   type: TransactionType;
@@ -67,29 +61,42 @@ interface TagTotal {
 }
 
 interface CategorySpendPoint {
-  month: string;     // display label "Jan 25"
-  monthKey: string;  // sort key "2025-01"
+  monthKey: string; // sort key "2025-01"
   category: string;
   total: number;
 }
 
 interface TagSpendPoint {
-  month: string;
   monthKey: string;
   tag: string;
   total: number;
 }
 
 const isTransactionType = (v: string | null): v is TransactionType =>
-  v !== null &&
-  Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
+  v !== null && Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
+
+const getMonthKeysInRange = (startDate: string, endDate: string): string[] => {
+  const monthKeys: string[] = [];
+  let cursor = dayjs(startDate).startOf("month");
+  const rangeEnd = dayjs(endDate).startOf("month");
+
+  while (cursor.isBefore(rangeEnd)) {
+    monthKeys.push(cursor.format("YYYY-MM"));
+    cursor = cursor.add(1, "month");
+  }
+
+  return monthKeys;
+};
+
+const formatMonthLabel = (month: string) => dayjs(month).format("MMM YY");
 
 // === Data hook ===
 const useChartsData = (startDate: string, endDate: string) => {
   const [trend, setTrend] = useState<TrendPoint[]>([]);
-  const [categories, setCategories] = useState<CategoryTotal[]>([]);
   const [tags, setTags] = useState<TagTotal[]>([]);
-  const [categorySpendByMonth, setCategorySpendByMonth] = useState<CategorySpendPoint[]>([]);
+  const [categorySpendByMonth, setCategorySpendByMonth] = useState<
+    CategorySpendPoint[]
+  >([]);
   const [tagSpendByMonth, setTagSpendByMonth] = useState<TagSpendPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -124,36 +131,40 @@ const useChartsData = (startDate: string, endDate: string) => {
 
         if (cancelled) return;
 
-        // Build trend points keyed by month label
-        const trendMap: Record<string, TrendPoint> = {};
+        const trendMonthKeys = getMonthKeysInRange(startDate, endDate);
+        const trendMap: Record<string, TrendPoint> = Object.fromEntries(
+          trendMonthKeys.map((monthKey) => [
+            monthKey,
+            {
+              month: formatMonthLabel(`${monthKey}-01`),
+              earn: 0,
+              spend: 0,
+              save: 0,
+            },
+          ])
+        );
+
         for (const row of trendRes.data ?? []) {
           if (!row.month || !isTransactionType(row.type)) continue;
-          const label = dayjs(row.month).format("MMM YY");
-          if (!trendMap[label]) trendMap[label] = { month: label, earn: 0, spend: 0, save: 0 };
-          trendMap[label][row.type] += Number(row.total) || 0;
+          const monthKey = dayjs(row.month).format("YYYY-MM");
+          if (!trendMap[monthKey]) continue;
+          trendMap[monthKey][row.type] += Number(row.total) || 0;
         }
-        setTrend(Object.values(trendMap));
+        setTrend(trendMonthKeys.map((monthKey) => trendMap[monthKey]));
 
-        // Aggregate categories across months for summary totals and category-based chart data
-        const catMap: Record<string, CategoryTotal> = {};
         const catSpend: CategorySpendPoint[] = [];
         for (const row of catRes.data ?? []) {
           if (!isTransactionType(row.type)) continue;
-          const key = `${row.type}__${row.category ?? "Unknown"}`;
-          if (!catMap[key]) catMap[key] = { category: row.category ?? "Unknown", type: row.type, total: 0 };
-          catMap[key].total += Number(row.total) || 0;
 
           // Monthly spend breakdown for trendline
           if (row.type === TRANSACTION_TYPES.SPEND && row.month) {
             catSpend.push({
-              month: dayjs(row.month).format("MMM YY"),
               monthKey: dayjs(row.month).format("YYYY-MM"),
               category: row.category ?? "Unknown",
               total: Number(row.total) || 0,
             });
           }
         }
-        setCategories(Object.values(catMap));
         setCategorySpendByMonth(catSpend);
 
         // Explode tags array and aggregate per tag+type
@@ -169,7 +180,6 @@ const useChartsData = (startDate: string, endDate: string) => {
             // Monthly spend breakdown for trendline
             if (row.type === TRANSACTION_TYPES.SPEND && row.month) {
               tagSpend.push({
-                month: dayjs(row.month).format("MMM YY"),
                 monthKey: dayjs(row.month).format("YYYY-MM"),
                 tag,
                 total: Number(row.total) || 0,
@@ -188,10 +198,12 @@ const useChartsData = (startDate: string, endDate: string) => {
     };
 
     fetchAll();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [startDate, endDate]);
 
-  return { trend, categories, tags, categorySpendByMonth, tagSpendByMonth, loading };
+  return { trend, tags, categorySpendByMonth, tagSpendByMonth, loading };
 };
 
 // === Sub-components ===
@@ -201,7 +213,10 @@ const CurrencyTooltipFormatter =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (value: any): string => {
     const n = typeof value === "number" ? value : 0;
-    return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(n);
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+    }).format(n);
   };
 
 const TrendChart = ({
@@ -215,15 +230,37 @@ const TrendChart = ({
   return (
     <Card title="Income vs Spending vs Savings">
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={data} margin={{ top: 4, right: 16, left: 16, bottom: 4 }}>
+        <BarChart
+          data={data}
+          margin={{ top: 4, right: 16, left: 16, bottom: 4 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-          <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11 }} width={72} />
+          <YAxis
+            tickFormatter={(v) => fmt(v)}
+            tick={{ fontSize: 11 }}
+            width={72}
+          />
           <Tooltip formatter={fmt} />
           <Legend wrapperStyle={{ fontSize: 13 }} />
-          <Bar dataKey="earn"  name={TRANSACTION_TYPE_LABELS[TRANSACTION_TYPES.EARN]}  fill={TYPE_VALUE_COLORS[TRANSACTION_TYPES.EARN]}  radius={[3, 3, 0, 0]} />
-          <Bar dataKey="spend" name={TRANSACTION_TYPE_LABELS[TRANSACTION_TYPES.SPEND]} fill={TYPE_VALUE_COLORS[TRANSACTION_TYPES.SPEND]} radius={[3, 3, 0, 0]} />
-          <Bar dataKey="save"  name={TRANSACTION_TYPE_LABELS[TRANSACTION_TYPES.SAVE]}  fill={TYPE_VALUE_COLORS[TRANSACTION_TYPES.SAVE]}  radius={[3, 3, 0, 0]} />
+          <Bar
+            dataKey="earn"
+            name={TRANSACTION_TYPE_LABELS[TRANSACTION_TYPES.EARN]}
+            fill={TYPE_VALUE_COLORS[TRANSACTION_TYPES.EARN]}
+            radius={[3, 3, 0, 0]}
+          />
+          <Bar
+            dataKey="spend"
+            name={TRANSACTION_TYPE_LABELS[TRANSACTION_TYPES.SPEND]}
+            fill={TYPE_VALUE_COLORS[TRANSACTION_TYPES.SPEND]}
+            radius={[3, 3, 0, 0]}
+          />
+          <Bar
+            dataKey="save"
+            name={TRANSACTION_TYPE_LABELS[TRANSACTION_TYPES.SAVE]}
+            fill={TYPE_VALUE_COLORS[TRANSACTION_TYPES.SAVE]}
+            radius={[3, 3, 0, 0]}
+          />
         </BarChart>
       </ResponsiveContainer>
     </Card>
@@ -233,10 +270,14 @@ const TrendChart = ({
 const SpendingTrendlineChart = ({
   categorySpendByMonth,
   tagSpendByMonth,
+  startDate,
+  endDate,
   currency,
 }: {
   categorySpendByMonth: CategorySpendPoint[];
   tagSpendByMonth: TagSpendPoint[];
+  startDate: string;
+  endDate: string;
   currency: string;
 }) => {
   const { Text } = Typography;
@@ -247,48 +288,75 @@ const SpendingTrendlineChart = ({
   const itemPool = useMemo(() => {
     const totals: Record<string, number> = {};
     if (mode === "category") {
-      for (const p of categorySpendByMonth) totals[p.category] = (totals[p.category] ?? 0) + p.total;
+      for (const p of categorySpendByMonth)
+        totals[p.category] = (totals[p.category] ?? 0) + p.total;
     } else {
-      for (const p of tagSpendByMonth) totals[p.tag] = (totals[p.tag] ?? 0) + p.total;
+      for (const p of tagSpendByMonth)
+        totals[p.tag] = (totals[p.tag] ?? 0) + p.total;
     }
-    return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([k]) => k);
+    return Object.entries(totals)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k]) => k);
   }, [mode, categorySpendByMonth, tagSpendByMonth]);
 
   useEffect(() => {
     setSelected(itemPool.slice(0, 5));
   }, [itemPool]);
 
-  const chartData = useMemo(() => {
-    const monthInfo = new Map<string, string>(); // monthKey -> label
+  const { chartData, hasData } = useMemo(() => {
     const itemByMonth: Record<string, Record<string, number>> = {}; // item -> monthKey -> total
     const points = mode === "category" ? categorySpendByMonth : tagSpendByMonth;
 
     for (const p of points) {
-      const key = mode === "category" ? (p as CategorySpendPoint).category : (p as TagSpendPoint).tag;
-      monthInfo.set(p.monthKey, p.month);
+      const key =
+        mode === "category"
+          ? (p as CategorySpendPoint).category
+          : (p as TagSpendPoint).tag;
       if (!itemByMonth[key]) itemByMonth[key] = {};
-      itemByMonth[key][p.monthKey] = (itemByMonth[key][p.monthKey] ?? 0) + p.total;
+      itemByMonth[key][p.monthKey] =
+        (itemByMonth[key][p.monthKey] ?? 0) + p.total;
     }
 
-    return [...monthInfo.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([monthKey, month]) => {
-        const row: Record<string, string | number> = { month };
-        // Use safe keys (k0, k1, …) instead of raw names to avoid Recharts
-        // path-resolver treating dots/brackets in names as nested accessors.
-        for (let i = 0; i < selected.length; i++) {
-          row[`k${i}`] = itemByMonth[selected[i]]?.[monthKey] ?? 0;
-        }
-        return row;
-      });
-  }, [mode, categorySpendByMonth, tagSpendByMonth, selected]);
+    const monthKeysInRange = getMonthKeysInRange(startDate, endDate);
+    const hasData = selected.some((item) =>
+      Object.values(itemByMonth[item] ?? {}).some((total) => total !== 0)
+    );
 
-  const hasData = chartData.length > 0 && selected.length > 0;
+    const chartData = monthKeysInRange.map((monthKey) => {
+      const row: Record<string, string | number> = {
+        month: formatMonthLabel(`${monthKey}-01`),
+      };
+      // Use safe keys (k0, k1, …) instead of raw names to avoid Recharts
+      // path-resolver treating dots/brackets in names as nested accessors.
+      for (let i = 0; i < selected.length; i++) {
+        row[`k${i}`] = itemByMonth[selected[i]]?.[monthKey] ?? 0;
+      }
+      return row;
+    });
+
+    return { chartData, hasData };
+  }, [
+    categorySpendByMonth,
+    endDate,
+    mode,
+    selected,
+    startDate,
+    tagSpendByMonth,
+  ]);
+
   const label = mode === "category" ? "categories" : "tags";
 
   return (
     <Card title="Spending Trendline">
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: "wrap",
+        }}
+      >
         <Segmented
           options={["Category", "Tag"]}
           value={mode === "category" ? "Category" : "Tag"}
@@ -305,13 +373,22 @@ const SpendingTrendlineChart = ({
         />
       </div>
       {!hasData ? (
-        <Text type="secondary">No spending data for the selected {label} in this period.</Text>
+        <Text type="secondary">
+          No spending data for the selected {label} in this period.
+        </Text>
       ) : (
         <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 4 }}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 4, right: 16, left: 16, bottom: 4 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11 }} width={72} />
+            <YAxis
+              tickFormatter={(v) => fmt(v)}
+              tick={{ fontSize: 11 }}
+              width={72}
+            />
             <Tooltip formatter={fmt} />
             <Legend wrapperStyle={{ fontSize: 13 }} />
             {selected.map((item, i) => (
@@ -350,15 +427,31 @@ const TagBar = ({
       {data.length === 0 ? (
         <Text type="secondary">No tagged transactions in this period</Text>
       ) : (
-        <ResponsiveContainer width="100%" height={Math.max(160, data.length * 34)}>
+        <ResponsiveContainer
+          width="100%"
+          height={Math.max(160, data.length * 34)}
+        >
           <BarChart
             layout="vertical"
             data={data}
             margin={{ top: 4, right: 32, left: 16, bottom: 4 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-            <XAxis type="number" tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11 }} />
-            <YAxis type="category" dataKey="tag" tick={{ fontSize: 12 }} width={96} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#f0f0f0"
+              horizontal={false}
+            />
+            <XAxis
+              type="number"
+              tickFormatter={(v) => fmt(v)}
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis
+              type="category"
+              dataKey="tag"
+              tick={{ fontSize: 12 }}
+              width={96}
+            />
             <Tooltip formatter={fmt} />
             <Bar dataKey="total" fill={color} radius={[0, 3, 3, 0]} />
           </BarChart>
@@ -380,10 +473,20 @@ export const ChartsTab = () => {
   const [endYear, setEndYear] = useState(defaultEnd.year());
   const [endMonth, setEndMonth] = useState(defaultEnd.month());
 
-  const startDate = dayjs().year(startYear).month(startMonth).startOf("month").format("YYYY-MM-DD");
-  const endDate = dayjs().year(endYear).month(endMonth).startOf("month").add(1, "month").format("YYYY-MM-DD");
+  const startDate = dayjs()
+    .year(startYear)
+    .month(startMonth)
+    .startOf("month")
+    .format("YYYY-MM-DD");
+  const endDate = dayjs()
+    .year(endYear)
+    .month(endMonth)
+    .startOf("month")
+    .add(1, "month")
+    .format("YYYY-MM-DD");
 
-  const { trend, tags, categorySpendByMonth, tagSpendByMonth, loading } = useChartsData(startDate, endDate);
+  const { trend, tags, categorySpendByMonth, tagSpendByMonth, loading } =
+    useChartsData(startDate, endDate);
 
   const tagData = (type: TransactionType) =>
     tags.filter((t) => t.type === type).slice(0, 10);
@@ -391,13 +494,40 @@ export const ChartsTab = () => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Date range picker */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
         <Text strong>From:</Text>
-        <Select value={startYear} onChange={setStartYear} options={yearOptions} style={{ width: 100 }} />
-        <Select value={startMonth} onChange={setStartMonth} options={monthOptions} style={{ width: 90 }} />
+        <Select
+          value={startYear}
+          onChange={setStartYear}
+          options={yearOptions}
+          style={{ width: 100 }}
+        />
+        <Select
+          value={startMonth}
+          onChange={setStartMonth}
+          options={monthOptions}
+          style={{ width: 90 }}
+        />
         <Text strong>To:</Text>
-        <Select value={endYear} onChange={setEndYear} options={yearOptions} style={{ width: 100 }} />
-        <Select value={endMonth} onChange={setEndMonth} options={monthOptions} style={{ width: 90 }} />
+        <Select
+          value={endYear}
+          onChange={setEndYear}
+          options={yearOptions}
+          style={{ width: 100 }}
+        />
+        <Select
+          value={endMonth}
+          onChange={setEndMonth}
+          options={monthOptions}
+          style={{ width: 90 }}
+        />
       </div>
 
       {/* Trend chart */}
@@ -414,13 +544,17 @@ export const ChartsTab = () => {
         <SpendingTrendlineChart
           categorySpendByMonth={categorySpendByMonth}
           tagSpendByMonth={tagSpendByMonth}
+          startDate={startDate}
+          endDate={endDate}
           currency={currency}
         />
       )}
 
       {/* Tag analytics */}
       <div>
-        <Title level={5} style={{ marginBottom: 12 }}>By Tag</Title>
+        <Title level={5} style={{ marginBottom: 12 }}>
+          By Tag
+        </Title>
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
             {loading ? (
