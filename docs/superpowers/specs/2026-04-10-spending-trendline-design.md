@@ -1,24 +1,26 @@
 # Spending Trendline Chart — Design Spec
 
 **Date:** 2026-04-10  
-**Status:** Approved
+**Status:** Approved, implemented, and amended after PR review
 
 ---
 
 ## Problem
 
-The existing Charts tab has three category donut charts (one per transaction type). Donuts show totals over the selected period but give no sense of how spending has changed over time. Users want to track whether a category or tag is growing, shrinking, or spiking.
+The original plan for the Charts tab included three category donut charts (one per transaction type). Donuts show totals over the selected period but give no sense of how spending has changed over time. Users want to track whether a category or tag is growing, shrinking, or spiking.
 
 ## Solution
 
-Replace the three category donut charts with a single multi-line trendline chart scoped to **Spending only**. Each line represents one selected category or tag, plotted month-by-month over the selected date range.
+Replace the category-donut concept with a multi-line trendline chart scoped to **Spending only**. Each line represents one selected category or tag, plotted month-by-month over the selected date range.
+
+The final implementation also preserves the full selected month range in both dashboard charts, so months with zero transactions still render as zero-value points/bars instead of disappearing from the timeline.
 
 ---
 
 ## Location
 
 Inside `apps/web-next/src/pages/dashboard/ChartsTab.tsx`.  
-The `CategoryDonutsRow` component and its rendering block are removed and replaced with a new `SpendingTrendlineChart` component.
+The category-donut plan is replaced by a new `SpendingTrendlineChart` component, and the final shipped version is covered by `apps/web-next/e2e/tests/dashboard.spec.ts`.
 
 ---
 
@@ -36,60 +38,76 @@ The `CategoryDonutsRow` component and its rendering block are removed and replac
 - **Library:** Recharts `LineChart`  
 - **X axis:** Month labels (e.g. "Jan 25") — one tick per month in range  
 - **Y axis:** Currency-formatted spend amount  
-- **Lines:** One `Line` per selected item, each with a distinct colour from `DONUT_COLORS`  
+- **Lines:** One `Line` per selected item, each with a distinct colour from `CHART_COLORS`  
 - **Tooltip:** Shows month + each selected item's spend formatted with `CurrencyTooltipFormatter`  
 - **Legend:** Top, 12px font  
 - **Points:** `dot={false}`, `activeDot={{ r: 4 }}` — clean lines, dots only on hover  
 - **Tension:** `type="monotone"` for smooth curves
+- **Series keys:** Use safe internal keys (`k0`, `k1`, ...) instead of raw category/tag names so Recharts does not treat names containing dots or brackets as nested data paths
+- **Missing months:** Generate the full month sequence from the selected date range and fill missing values with zeroes before rendering
 
 ### Default selection
 
-When the chart mounts or the date range changes, compute the top 5 items by total spend in that period from the already-fetched `categories` / `tags` state and set them as the initial selection.
+When the chart mounts or the date range changes, compute the top 5 items by total spend in that period from the already-fetched spending-by-month arrays and set them as the initial selection.
 
 ### Empty state
 
-When no data exists for the selected items/period, render: _"No spending data for the selected categories in this period."_
+When no data exists for the selected items/period, render: _"No spending data for the selected {categories|tags} in this period."_
 
 ---
 
 ## Data
 
-No new fetches required. `useChartsData` already fetches:
+No new fetches are required. `useChartsData` fetches:
 
+- `view_monthly_totals` → provides `{ month, type, total }` rows for the aggregate bar chart  
 - `view_monthly_category_totals` → provides `{ month, category, type, total }` rows  
 - `view_monthly_tagged_type_totals` → provides `{ month, tags[], type, total }` rows (tags are exploded client-side into per-tag totals)
 
-Filter to `type === 'spend'` client-side. Build a map:
+Final hook responsibilities:
+
+1. Build the aggregate `TrendChart` dataset from `view_monthly_totals`, pre-seeding every month in the selected range with zeroes.
+2. Filter category and tag rows to `type === "spend"` and retain monthly totals for the trendline.
+3. Aggregate tag totals for the existing tag bar charts.
+4. Avoid keeping unused category summary state in the hook.
+
+The trendline reshapes spend data into Recharts-compatible row objects using safe internal keys:
 
 ```
-{ [month label]: { [categoryOrTag]: totalSpend } }
+{ month: "Jan 25", k0: 320, k1: 180, ... }
 ```
 
-Then reshape into Recharts-compatible row objects:
-
-```
-{ month: "Jan 25", "Food & Drink": 320, "Transport": 180, ... }
-```
+The displayed legend/tooltip names still use the original category or tag labels.
 
 ---
 
-## What is removed
+## What changed from the earlier donut-based plan
 
-- `CategoryDonut` component  
-- `CategoryDonutsRow` component  
-- The "By Category" section heading and its `<Row>` of three `<Col>` donut cards  
-- The `donutData()` helper in `ChartsTab`
-
-The `categories` and `tags` data from `useChartsData` are still used — by the trendline and tag bar charts respectively.
+- The category-donut idea is dropped in favor of a single spending trendline.
+- The implementation does **not** keep a `categories` summary state in `useChartsData`; only data consumed by the UI remains.
+- `useChartsData` now owns part of the timeline shaping logic so the aggregate trend bar chart includes zero-value months.
+- `SpendingTrendlineChart` receives `startDate` and `endDate` so it can render one tick per month in the selected range, even when a month has no spending rows.
 
 ---
 
 ## What is unchanged
 
 - Date range pickers at the top of `ChartsTab`  
-- `TrendChart` (aggregate income/spending/savings bar chart)  
+- `TrendChart` remains the aggregate income/spending/savings bar chart  
 - `TagBar` charts (spending and earnings by tag)  
-- `useChartsData` hook — no changes needed
+- Top-5 auto-selection remains the default behavior when the item pool changes
+
+---
+
+## Testing
+
+- Add a minimal Playwright smoke test for the Dashboard Charts tab.
+- Assert the user can navigate to the `Charts` tab and see:
+  - `Income vs Spending vs Savings`
+  - `Spending Trendline`
+  - `By Tag`
+
+This protects the dashboard route wiring and the presence of the key chart sections without trying to unit-test Recharts internals.
 
 ---
 
@@ -97,6 +115,7 @@ The `categories` and `tags` data from `useChartsData` are still used — by the 
 
 - No placeholders or TBDs remain  
 - Architecture matches feature description  
-- Scope is focused: one component swap, no new data fetches, no new routes  
+- Scope is still focused on the Charts tab and its smoke coverage  
 - "Top 5 recomputes on date range change" is explicit  
-- Empty state is defined  
+- Missing-month behavior is explicit for both dashboard charts  
+- Empty state and safe internal chart keys are defined
