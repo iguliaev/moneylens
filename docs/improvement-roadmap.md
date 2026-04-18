@@ -33,6 +33,9 @@
 - [x] Add month-over-month comparison with trend arrows (↑↓) on summary cards
 - [x] Animate budget progress bars
 - [x] Surface unused DB view: `view_monthly_tagged_type_totals` (tag analytics in Charts tab)
+- [x] Fix chart timelines to fill the full selected date range with zero-value months (PR #136 follow-up)
+- [x] Use safe internal Recharts series keys (`k0`, `k1`, …) to prevent dot/bracket name resolution issues
+- [x] Add dashboard Charts tab Playwright smoke test
 
 ---
 
