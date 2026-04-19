@@ -116,34 +116,26 @@ export const TransactionList = () => {
           title="Date"
           sorter
           render={(value: string) => <DateField value={value} />}
-          filterDropdown={({ confirm, clearFilters, close }) => {
-            const defaultVal = getDefaultFilter("date", filters, "between");
-            const defaultDates =
-              Array.isArray(defaultVal) && defaultVal.length === 2
-                ? ([dayjs(defaultVal[0] as string), dayjs(defaultVal[1] as string)] as [dayjs.Dayjs, dayjs.Dayjs])
+          filteredValue={getDefaultFilter("date", filters, "between") ?? null}
+          filterDropdown={({ confirm }) => {
+            const activeVal = getDefaultFilter("date", filters, "between");
+            const value =
+              Array.isArray(activeVal) && activeVal.length === 2
+                ? ([dayjs(activeVal[0] as string), dayjs(activeVal[1] as string)] as [dayjs.Dayjs, dayjs.Dayjs])
                 : undefined;
             return (
               <div style={{ padding: 8 }}>
                 <DatePicker.RangePicker
-                  defaultValue={defaultDates}
+                  value={value}
                   onChange={(dates) => {
-                    if (dates && dates[0] && dates[1]) {
-                      setFilters([
-                        {
-                          field: "date",
-                          operator: "between",
-                          value: [
-                            dates[0].format("YYYY-MM-DD"),
-                            dates[1].format("YYYY-MM-DD"),
-                          ],
-                        },
-                      ]);
-                      confirm({ closeDropdown: true });
-                    } else {
-                      if (clearFilters) clearFilters();
-                      setFilters([{ field: "date", operator: "between", value: undefined }]);
-                      close();
-                    }
+                    setFilters([{
+                      field: "date",
+                      operator: "between",
+                      value: dates?.[0] && dates?.[1]
+                        ? [dates[0].format("YYYY-MM-DD"), dates[1].format("YYYY-MM-DD")]
+                        : undefined,
+                    }]);
+                    confirm({ closeDropdown: true });
                   }}
                 />
               </div>
