@@ -31,9 +31,7 @@ export const CurrencyContext = createContext<CurrencyContextType>({
 
 export const CurrencyContextProvider = ({ children }: PropsWithChildren) => {
   const [currency, setCurrencyState] = useState<string>(() => {
-    return (
-      localStorage.getItem(CURRENCY_STORAGE_KEY) ?? DEFAULT_CURRENCY
-    );
+    return localStorage.getItem(CURRENCY_STORAGE_KEY) ?? DEFAULT_CURRENCY;
   });
 
   useEffect(() => {
