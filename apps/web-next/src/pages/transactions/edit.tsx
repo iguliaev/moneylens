@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Edit, useForm, useSelect } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
-import { Form, Input, DatePicker, Select, message } from "antd";
+import { Form, DatePicker, Select, InputNumber, Input, message } from "antd";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_OPTIONS,
@@ -62,7 +62,8 @@ export const TransactionEdit = () => {
   // Fetch all available tags
   const { query: tagsQuery } = useList({
     resource: "tags",
-    pagination: { pageSize: 1000 },
+    pagination: { mode: "off" },
+    sorters: [{ field: "name", order: "asc" }],
   });
 
   const tagOptions = useMemo(() => {
@@ -124,7 +125,7 @@ export const TransactionEdit = () => {
             value: value ? dayjs(value) : undefined,
           })}
         >
-          <DatePicker />
+          <DatePicker format="YYYY-MM-DD" />
         </Form.Item>
         <Form.Item
           label="Type"
@@ -167,12 +168,16 @@ export const TransactionEdit = () => {
           label="Amount"
           name={["amount"]}
           rules={[
+            { required: true },
             {
-              required: true,
+              validator: (_, value) =>
+                value === null || value === undefined || value === 0
+                  ? Promise.reject(new Error("Amount cannot be zero"))
+                  : Promise.resolve(),
             },
           ]}
         >
-          <Input />
+          <InputNumber precision={2} style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item
           label="Bank Account"

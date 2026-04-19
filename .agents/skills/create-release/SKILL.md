@@ -29,7 +29,35 @@ git log release..main --oneline
 
 Present the commit list clearly. If there are no commits (i.e. `main` and `release` are already in sync), tell the user there is nothing to release and stop.
 
-Ask the user: "Do these look right to you? Any surprises before we continue?"
+**Summarize and suggest a version:**
+
+After listing the commits, group them into categories and present a human-readable summary to the user. Use conventional commit prefixes as signals (e.g. `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`), and look at PR titles and descriptions for context. For example:
+
+> **🆕 New Features**
+> - Dashboard category sorting (#109)
+> - Dashboard category pagination (#112)
+>
+> **🐛 Bug Fixes**
+> - Fix deprecated `set-output` in Playwright workflow (#111)
+>
+> **🔧 Chores / Maintenance**
+> - Add GitHub issue templates (#116)
+> - Add PR tooling guardrails (#114)
+
+Then look up the most recent tag and apply semver rules to suggest the next version:
+
+```bash
+git tag --sort=-version:refname | head -n 1
+```
+
+- Any `feat:` commits → bump **minor** (e.g. `v0.7.0` → `v0.8.0`)
+- Only `fix:` commits → bump **patch** (e.g. `v0.7.0` → `v0.7.1`)
+- Any breaking changes (noted with `BREAKING CHANGE` or `!` in commit) → bump **major** (e.g. `v0.7.0` → `v1.0.0`)
+- Only `chore:`, `docs:`, `refactor:`, `ci:` etc. → bump **patch**
+
+State your suggestion clearly, e.g.: *"Based on these changes (2 new features, several chores), I recommend `v0.8.0`."*
+
+Then ask the user to confirm the tag or provide a different one before continuing.
 
 ---
 

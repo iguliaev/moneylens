@@ -132,13 +132,19 @@ test.describe("Transactions", () => {
           page.getByRole("heading", { name: "Edit Transaction" })
         ).toBeVisible();
 
-        // Wait for form to finish loading initial data
+        // Wait for form to finish loading initial data AND background queries
+        // (e.g. categories for the current type) to settle before touching dropdowns.
+        // Without this, the in-flight categories fetch can cause a React re-render
+        // that detaches Type dropdown options mid-click.
         await waitForFormReady(page, "transaction-edit-form");
+        await page.waitForLoadState("networkidle");
 
-        // Change date
-        await page.getByLabel("Date").click();
-        await page.keyboard.press("Control+A"); // Select all (works on both Mac/Win)
+        // Change date: fill() focuses + clears the input; Enter confirms the date
+        // and closes the calendar popup cleanly before we touch the next field.
+        // Without Enter, the popup can close on the next click and discard the
+        // typed value intermittently on slow CI runners.
         await page.getByLabel("Date").fill(newDate);
+        await page.keyboard.press("Enter");
 
         // Change type
         await page
@@ -186,13 +192,22 @@ test.describe("Transactions", () => {
           page.getByRole("heading", { name: "Transactions" })
         ).toBeVisible();
 
-        // Switch to the new type's tab
+        // Switch to the new type's tab.
+        // When toType is "spend" (the default tab), the list already loaded
+        // spend data on redirect — clicking the already-selected tab fires no
+        // new request, so waitForResponse would time out. networkidle handles
+        // both cases cleanly:
+        //   - tab already selected ("spend"): networkidle resolves immediately
+        //   - tab changed: React synchronously starts the Supabase fetch on
+        //     click, networkidle waits for that request to finish
         await page
           .getByRole("radiogroup", { name: "segmented control" })
           .getByText(new RegExp(toType, "i"))
           .click();
+        await page.waitForLoadState("networkidle");
 
-        // Verify the edited transaction row
+        // Verify the edited transaction row.
+        // Extended timeout guards against slow CI re-renders after networkidle.
         const editedRow = getTransactionRow(page, {
           note: newNote,
           date: newDate,
@@ -200,7 +215,7 @@ test.describe("Transactions", () => {
           amount: toAmount,
           bankAccount: "Secondary Account",
         });
-        await expect(editedRow).toBeVisible();
+        await expect(editedRow).toBeVisible({ timeout: 15000 });
       });
     }
   );
@@ -371,11 +386,17 @@ test.describe("Transactions", () => {
       page.getByRole("heading", { name: "Edit Transaction" })
     ).toBeVisible();
 
+    // Wait for the form and all background queries (initial categories fetch) to
+    // settle before touching any dropdown — otherwise the in-flight categories
+    // query causes a React re-render that detaches Type dropdown options mid-click.
+    await waitForFormReady(page, "transaction-edit-form");
+    await page.waitForLoadState("networkidle");
+
     // Change to earn type
     await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
-    await page.getByTitle(new RegExp("earn", "i")).click();
+    await page.getByTitle(new RegExp("^earn$", "i")).click();
     await expect(
-      page.locator("#root").getByTitle(new RegExp("earn", "i"))
+      page.locator(".ant-select-selection-item").filter({ hasText: /^earn$/i })
     ).toBeVisible();
 
     // Open category dropdown
@@ -391,9 +412,9 @@ test.describe("Transactions", () => {
 
     // Change to save type
     await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
-    await page.getByTitle(new RegExp("save", "i")).click();
+    await page.getByTitle(new RegExp("^save$", "i")).click();
     await expect(
-      page.locator("#root").getByTitle(new RegExp("save", "i"))
+      page.locator(".ant-select-selection-item").filter({ hasText: /^save$/i })
     ).toBeVisible();
 
     // Open category dropdown again
@@ -403,5 +424,24 @@ test.describe("Transactions", () => {
 
     // Should show save categories (Savings)
     await page.getByText("Savings");
+  });
+
+  test("transaction amount field rejects zero but allows negative values", async ({
+    page,
+  }) => {
+    await page.goto("/transactions/create");
+
+    // Enter zero — should be rejected
+    await page.getByLabel("Amount").fill("0");
+    await page.getByLabel("Amount").blur();
+    await page.getByRole("button", { name: /save/i }).click();
+
+    await expect(page).toHaveURL(/\/transactions\/create/);
+    await expect(page.getByText("Amount cannot be zero")).toBeVisible();
+
+    // Clear and enter a negative — the field should accept it (no validation error)
+    await page.getByLabel("Amount").fill("-50");
+    await page.getByLabel("Amount").blur();
+    await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
 });

@@ -72,21 +72,23 @@ npm run check-types
 ```bash
 cd apps/web-next
 
-# Run tests
-npm run test:e2e --reporter=json 
+# Run all tests (agent-friendly: text output, no browser window)
+npm run test:e2e:ci
 
-# Run with UI
+# Run all tests (manual: opens HTML report in browser on failure)
+npm run test:e2e
+
+# Run with UI (interactive test runner)
 npm run test:e2e:ui
 
 # Run with browser visible
 npm run test:e2e:headed
 
+# Run specific test file (agent-friendly)
+npm run test:e2e:ci -- e2e/tests/transactions.spec.ts
 
-# Run specific test file
-npm run test:e2e -- tests/transactions.spec.ts --reporter=json 
-
-# Run specific test in a file
-npm run test:e2e -- tests/transactions.spec.ts --reporter=json -g "user can add tags"
+# Run specific test by name (agent-friendly)
+npm run test:e2e:ci -- e2e/tests/transactions.spec.ts -g "user can add tags"
 
 ```
 

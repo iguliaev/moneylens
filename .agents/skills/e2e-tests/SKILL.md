@@ -1,6 +1,6 @@
 ---
-name: End-to-End Test Implementation
-description: Implement end-to-end tests for web-next Web Application using Playwright to ensure application functionality. Use when asked to create, update, or maintain e2e tests.
+name: e2e-tests
+description: Implement, fix, or refactor end-to-end Playwright tests for the web-next application. Use when asked to write tests, add coverage, fix flaky tests, or update tests after a feature change. Trigger phrases - "write e2e tests for X", "add playwright tests", "test this feature", "this test is failing/flaky", "update tests for the new X page".
 ---
 
 # End-to-End Test Implementation
@@ -138,10 +138,55 @@ The application structure is as follows:
   await page.getByRole("combobox", { name: "* Type" }).click();
 ```
 
-** Locate Filled Selector **
+** Select an Option from an Ant Design Dropdown **
+
+Always scope the option click to `.ant-select-dropdown:visible` and use an anchored regex. This is the correct pattern for clicking an option in an open Ant Design `<Select>` dropdown:
+
 ```typescript
-    await page.getByText(new RegExp(categoryType, "i")).click();
+  // Open the dropdown first
+  await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
+
+  // Then click the option scoped to the visible dropdown
+  const option = page
+    .locator(".ant-select-dropdown:visible")
+    .getByTitle(new RegExp(`^${categoryType}$`, "i"));
+  await option.waitFor({ state: "visible" });
+  await option.click();
 ```
+
+**Why NOT `getByText`:**
+- `getByText(new RegExp(categoryType, "i"))` matches every element on the page that contains the text — including the combobox display value, table cells, labels, and other unrelated text. This causes ambiguous multi-match errors and, worse, may silently click the wrong element.
+- After an option is clicked, Ant Design briefly keeps the dropdown in the DOM while animating out. The newly selected value also appears in `.ant-select-selection-item` on the same frame. A `getByText` query at that moment resolves to multiple elements and the click lands on the detaching dropdown node, not the target — causing the "element detached from DOM" flake.
+- Scoping to `.ant-select-dropdown:visible` guarantees the locator only matches the open dropdown overlay, making the click unambiguous and stable.
+
+**Verify the selection after clicking** using `.ant-select-selection-item`, not the combobox input (which is always empty in Ant Design):
+
+```typescript
+  await expect(
+    page.locator(".ant-select-selection-item").filter({ hasText: new RegExp(`^${categoryType}$`, "i") })
+  ).toBeVisible();
+```
+
+** Handle Ant Design Form Validation Errors **
+
+Always use `getByRole("alert")` to assert validation errors — never `getByText` with the hardcoded message string:
+
+```typescript
+// Submit empty form to trigger validation
+await page.getByRole("button", { name: /save/i }).click();
+
+// Assert the error is visible
+await expect(page.getByRole("alert").first()).toBeVisible();
+
+// Assert the error disappears after filling the field
+await page.getByRole("textbox", { name: "* Name" }).fill("some value");
+await expect(page.getByRole("alert")).toHaveCount(0);
+```
+
+**Why NOT `getByText("'name' is required")`:**
+- Ant Design's default validation message (`'name' is required`) is generated from the field name and can change if the field label, locale, or validation config changes — breaking the test silently.
+- `getByRole("alert")` is the semantic locator for Ant Design's `<Form.Item>` error nodes and is stable regardless of message content or locale.
+- If you need to assert a *specific* error message (e.g. to distinguish between two errors), use `getByRole("alert").filter({ hasText: /required/i })` rather than exact string matching.
 
 ---
 **Summary:**

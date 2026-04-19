@@ -28,6 +28,7 @@ import { App as AntdApp } from "antd";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
 import authProvider from "./authProvider";
 import { ColorModeContextProvider } from "./contexts/color-mode";
+import { CurrencyContextProvider } from "./contexts/currency";
 import { supabaseClient } from "./utility";
 import { withSoftDelete } from "./utility/softDeleteDataProvider";
 import { DashboardPage } from "./pages/dashboard";
@@ -59,7 +60,7 @@ import {
 } from "./pages/categories";
 import { SettingsPage } from "./pages/settings";
 import { ProjectTitle } from "./components/title";
-import { Header, EnvironmentBanner } from "./components";
+import { Header, EnvironmentBanner, ErrorBoundary } from "./components";
 
 const I18N_TRANSLATIONS: Record<string, string> = {
   "documentTitle.default": "MoneyLens",
@@ -71,220 +72,226 @@ function App() {
     <BrowserRouter>
       <RefineKbarProvider>
         <ColorModeContextProvider>
-          <AntdApp>
-            <Refine
-              dataProvider={withSoftDelete(
-                dataProvider(supabaseClient),
-                supabaseClient
-              )}
-              liveProvider={liveProvider(supabaseClient)}
-              authProvider={authProvider}
-              routerProvider={routerProvider}
-              notificationProvider={useNotificationProvider}
-              i18nProvider={{
-                translate: (
-                  key: string,
-                  options?: object | string,
-                  defaultValue?: string
-                ) => {
-                  if (Object.hasOwn(I18N_TRANSLATIONS, key))
-                    return I18N_TRANSLATIONS[key];
-                  const fallback =
-                    typeof options === "string" ? options : defaultValue;
-                  return fallback ?? key;
-                },
-                changeLocale: () => Promise.resolve(),
-                getLocale: () => "en",
-              }}
-              options={{
-                syncWithLocation: true,
-                warnWhenUnsavedChanges: true,
-                projectId: "f28RTa-zPdRQM-EApdtq",
-              }}
-              resources={[
-                {
-                  name: "dashboard",
-                  list: "/",
-                  meta: {
-                    label: "Dashboard",
-                    icon: <DashboardOutlined />,
+          <CurrencyContextProvider>
+            <AntdApp>
+              <Refine
+                dataProvider={withSoftDelete(
+                  dataProvider(supabaseClient),
+                  supabaseClient
+                )}
+                liveProvider={liveProvider(supabaseClient)}
+                authProvider={authProvider}
+                routerProvider={routerProvider}
+                notificationProvider={useNotificationProvider}
+                i18nProvider={{
+                  translate: (
+                    key: string,
+                    options?: object | string,
+                    defaultValue?: string
+                  ) => {
+                    if (Object.hasOwn(I18N_TRANSLATIONS, key))
+                      return I18N_TRANSLATIONS[key];
+                    const fallback =
+                      typeof options === "string" ? options : defaultValue;
+                    return fallback ?? key;
                   },
-                },
-                {
-                  name: "transactions",
-                  list: "/transactions",
-                  create: "/transactions/create",
-                  edit: "/transactions/edit/:id",
-                  show: "/transactions/show/:id",
-                  meta: {
-                    label: "Transactions",
-                    icon: <SwapOutlined />,
+                  changeLocale: () => Promise.resolve(),
+                  getLocale: () => "en",
+                }}
+                options={{
+                  syncWithLocation: true,
+                  warnWhenUnsavedChanges: true,
+                  projectId: "f28RTa-zPdRQM-EApdtq",
+                }}
+                resources={[
+                  {
+                    name: "dashboard",
+                    list: "/",
+                    meta: {
+                      label: "Dashboard",
+                      icon: <DashboardOutlined />,
+                    },
                   },
-                },
-                {
-                  name: "budgets",
-                  list: "/budgets",
-                  create: "/budgets/create",
-                  edit: "/budgets/edit/:id",
-                  show: "/budgets/show/:id",
-                  meta: {
-                    label: "Budgets",
-                    icon: <AimOutlined />,
+                  {
+                    name: "transactions",
+                    list: "/transactions",
+                    create: "/transactions/create",
+                    edit: "/transactions/edit/:id",
+                    show: "/transactions/show/:id",
+                    meta: {
+                      label: "Transactions",
+                      icon: <SwapOutlined />,
+                    },
                   },
-                },
-                {
-                  name: "categories",
-                  list: "/categories",
-                  create: "/categories/create",
-                  edit: "/categories/edit/:id",
-                  show: "/categories/show/:id",
-                },
-                {
-                  name: "bank_accounts", // Database table name
-                  list: "/bank-accounts",
-                  create: "/bank-accounts/create",
-                  edit: "/bank-accounts/edit/:id",
-                  show: "/bank-accounts/show/:id",
-                  meta: {
-                    label: "Bank Accounts",
-                    icon: <BankOutlined />,
+                  {
+                    name: "budgets",
+                    list: "/budgets",
+                    create: "/budgets/create",
+                    edit: "/budgets/edit/:id",
+                    show: "/budgets/show/:id",
+                    meta: {
+                      label: "Budgets",
+                      icon: <AimOutlined />,
+                    },
                   },
-                },
-                {
-                  name: "tags",
-                  list: "/tags",
-                  create: "/tags/create",
-                  edit: "/tags/edit/:id",
-                  show: "/tags/show/:id",
-                  meta: {
-                    label: "Tags",
-                    icon: <TagsOutlined />,
+                  {
+                    name: "categories",
+                    list: "/categories",
+                    create: "/categories/create",
+                    edit: "/categories/edit/:id",
+                    show: "/categories/show/:id",
                   },
-                },
-                {
-                  name: "settings",
-                  list: "/settings",
-                  meta: {
-                    label: "Settings",
-                    icon: <SettingOutlined />,
+                  {
+                    name: "bank_accounts", // Database table name
+                    list: "/bank-accounts",
+                    create: "/bank-accounts/create",
+                    edit: "/bank-accounts/edit/:id",
+                    show: "/bank-accounts/show/:id",
+                    meta: {
+                      label: "Bank Accounts",
+                      icon: <BankOutlined />,
+                    },
                   },
-                },
-              ]}
-            >
-              <Routes>
-                <Route
-                  element={
-                    <Authenticated
-                      key="authenticated-routes"
-                      fallback={<CatchAllNavigate to="/login" />}
-                    >
-                      <EnvironmentBanner />
-                      <ThemedLayout Header={Header} Title={ProjectTitle}>
-                        <Outlet />
-                      </ThemedLayout>
-                    </Authenticated>
-                  }
-                >
-                  <Route index element={<DashboardPage />} />
-                  <Route path="transactions">
-                    <Route index element={<TransactionList />} />
-                    <Route path="create" element={<TransactionCreate />} />
-                    <Route path="edit/:id" element={<TransactionEdit />} />
-                    <Route path="show/:id" element={<TransactionShow />} />
+                  {
+                    name: "tags",
+                    list: "/tags",
+                    create: "/tags/create",
+                    edit: "/tags/edit/:id",
+                    show: "/tags/show/:id",
+                    meta: {
+                      label: "Tags",
+                      icon: <TagsOutlined />,
+                    },
+                  },
+                  {
+                    name: "settings",
+                    list: "/settings",
+                    meta: {
+                      label: "Settings",
+                      icon: <SettingOutlined />,
+                    },
+                  },
+                ]}
+              >
+                <Routes>
+                  <Route
+                    element={
+                      <Authenticated
+                        key="authenticated-routes"
+                        fallback={<CatchAllNavigate to="/login" />}
+                      >
+                        <EnvironmentBanner />
+                        <ThemedLayout Header={Header} Title={ProjectTitle}>
+                          <ErrorBoundary>
+                            <Outlet />
+                          </ErrorBoundary>
+                        </ThemedLayout>
+                      </Authenticated>
+                    }
+                  >
+                    <Route index element={<DashboardPage />} />
+                    <Route path="transactions">
+                      <Route index element={<TransactionList />} />
+                      <Route path="create" element={<TransactionCreate />} />
+                      <Route path="edit/:id" element={<TransactionEdit />} />
+                      <Route path="show/:id" element={<TransactionShow />} />
+                    </Route>
+
+                    <Route path="categories">
+                      <Route index element={<CategoryList />} />
+                      <Route path="create" element={<CategoryCreate />} />
+                      <Route path="edit/:id" element={<CategoryEdit />} />
+                      <Route path="show/:id" element={<CategoryShow />} />
+                    </Route>
+
+                    <Route path="bank-accounts">
+                      <Route index element={<BankAccountList />} />
+                      <Route path="create" element={<BankAccountCreate />} />
+                      <Route path="edit/:id" element={<BankAccountEdit />} />
+                      <Route path="show/:id" element={<BankAccountShow />} />
+                    </Route>
+
+                    <Route path="tags">
+                      <Route index element={<TagList />} />
+                      <Route path="create" element={<TagCreate />} />
+                      <Route path="edit/:id" element={<TagEdit />} />
+                      <Route path="show/:id" element={<TagShow />} />
+                    </Route>
+
+                    <Route path="budgets">
+                      <Route index element={<BudgetList />} />
+                      <Route path="create" element={<BudgetCreate />} />
+                      <Route path="edit/:id" element={<BudgetEdit />} />
+                      <Route path="show/:id" element={<BudgetShow />} />
+                    </Route>
+
+                    <Route path="settings" element={<SettingsPage />} />
                   </Route>
 
-                  <Route path="categories">
-                    <Route index element={<CategoryList />} />
-                    <Route path="create" element={<CategoryCreate />} />
-                    <Route path="edit/:id" element={<CategoryEdit />} />
-                    <Route path="show/:id" element={<CategoryShow />} />
-                  </Route>
-
-                  <Route path="bank-accounts">
-                    <Route index element={<BankAccountList />} />
-                    <Route path="create" element={<BankAccountCreate />} />
-                    <Route path="edit/:id" element={<BankAccountEdit />} />
-                    <Route path="show/:id" element={<BankAccountShow />} />
-                  </Route>
-
-                  <Route path="tags">
-                    <Route index element={<TagList />} />
-                    <Route path="create" element={<TagCreate />} />
-                    <Route path="edit/:id" element={<TagEdit />} />
-                    <Route path="show/:id" element={<TagShow />} />
-                  </Route>
-
-                  <Route path="budgets">
-                    <Route index element={<BudgetList />} />
-                    <Route path="create" element={<BudgetCreate />} />
-                    <Route path="edit/:id" element={<BudgetEdit />} />
-                    <Route path="show/:id" element={<BudgetShow />} />
-                  </Route>
-
-                  <Route path="settings" element={<SettingsPage />} />
-                </Route>
-
-                <Route
-                  element={
-                    <Authenticated
-                      key="auth-pages"
-                      fallback={
-                        <>
-                          <EnvironmentBanner />
-                          <Outlet />
-                        </>
+                  <Route
+                    element={
+                      <Authenticated
+                        key="auth-pages"
+                        fallback={
+                          <>
+                            <EnvironmentBanner />
+                            <Outlet />
+                          </>
+                        }
+                      >
+                        <NavigateToResource />
+                      </Authenticated>
+                    }
+                  >
+                    <Route
+                      path="/login"
+                      element={
+                        <AuthPage type="login" title={<ProjectTitle />} />
                       }
-                    >
-                      <NavigateToResource />
-                    </Authenticated>
-                  }
-                >
+                    />
+                    <Route
+                      path="/register"
+                      element={
+                        <AuthPage type="register" title={<ProjectTitle />} />
+                      }
+                    />
+                    <Route
+                      path="/forgot-password"
+                      element={
+                        <AuthPage
+                          type="forgotPassword"
+                          title={<ProjectTitle />}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/update-password"
+                      element={
+                        <AuthPage
+                          type="updatePassword"
+                          title={<ProjectTitle />}
+                        />
+                      }
+                    />
+                  </Route>
                   <Route
-                    path="/login"
-                    element={<AuthPage type="login" title={<ProjectTitle />} />}
-                  />
-                  <Route
-                    path="/register"
                     element={
-                      <AuthPage type="register" title={<ProjectTitle />} />
+                      <Authenticated key="catch-all">
+                        <ThemedLayout>
+                          <Outlet />
+                        </ThemedLayout>
+                      </Authenticated>
                     }
-                  />
-                  <Route
-                    path="/forgot-password"
-                    element={
-                      <AuthPage
-                        type="forgotPassword"
-                        title={<ProjectTitle />}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/update-password"
-                    element={
-                      <AuthPage
-                        type="updatePassword"
-                        title={<ProjectTitle />}
-                      />
-                    }
-                  />
-                </Route>
-                <Route
-                  element={
-                    <Authenticated key="catch-all">
-                      <ThemedLayout>
-                        <Outlet />
-                      </ThemedLayout>
-                    </Authenticated>
-                  }
-                >
-                  <Route path="*" element={<ErrorComponent />} />
-                </Route>
-              </Routes>
-              <RefineKbar />
-              <UnsavedChangesNotifier />
-              <DocumentTitleHandler />
-            </Refine>
-          </AntdApp>
+                  >
+                    <Route path="*" element={<ErrorComponent />} />
+                  </Route>
+                </Routes>
+                <RefineKbar />
+                <UnsavedChangesNotifier />
+                <DocumentTitleHandler />
+              </Refine>
+            </AntdApp>
+          </CurrencyContextProvider>
         </ColorModeContextProvider>
       </RefineKbarProvider>
     </BrowserRouter>
