@@ -21,10 +21,7 @@ import {
 import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import { supabaseClient } from "../../utility";
 import { Show } from "@refinedev/antd";
-import {
-  useCurrency,
-  SUPPORTED_CURRENCIES,
-} from "../../contexts/currency";
+import { useCurrency, SUPPORTED_CURRENCIES } from "../../contexts/currency";
 
 const { Paragraph } = Typography;
 

@@ -208,7 +208,9 @@ const usePeriodStats = ({
     typeSummary: [],
     categorySummary: [],
   });
-  const [previousTypeSummary, setPreviousTypeSummary] = useState<TypeSummary[] | null>(null);
+  const [previousTypeSummary, setPreviousTypeSummary] = useState<
+    TypeSummary[] | null
+  >(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -343,7 +345,10 @@ const TypeSummaryCards = ({
                 value={current}
                 precision={2}
                 formatter={(value) =>
-                  formatCurrencyLocal(typeof value === "number" ? value : 0, currency)
+                  formatCurrencyLocal(
+                    typeof value === "number" ? value : 0,
+                    currency
+                  )
                 }
                 loading={loading}
                 valueStyle={{ color: TYPE_COLORS[type] }}
@@ -362,10 +367,20 @@ const TypeSummaryCards = ({
             value={netIncome}
             precision={2}
             formatter={(value) =>
-              formatCurrencyLocal(typeof value === "number" ? value : 0, currency)
+              formatCurrencyLocal(
+                typeof value === "number" ? value : 0,
+                currency
+              )
             }
             loading={loading}
-            valueStyle={{ color: netIncome > 0 ? "#52c41a" : netIncome < 0 ? "#ff4d4f" : undefined }}
+            valueStyle={{
+              color:
+                netIncome > 0
+                  ? "#52c41a"
+                  : netIncome < 0
+                    ? "#ff4d4f"
+                    : undefined,
+            }}
           />
           {!loading && previousData !== null && (
             <TrendBadge current={netIncome} previous={prevNetIncome} />
