@@ -141,45 +141,13 @@ Extend `aggregation_logic_test.sql` with three new test cases (incrementing `SEL
 
 ---
 
-### 2.4 No Database-Level CHECK Constraint on `transactions.amount`
+### 2.4 ~~No Database-Level CHECK Constraint on `transactions.amount`~~ — _Removed_
 
-**What**  
-`transactions.amount NUMERIC(12, 2) NOT NULL` has no `CHECK` constraint. The frontend validates that amounts are positive, but the database will accept a `INSERT INTO transactions (amount) VALUES (-50)` directly (e.g., via the Supabase REST API or a misbehaving client).
+**Decision:** Negative amounts on `transactions` are **intentional by design**. For example, a reversal or refund entered directly as a negative spend is a valid use case. Adding a `CHECK (amount > 0)` constraint would break this deliberately supported workflow.
 
-The `budgets` table correctly has `CHECK (target_amount > 0)`. The same discipline should apply to transactions.
+The `budgets` table `CHECK (target_amount > 0)` remains correct because a budget target must always be a positive goal amount.
 
-**Why it matters**  
-- **Correctness:** Negative amounts would corrupt all dashboard totals, analytics views, and budget progress calculations silently.
-- **Security/trust boundary:** Database constraints are the last line of defense. Relying solely on frontend validation is insufficient for any record directly accessible via the PostgREST API.
-
-**How to implement**  
-Add a new migration `20260419000001_transaction_amount_check.sql`:
-
-```sql
-ALTER TABLE public.transactions
-    ADD CONSTRAINT chk_transactions_amount_positive
-    CHECK (amount > 0);
-```
-
-If any existing rows have `amount <= 0`, the migration will fail. Run a pre-check query first:
-
-```sql
-SELECT id, amount FROM public.transactions WHERE amount <= 0;
-```
-
-Clean up or correct those rows before applying the constraint.
-
-**Risk:** **Potentially breaking** — if any existing data has zero or negative amounts the `ALTER TABLE` will fail and must be resolved first. Low probability for a personal finance app but must be verified. On production, use `NOT VALID` first then `VALIDATE CONSTRAINT` separately to avoid a long table lock:
-
-```sql
-ALTER TABLE public.transactions
-    ADD CONSTRAINT chk_transactions_amount_positive
-    CHECK (amount > 0) NOT VALID;
-
--- After verifying no violations:
-ALTER TABLE public.transactions
-    VALIDATE CONSTRAINT chk_transactions_amount_positive;
-```
+No migration needed for this item.
 
 ---
 
@@ -345,7 +313,7 @@ This makes the dashboard live without any page reload.
 | 1.2 | Performance | Rewrite `budgets_with_linked` to avoid correlated subqueries | Low | None | 🟡 Medium |
 | 2.1 | Testing | pgTAP tests for `get_budget_progress()` | Medium | None | 🔴 High |
 | 2.2 | Testing | Edge-case tests for `view_monthly_tagged_type_totals` | Low | None | 🟡 Medium |
-| 2.4 | Correctness | CHECK constraint on `transactions.amount` | Low | Low-Medium | 🔴 High |
+| ~~2.4~~ | ~~Correctness~~ | ~~CHECK constraint on `transactions.amount`~~ | — | — | _Removed — negative amounts intentional_ |
 | 2.5 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
 | 3.1 | Data Model | Add `user_settings` table for currency + RLS | Medium | None | 🔴 High |
 | 3.2 | Data Model | Document `budgets` nullable date semantics | Low | None | 🟢 Low |
@@ -356,10 +324,9 @@ This makes the dashboard live without any page reload.
 ## 6. Recommended Implementation Order
 
 1. **1.1 — Date index** (one migration, five minutes, immediate measurable impact)
-2. **2.4 — Amount CHECK constraint** (pre-check data → `NOT VALID` → validate)
-3. **3.1 — `user_settings` table** (migration + frontend wiring)
-4. **2.1 — Budget progress pgTAP tests** (coverage for existing complex logic)
-5. **2.2 — Tag view edge-case tests** (extend existing test file)
-6. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
-7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
-8. **2.5 — Dual tag storage resolution** (requires full audit, do last)
+2. **3.1 — `user_settings` table** (migration + frontend wiring)
+3. **2.1 — Budget progress pgTAP tests** (coverage for existing complex logic)
+4. **2.2 — Tag view edge-case tests** (extend existing test file)
+5. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
+6. **4.1 — Dashboard real-time subscriptions** (UX improvement)
+7. **2.5 — Dual tag storage resolution** (requires full audit, do last)

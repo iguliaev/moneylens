@@ -1,0 +1,73 @@
+{
+  "skill_name": "create-pull-request",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I've added a new migration for the user_settings table and updated the frontend to wire it up. Can you create a PR for these changes?",
+      "expected_output": "A PR is created on a feature/ branch targeting main. Description fills in the repo's PR template with meaningful content. User is asked to confirm title and description before submission.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "branch_type_correct",
+          "description": "Branch uses feature/ or chore/ prefix, not main"
+        },
+        {
+          "id": "pr_template_used",
+          "description": "PR description uses sections from .github/pull_request_template.md (Why, What Changed, Key Decisions, Testing)"
+        },
+        {
+          "id": "commit_confirmation",
+          "description": "Agent proposes a commit message and asks user to confirm before staging/committing"
+        },
+        {
+          "id": "substantive_description",
+          "description": "PR body is substantive (>200 chars, no placeholder text left unfilled)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "just open a quick pr for the typo fix i pushed",
+      "expected_output": "Skill checks current branch (already non-main), uses it as-is without creating a new branch, confirms with user, opens PR with template-based description.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "uses_existing_branch",
+          "description": "Does NOT create a new branch — uses the already-checked-out non-main branch"
+        },
+        {
+          "id": "confirmation_step",
+          "description": "Shows PR title and description to user before submitting"
+        },
+        {
+          "id": "template_used",
+          "description": "PR description uses the repo's PR template structure"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have some uncommitted changes to the date filter fix. Create a PR.",
+      "expected_output": "Skill detects uncommitted changes, summarises them, proposes a commit message, creates a bugfix/ branch from main, commits, and opens the PR.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "detects_uncommitted_changes",
+          "description": "Identifies the uncommitted file(s) and shows a summary"
+        },
+        {
+          "id": "creates_branch_from_main",
+          "description": "Creates a new branch (does not commit to main)"
+        },
+        {
+          "id": "correct_branch_type",
+          "description": "Uses bugfix/ prefix for the branch name (it's a bug fix)"
+        },
+        {
+          "id": "proposes_commit_message",
+          "description": "Suggests a commit message before staging, asks user to confirm"
+        }
+      ]
+    }
+  ]
+}
