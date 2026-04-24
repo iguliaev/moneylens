@@ -67,7 +67,7 @@ git push -u origin <branch-name>
 **Before writing a single word of the PR body, look for a template:**
 
 ```bash
-cat .github/pull_request_template.md 2>/dev/null \
+cat .github/PULL_REQUEST_TEMPLATE.md 2>/dev/null \
   || cat PULL_REQUEST_TEMPLATE.md 2>/dev/null \
   || ls .github/PULL_REQUEST_TEMPLATE/ 2>/dev/null
 ```
