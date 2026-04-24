@@ -14,7 +14,7 @@ import { Show } from "@refinedev/antd";
 import { BudgetsSection } from "./BudgetsSection";
 import { ChartsTab } from "./ChartsTab";
 
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useRef, useState, type FC } from "react";
 import { useCurrency } from "../../contexts/currency";
 import dayjs from "dayjs";
 import { supabaseClient } from "../../utility";
@@ -212,6 +212,8 @@ const usePeriodStats = ({
     TypeSummary[] | null
   >(null);
   const [loading, setLoading] = useState(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,7 +260,45 @@ const usePeriodStats = ({
     return () => {
       cancelled = true;
     };
-  }, [endDate, period, startDate]);
+  }, [endDate, period, startDate, refreshCounter]);
+
+  // Realtime subscription: re-fetch stats when transactions change
+  useEffect(() => {
+    let channel: ReturnType<typeof supabaseClient.channel> | null = null;
+
+    const setupSubscription = async () => {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user) return;
+
+      channel = supabaseClient
+        .channel(`dashboard-transactions-${period}-${startDate}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "transactions",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(() => {
+              setRefreshCounter((c) => c + 1);
+            }, 500);
+          }
+        )
+        .subscribe();
+    };
+
+    setupSubscription();
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (channel) supabaseClient.removeChannel(channel);
+    };
+  }, [period, startDate]);
 
   return { ...stats, previousTypeSummary, loading };
 };

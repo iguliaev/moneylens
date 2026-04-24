@@ -101,6 +101,7 @@ function App() {
                 options={{
                   syncWithLocation: true,
                   warnWhenUnsavedChanges: true,
+                  liveMode: "auto",
                   projectId: "f28RTa-zPdRQM-EApdtq",
                 }}
                 resources={[

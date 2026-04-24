@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(14);
 
 -- Create test supabase users
 select tests.create_supabase_user('user1@test.com');
@@ -78,6 +78,47 @@ JOIN tags tag ON tag.user_id = t.user_id
 WHERE 
   (t.notes LIKE '%Lunch%' OR t.notes LIKE '%Dinner%' OR t.notes LIKE '%Vacation%') AND tag.name = 'groceries'
   OR (t.notes LIKE '%Salary%') AND tag.name = 'salary';
+
+
+-- Additional test data for edge-case tests (tests 12-14)
+
+-- Test 12: insert a transaction in 2024-03, tag it with groceries, then soft-delete it
+INSERT INTO transactions (id, user_id, date, type, category_id, amount, notes, bank_account)
+SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2024-03-15'::date, 'spend'::transaction_type, c.id, 45.00, 'SoftDelTest', 'Test Bank'
+FROM public.categories c
+WHERE c.user_id = tests.get_supabase_uid('user1@test.com') AND c.name = 'food' AND c.deleted_at IS NULL;
+
+INSERT INTO transaction_tags (transaction_id, tag_id)
+SELECT t.id, tg.id
+FROM public.transactions t
+CROSS JOIN public.tags tg
+WHERE t.notes = 'SoftDelTest'
+  AND t.user_id = tests.get_supabase_uid('user1@test.com')
+  AND tg.user_id = tests.get_supabase_uid('user1@test.com')
+  AND tg.name = 'groceries';
+
+UPDATE public.transactions SET deleted_at = NOW()
+WHERE notes = 'SoftDelTest'
+  AND user_id = tests.get_supabase_uid('user1@test.com');
+
+-- Test 13: untagged transaction in 2024-02 (no transaction_tags row)
+INSERT INTO transactions (id, user_id, date, type, category_id, amount, notes, bank_account)
+SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2024-02-01'::date, 'spend'::transaction_type, c.id, 30.00, 'UntaggedTest', 'Test Bank'
+FROM public.categories c
+WHERE c.user_id = tests.get_supabase_uid('user1@test.com') AND c.name = 'food' AND c.deleted_at IS NULL;
+
+-- Test 14: transaction tagged with BOTH groceries AND salary in 2024-01
+WITH multi_tag_tx AS (
+    INSERT INTO transactions (id, user_id, date, type, category_id, amount, notes, bank_account)
+    SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2024-01-15'::date, 'spend'::transaction_type, c.id, 75.00, 'MultiTagTest', 'Test Bank'
+    FROM public.categories c
+    WHERE c.user_id = tests.get_supabase_uid('user1@test.com') AND c.name = 'food' AND c.deleted_at IS NULL
+    RETURNING id
+)
+INSERT INTO transaction_tags (transaction_id, tag_id)
+SELECT mt.id, tg.id
+FROM multi_tag_tx mt, public.tags tg
+WHERE tg.user_id = tests.get_supabase_uid('user1@test.com') AND tg.name IN ('groceries', 'salary');
 
 
 -- as User 1
@@ -211,11 +252,45 @@ select results_eq(
     select * from (values
       ('earn'::text, array['salary']::text[], 3000.00::numeric),
       ('save'::text, array['groceries']::text[], 300.00::numeric),
-      ('spend'::text, array['groceries']::text[], 300.00::numeric)
+      ('spend'::text, array['groceries']::text[], 300.00::numeric),
+      ('spend'::text, array['groceries', 'salary']::text[], 75.00::numeric)
     ) as t(type, tags, total)
     order by type, tags::text
     $$,
     'view_tagged_type_totals returns correct totals per type and tag array across all time, user1'
+);
+
+
+-- Test 12: soft-deleted transaction should NOT appear in view_monthly_tagged_type_totals
+select is(
+    (SELECT COUNT(*)::integer FROM view_monthly_tagged_type_totals
+     WHERE user_id = tests.get_supabase_uid('user1@test.com') AND month = '2024-03-01'),
+    0,
+    'soft-deleted transaction does not appear in view_monthly_tagged_type_totals'
+);
+
+-- Test 13: untagged transaction should NOT appear in view_monthly_tagged_type_totals
+select is(
+    (SELECT COUNT(*)::integer FROM view_monthly_tagged_type_totals
+     WHERE user_id = tests.get_supabase_uid('user1@test.com') AND month = '2024-02-01'),
+    0,
+    'untagged transaction does not appear in view_monthly_tagged_type_totals'
+);
+
+-- Test 14: multi-tagged transaction appears as single row with combined tags array
+select results_eq(
+    $$
+    select type::text as type, tags, total
+    from view_monthly_tagged_type_totals
+    where user_id = tests.get_supabase_uid('user1@test.com') and month = '2024-01-01'
+    order by type, tags::text
+    $$,
+    $$
+    select * from (values
+      ('spend'::text, array['groceries', 'salary']::text[], 75.00::numeric)
+    ) as t(type, tags, total)
+    $$,
+    'multi-tagged transaction appears as single row with combined tags in view_monthly_tagged_type_totals'
 );
 
 

@@ -5,6 +5,7 @@ import {
   useEffect,
   type PropsWithChildren,
 } from "react";
+import { supabaseClient } from "../../utility/supabaseClient";
 
 export const SUPPORTED_CURRENCIES = [
   { value: "GBP", label: "GBP — British Pound (£)" },
@@ -34,12 +35,44 @@ export const CurrencyContextProvider = ({ children }: PropsWithChildren) => {
     return localStorage.getItem(CURRENCY_STORAGE_KEY) ?? DEFAULT_CURRENCY;
   });
 
+  // On mount: load from DB, overriding localStorage if DB has a value
+  useEffect(() => {
+    const loadFromDB = async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from("user_settings")
+          .select("currency")
+          .single();
+        if (!error && data?.currency) {
+          setCurrencyState(data.currency);
+          localStorage.setItem(CURRENCY_STORAGE_KEY, data.currency);
+        }
+      } catch {
+        // Silently fall back to localStorage value
+      }
+    };
+    loadFromDB();
+  }, []);
+
+  // Keep localStorage in sync
   useEffect(() => {
     localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
   }, [currency]);
 
-  const setCurrency = (newCurrency: string) => {
+  const setCurrency = async (newCurrency: string) => {
     setCurrencyState(newCurrency);
+    try {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (user) {
+        await supabaseClient
+          .from("user_settings")
+          .upsert({ user_id: user.id, currency: newCurrency });
+      }
+    } catch {
+      // Silently ignore - localStorage is already updated
+    }
   };
 
   return (
