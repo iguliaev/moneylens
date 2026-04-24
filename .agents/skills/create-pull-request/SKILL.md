@@ -64,14 +64,19 @@ git push -u origin <branch-name>
 
 ## Step 5 — Draft the PR description
 
-Check for a pull request template in the repo. Common locations:
-- `.github/pull_request_template.md`
-- `PULL_REQUEST_TEMPLATE.md` (repo root)
-- `.github/PULL_REQUEST_TEMPLATE/` (directory with multiple templates)
+**Before writing a single word of the PR body, look for a template:**
 
-**If a template exists:** Fill it in based on the actual changes. Don't just copy the section headers — write real content for each section. Skip sections that genuinely don't apply (e.g. "Database changes" for a docs-only PR) by removing them rather than writing "N/A".
+```bash
+cat .github/pull_request_template.md 2>/dev/null \
+  || cat PULL_REQUEST_TEMPLATE.md 2>/dev/null \
+  || ls .github/PULL_REQUEST_TEMPLATE/ 2>/dev/null
+```
 
-**If no template exists:** Use this structure:
+**If a template exists — use it as the exact structure.** Copy the section headers verbatim and fill each one in with real content from the diff. This is not optional: reviewers expect the repo's template, and a custom structure will confuse them. Do not invent alternative section names like "## Summary" or "## Changes" when the template provides different headings.
+
+Only remove a section (rather than writing "N/A") if it genuinely doesn't apply — for example, a docs-only PR with no database changes.
+
+**If no template exists**, use this fallback structure:
 
 ```
 ## Why
