@@ -8,12 +8,15 @@ CREATE TABLE IF NOT EXISTS public.user_settings (
 
 ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS user_settings_select ON public.user_settings;
 CREATE POLICY user_settings_select ON public.user_settings
     FOR SELECT USING (user_id = (SELECT auth.uid()));
 
+DROP POLICY IF EXISTS user_settings_insert ON public.user_settings;
 CREATE POLICY user_settings_insert ON public.user_settings
     FOR INSERT WITH CHECK (user_id = (SELECT auth.uid()));
 
+DROP POLICY IF EXISTS user_settings_update ON public.user_settings;
 CREATE POLICY user_settings_update ON public.user_settings
     FOR UPDATE USING (user_id = (SELECT auth.uid()))
     WITH CHECK (user_id = (SELECT auth.uid()));
