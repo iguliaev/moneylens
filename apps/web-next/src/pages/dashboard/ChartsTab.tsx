@@ -91,7 +91,7 @@ const getMonthKeysInRange = (startDate: string, endDate: string): string[] => {
 const formatMonthLabel = (month: string) => dayjs(month).format("MMM YY");
 
 // === Data hook ===
-const useChartsData = (startDate: string, endDate: string) => {
+const useChartsData = (startDate: string, endDate: string, refreshTrigger?: number) => {
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [tags, setTags] = useState<TagTotal[]>([]);
   const [categorySpendByMonth, setCategorySpendByMonth] = useState<
@@ -201,7 +201,7 @@ const useChartsData = (startDate: string, endDate: string) => {
     return () => {
       cancelled = true;
     };
-  }, [startDate, endDate]);
+  }, [startDate, endDate, refreshTrigger]);
 
   return { trend, tags, categorySpendByMonth, tagSpendByMonth, loading };
 };
@@ -462,7 +462,7 @@ const TagBar = ({
 };
 
 // === Main Component ===
-export const ChartsTab = () => {
+export const ChartsTab = ({ refreshTrigger }: { refreshTrigger?: number }) => {
   const { currency } = useCurrency();
 
   const defaultEnd = dayjs();
@@ -486,7 +486,7 @@ export const ChartsTab = () => {
     .format("YYYY-MM-DD");
 
   const { trend, tags, categorySpendByMonth, tagSpendByMonth, loading } =
-    useChartsData(startDate, endDate);
+    useChartsData(startDate, endDate, refreshTrigger);
 
   const tagData = (type: TransactionType) =>
     tags.filter((t) => t.type === type).slice(0, 10);

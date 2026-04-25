@@ -32,8 +32,12 @@ const PROGRESS_STATUS: Record<
   save: "success",
 };
 
-export const BudgetsSection = () => {
-  const { budgets, loading } = useBudgets();
+export const BudgetsSection = ({
+  refreshTrigger,
+}: {
+  refreshTrigger?: number;
+}) => {
+  const { budgets, loading } = useBudgets(refreshTrigger);
   const { list } = useNavigation();
   const { currency } = useCurrency();
   const [animated, setAnimated] = useState(false);
