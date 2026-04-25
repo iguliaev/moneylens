@@ -3,6 +3,11 @@
 -- The rewrite pre-aggregates counts in derived tables and joins once, giving
 -- the planner a single pass over budget_categories and budget_tags regardless
 -- of how many budgets the user has.
+--
+-- NOTE: The LEFT JOINs make this view non-auto-updatable in PostgreSQL.
+-- This is intentional and safe: budgets_with_linked is a read-only list view.
+-- All mutations (INSERT/UPDATE/DELETE) go directly to the `budgets` table.
+-- No application code writes through this view.
 
 CREATE OR REPLACE VIEW
     public.budgets_with_linked
