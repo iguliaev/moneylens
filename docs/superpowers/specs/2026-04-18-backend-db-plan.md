@@ -86,7 +86,9 @@ WHERE b.deleted_at IS NULL;
 
 ## 2. Correctness & Testing
 
-### 2.1 No pgTAP Tests for `get_budget_progress()`
+### 2.1 No pgTAP Tests for `get_budget_progress()` ✅ Done
+
+> **Implemented:** `supabase/tests/budget_progress_test.sql` — PR [#150](https://github.com/iguliaev/moneylens/pull/150)
 
 **What**  
 `get_budget_progress()` is a 60-line SQL function with non-trivial deduplication logic (UNION-based to avoid double-counting transactions that match via both a category link and a tag link). It has zero test coverage.
@@ -314,7 +316,7 @@ This makes the dashboard live without any page reload.
 1. ~~**1.1 — Date index**~~ ✅ Done (PR #146)
 2. ~~**2.3 — RETURN NEXT bugfix**~~ ✅ Done (PR #147)
 3. ~~**3.1 — `user_settings` table**~~ ✅ Done (PR #149)
-4. **2.1 — Budget progress pgTAP tests** (coverage for existing complex logic)
+4. ~~**2.1 — Budget progress pgTAP tests**~~ ✅ Done (PR #150)
 5. **2.2 — Tag view edge-case tests** (extend existing test file)
 6. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
 7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
