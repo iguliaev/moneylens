@@ -243,7 +243,7 @@ Future features (recurring budgets, monthly reset) will need to know intent. A b
 
 ## 4. Real-time
 
-### 4.1 `liveProvider` Configured but Never Used
+### 4.1 `liveProvider` Configured but Never Used ✅ Done
 
 **What**  
 `App.tsx` wires `liveProvider(supabaseClient)` into Refine. No resource, page, or hook in the application passes `liveMode` or calls `useLiveMode`. The dashboard `usePeriodStats` hook fetches data imperatively on mount and on date-picker changes, with no subscription.
@@ -309,7 +309,7 @@ This makes the dashboard live without any page reload.
 | 2.6 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
 | ~~3.1~~ | ~~Data Model~~ | ~~Add `user_settings` table for currency + RLS~~ | — | — | ✅ Done — PR [#149](https://github.com/iguliaev/moneylens/pull/149) |
 | 3.2 | Data Model | Document `budgets` nullable date semantics | Low | None | 🟢 Low |
-| 4.1 | Real-time | Wire Supabase Realtime into dashboard `usePeriodStats` | Medium | None | 🟡 Medium |
+| ~~4.1~~ | ~~Real-time~~ | ~~Wire Supabase Realtime into dashboard `usePeriodStats`~~ | — | — | ✅ Done — PR [#153](https://github.com/iguliaev/moneylens/pull/153) |
 
 ---
 
@@ -321,5 +321,5 @@ This makes the dashboard live without any page reload.
 4. ~~**2.1 — Budget progress pgTAP tests**~~ ✅ Done (PR #150)
 5. ~~**2.2 — Tag view edge-case tests**~~ ✅ Done (PR #151)
 6. ~~**1.2 — `budgets_with_linked` view rewrite**~~ ✅ Done (PR #152)
-7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
+7. ~~**4.1 — Dashboard real-time subscriptions**~~ ✅ Done (PR #153)
 8. **2.6 — Dual tag storage resolution** (requires full audit, do last)
