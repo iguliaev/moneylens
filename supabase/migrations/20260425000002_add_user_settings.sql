@@ -22,13 +22,13 @@ CREATE POLICY user_settings_update ON public.user_settings
     WITH CHECK (user_id = (SELECT auth.uid()));
 
 -- Auto-set user_id on insert (follows same pattern as categories, tags, etc.)
-DROP TRIGGER IF EXISTS tg_user_settings_user_id ON public.user_settings;
-CREATE TRIGGER tg_user_settings_user_id
+DROP TRIGGER IF EXISTS set_user_id_on_user_settings ON public.user_settings;
+CREATE TRIGGER set_user_id_on_user_settings
     BEFORE INSERT ON public.user_settings
     FOR EACH ROW EXECUTE FUNCTION public.tg_set_user_id();
 
 -- Auto-update updated_at on update
-DROP TRIGGER IF EXISTS tg_user_settings_updated_at ON public.user_settings;
-CREATE TRIGGER tg_user_settings_updated_at
+DROP TRIGGER IF EXISTS set_updated_at_on_user_settings ON public.user_settings;
+CREATE TRIGGER set_updated_at_on_user_settings
     BEFORE UPDATE ON public.user_settings
     FOR EACH ROW EXECUTE FUNCTION public.tg_set_updated_at();
