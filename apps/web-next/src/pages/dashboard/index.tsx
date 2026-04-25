@@ -18,6 +18,7 @@ import { useEffect, useRef, useState, type FC } from "react";
 import { useCurrency } from "../../contexts/currency";
 import dayjs from "dayjs";
 import { supabaseClient } from "../../utility";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Tables } from "../../types/database.types";
 import {
   TRANSACTION_TYPES,
@@ -486,8 +487,7 @@ export const DashboardPage: FC = () => {
   // Subscribe to transaction changes and refresh all dashboard data
   useEffect(() => {
     let disposed = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let channel: any;
+    let channel: RealtimeChannel | undefined;
 
     supabaseClient.auth.getUser().then(({ data }) => {
       if (disposed) return;
