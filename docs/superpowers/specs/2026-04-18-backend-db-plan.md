@@ -13,7 +13,9 @@ MoneyLens persists financial data in PostgreSQL 17 via Supabase. The schema is w
 
 ## 1. Performance
 
-### 1.1 Missing Date Index on `transactions`
+### 1.1 Missing Date Index on `transactions` ✅ Done
+
+> **Implemented:** `supabase/migrations/20260425000000_add_transaction_date_indexes.sql` — PR [#146](https://github.com/iguliaev/moneylens/pull/146)
 
 **What**  
 The baseline migration (`20260201164000`) creates no index on `transactions.date` or the composite `(user_id, date)`. The soft-delete migration adds `idx_transactions_user_deleted (user_id, deleted_at)` but still omits `date`. Every analytics view (`view_monthly_totals`, `view_monthly_category_totals`, `view_monthly_tagged_type_totals`, etc.) performs `DATE_TRUNC('month', date)` range scans scoped to a user and a time window. As transaction count grows these become sequential scans.
@@ -132,7 +134,19 @@ Extend `aggregation_logic_test.sql` with three new test cases (incrementing `SEL
 
 ---
 
-### 2.3 `reset_user_data` — Budget Cleanup Already Tested (Confirmation)
+### 2.3 `delete_bank_account_safe` / `delete_tag_safe` — RETURN NEXT Bug ✅ Done
+
+> **Implemented:** `supabase/migrations/20260425000001_fix_delete_safe_return_next.sql` — PR [#147](https://github.com/iguliaev/moneylens/pull/147)
+
+**What**  
+Both `delete_bank_account_safe` and `delete_tag_safe` used bare `RETURN` inside `RETURNS TABLE` functions. In PL/pgSQL, bare `RETURN` exits without emitting a row — callers received `NULL` instead of `(ok, in_use_count)`. This caused `bank_accounts_usage_and_rpc_test.sql` tests 2 and 3 to fail on every run.
+
+**Fix**  
+Replaced bare `RETURN` with `RETURN NEXT` (emit row) + `RETURN` (exit) in both functions.
+
+---
+
+### 2.4 `reset_user_data` — Budget Cleanup Already Tested (Confirmation)
 
 **What**  
 `reset_user_data_test.sql` fully covers budget cleanup: it verifies `budgets`, `budget_categories`, and `budget_tags` are all zeroed for the reset user while the other user's budgets remain intact (tests 1, 3, and 4). No action required here.
@@ -141,7 +155,7 @@ Extend `aggregation_logic_test.sql` with three new test cases (incrementing `SEL
 
 ---
 
-### 2.4 ~~No Database-Level CHECK Constraint on `transactions.amount`~~ — _Removed_
+### 2.5 ~~No Database-Level CHECK Constraint on `transactions.amount`~~ — _Removed_
 
 **Decision:** Negative amounts on `transactions` are **intentional by design**. For example, a reversal or refund entered directly as a negative spend is a valid use case. Adding a `CHECK (amount > 0)` constraint would break this deliberately supported workflow.
 
@@ -151,7 +165,7 @@ No migration needed for this item.
 
 ---
 
-### 2.5 Dual Tag Storage Inconsistency (`tags TEXT[]` vs `transaction_tags`)
+### 2.6 Dual Tag Storage Inconsistency (`tags TEXT[]` vs `transaction_tags`)
 
 **What**  
 The `transactions` table retains a legacy `tags TEXT[]` column. The new system uses the `transaction_tags` junction table. Two views use each approach:
@@ -309,12 +323,13 @@ This makes the dashboard live without any page reload.
 
 | # | Category | Item | Effort | Risk | Priority |
 |---|---|---|---|---|---|
-| 1.1 | Performance | Add `(user_id, date)` index on `transactions` | Low | None | 🔴 High |
+| ~~1.1~~ | ~~Performance~~ | ~~Add `(user_id, date)` index on `transactions`~~ | — | — | ✅ Done — PR [#146](https://github.com/iguliaev/moneylens/pull/146) |
 | 1.2 | Performance | Rewrite `budgets_with_linked` to avoid correlated subqueries | Low | None | 🟡 Medium |
 | 2.1 | Testing | pgTAP tests for `get_budget_progress()` | Medium | None | 🔴 High |
 | 2.2 | Testing | Edge-case tests for `view_monthly_tagged_type_totals` | Low | None | 🟡 Medium |
-| ~~2.4~~ | ~~Correctness~~ | ~~CHECK constraint on `transactions.amount`~~ | — | — | _Removed — negative amounts intentional_ |
-| 2.5 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
+| ~~2.3~~ | ~~Correctness~~ | ~~`delete_bank_account_safe` / `delete_tag_safe` RETURN NEXT bug~~ | — | — | ✅ Done — PR [#147](https://github.com/iguliaev/moneylens/pull/147) |
+| ~~2.5~~ | ~~Correctness~~ | ~~CHECK constraint on `transactions.amount`~~ | — | — | _Removed — negative amounts intentional_ |
+| 2.6 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
 | 3.1 | Data Model | Add `user_settings` table for currency + RLS | Medium | None | 🔴 High |
 | 3.2 | Data Model | Document `budgets` nullable date semantics | Low | None | 🟢 Low |
 | 4.1 | Real-time | Wire Supabase Realtime into dashboard `usePeriodStats` | Medium | None | 🟡 Medium |
@@ -323,10 +338,11 @@ This makes the dashboard live without any page reload.
 
 ## 6. Recommended Implementation Order
 
-1. **1.1 — Date index** (one migration, five minutes, immediate measurable impact)
-2. **3.1 — `user_settings` table** (migration + frontend wiring)
-3. **2.1 — Budget progress pgTAP tests** (coverage for existing complex logic)
-4. **2.2 — Tag view edge-case tests** (extend existing test file)
-5. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
-6. **4.1 — Dashboard real-time subscriptions** (UX improvement)
-7. **2.5 — Dual tag storage resolution** (requires full audit, do last)
+1. ~~**1.1 — Date index**~~ ✅ Done (PR #146)
+2. ~~**2.3 — RETURN NEXT bugfix**~~ ✅ Done (PR #147)
+3. **3.1 — `user_settings` table** (migration + frontend wiring)
+4. **2.1 — Budget progress pgTAP tests** (coverage for existing complex logic)
+5. **2.2 — Tag view edge-case tests** (extend existing test file)
+6. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
+7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
+8. **2.6 — Dual tag storage resolution** (requires full audit, do last)
