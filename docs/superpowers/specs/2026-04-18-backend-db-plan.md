@@ -46,7 +46,7 @@ Both are partial indexes (`WHERE deleted_at IS NULL`) so they are small, always 
 
 ---
 
-### 1.2 Correlated Subqueries in `budgets_with_linked`
+### 1.2 Correlated Subqueries in `budgets_with_linked` ✅ Done
 
 **What**  
 `budgets_with_linked` uses two correlated scalar subqueries per row (one for `category_count`, one for `tag_count`). With many budgets this means N×2 sub-selects.
@@ -301,9 +301,9 @@ This makes the dashboard live without any page reload.
 | # | Category | Item | Effort | Risk | Priority |
 |---|---|---|---|---|---|
 | ~~1.1~~ | ~~Performance~~ | ~~Add `(user_id, date)` index on `transactions`~~ | — | — | ✅ Done — PR [#146](https://github.com/iguliaev/moneylens/pull/146) |
-| 1.2 | Performance | Rewrite `budgets_with_linked` to avoid correlated subqueries | Low | None | 🟡 Medium |
-| 2.1 | Testing | pgTAP tests for `get_budget_progress()` | Medium | None | 🔴 High |
-| 2.2 | Testing | Edge-case tests for `view_monthly_tagged_type_totals` | Low | None | 🟡 Medium |
+| ~~1.2~~ | ~~Performance~~ | ~~Rewrite `budgets_with_linked` to avoid correlated subqueries~~ | — | — | ✅ Done — PR [#152](https://github.com/iguliaev/moneylens/pull/152) |
+| ~~2.1~~ | ~~Testing~~ | ~~pgTAP tests for `get_budget_progress()`~~ | — | — | ✅ Done — PR [#150](https://github.com/iguliaev/moneylens/pull/150) |
+| ~~2.2~~ | ~~Testing~~ | ~~Edge-case tests for `view_monthly_tagged_type_totals`~~ | — | — | ✅ Done — PR [#151](https://github.com/iguliaev/moneylens/pull/151) |
 | ~~2.3~~ | ~~Correctness~~ | ~~`delete_bank_account_safe` / `delete_tag_safe` RETURN NEXT bug~~ | — | — | ✅ Done — PR [#147](https://github.com/iguliaev/moneylens/pull/147) |
 | ~~2.5~~ | ~~Correctness~~ | ~~CHECK constraint on `transactions.amount`~~ | — | — | _Removed — negative amounts intentional_ |
 | 2.6 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
@@ -320,6 +320,6 @@ This makes the dashboard live without any page reload.
 3. ~~**3.1 — `user_settings` table**~~ ✅ Done (PR #149)
 4. ~~**2.1 — Budget progress pgTAP tests**~~ ✅ Done (PR #150)
 5. ~~**2.2 — Tag view edge-case tests**~~ ✅ Done (PR #151)
-6. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
+6. ~~**1.2 — `budgets_with_linked` view rewrite**~~ ✅ Done (PR #152)
 7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
 8. **2.6 — Dual tag storage resolution** (requires full audit, do last)
