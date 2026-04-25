@@ -84,25 +84,26 @@ WHERE
 -- ── Setup for edge-case tests 12–14 (months in 2026 to avoid collision) ─────
 
 -- Test 12: tagged spend tx in Jan 2026, soft-deleted → should be excluded
+-- Use a temp table to carry the inserted ID across statements (PostgreSQL CTE writes
+-- use the same snapshot and cannot see each other's effects on the target tables).
+create temp table _test12_id (id uuid) on commit drop;
+
 with tx12 as (
   insert into public.transactions (user_id, date, type, category_id, amount)
   select tests.get_supabase_uid('user1@test.com'), '2026-01-15', 'spend',
     (select id from public.categories where user_id = tests.get_supabase_uid('user1@test.com') and name = 'food'),
     77.00
   returning id
-),
-tt12 as (
-  insert into public.transaction_tags (transaction_id, tag_id)
-  select tx12.id,
-    (select id from public.tags where user_id = tests.get_supabase_uid('user1@test.com') and name = 'groceries')
-  from tx12
-  returning transaction_id
 )
-select 1 from tt12;
+insert into _test12_id select id from tx12;
+
+insert into public.transaction_tags (transaction_id, tag_id)
+select (select id from _test12_id),
+  (select id from public.tags where user_id = tests.get_supabase_uid('user1@test.com') and name = 'groceries');
 
 update public.transactions
 set deleted_at = now()
-where user_id = tests.get_supabase_uid('user1@test.com') and date = '2026-01-15'::date;
+where id in (select id from _test12_id);
 
 -- Test 13: untagged spend tx in Feb 2026 — no transaction_tags row → filtered by ARRAY_LENGTH check
 insert into public.transactions (user_id, date, type, category_id, amount)
@@ -271,14 +272,19 @@ select results_eq(
 -- Test 12: soft-deleted transaction is excluded from view_monthly_tagged_type_totals
 select is_empty(
     $$ select total from public.view_monthly_tagged_type_totals
-       where user_id = tests.get_supabase_uid('user1@test.com') and month = '2026-01-01' $$,
+       where user_id = tests.get_supabase_uid('user1@test.com')
+         and month = '2026-01-01'
+         and type::text = 'spend'
+         and tags = array['groceries']::text[] $$,
     'soft-deleted tagged transaction is excluded from view_monthly_tagged_type_totals'
 );
 
 -- Test 13: untagged transaction does not appear in view_monthly_tagged_type_totals
 select is_empty(
     $$ select total from public.view_monthly_tagged_type_totals
-       where user_id = tests.get_supabase_uid('user1@test.com') and month = '2026-02-01' $$,
+       where user_id = tests.get_supabase_uid('user1@test.com')
+         and month = '2026-02-01'
+         and type::text = 'spend' $$,
     'untagged transaction is excluded from view_monthly_tagged_type_totals (ARRAY_LENGTH filter)'
 );
 
@@ -287,7 +293,10 @@ select results_eq(
     $$
     select type::text, tags, total
     from public.view_monthly_tagged_type_totals
-    where user_id = tests.get_supabase_uid('user1@test.com') and month = '2026-03-01'
+    where user_id = tests.get_supabase_uid('user1@test.com')
+      and month = '2026-03-01'
+      and type = 'spend'
+      and tags = array['essentials', 'groceries']::text[]
     $$,
     $$
     select * from (values
