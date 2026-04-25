@@ -46,7 +46,7 @@ Both are partial indexes (`WHERE deleted_at IS NULL`) so they are small, always 
 
 ---
 
-### 1.2 Correlated Subqueries in `budgets_with_linked`
+### 1.2 Correlated Subqueries in `budgets_with_linked` ✅ Done
 
 **What**  
 `budgets_with_linked` uses two correlated scalar subqueries per row (one for `category_count`, one for `tag_count`). With many budgets this means N×2 sub-selects.
