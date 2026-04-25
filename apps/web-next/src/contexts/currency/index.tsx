@@ -35,13 +35,17 @@ export const CurrencyContextProvider = ({ children }: PropsWithChildren) => {
   const [currency, setCurrencyState] = useState<string>(() => {
     return localStorage.getItem(CURRENCY_STORAGE_KEY) ?? DEFAULT_CURRENCY;
   });
-  // Track whether the user is currently authenticated so setCurrency can skip
-  // the upsert for unauthenticated sessions (avoids RLS errors + wasted requests).
-  const isAuthenticatedRef = useRef(false);
+  // Stores the current user's ID (or null when signed out). Used to:
+  // 1. Guard setCurrency upserts against unauthenticated sessions.
+  // 2. Discard stale hydration results if auth changes while a SELECT is in-flight.
+  const currentUserIdRef = useRef<string | null>(null);
 
-  // Hydrate from Supabase on auth state changes (INITIAL_SESSION, SIGNED_IN, SIGNED_OUT).
-  // This ensures cross-device sync: server value always wins on session start.
   useEffect(() => {
+    // Eagerly seed auth state so setCurrency works before INITIAL_SESSION fires.
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      currentUserIdRef.current = session?.user?.id ?? null;
+    });
+
     const {
       data: { subscription },
     } = supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -49,14 +53,20 @@ export const CurrencyContextProvider = ({ children }: PropsWithChildren) => {
         (event === "INITIAL_SESSION" || event === "SIGNED_IN") &&
         session?.user
       ) {
-        isAuthenticatedRef.current = true;
+        const userId = session.user.id;
+        currentUserIdRef.current = userId;
         supabaseClient
           .from("user_settings")
           .select("currency")
           .maybeSingle()
           .then(({ data, error }) => {
+            // Discard result if auth changed while the query was in-flight
+            if (currentUserIdRef.current !== userId) return;
             if (error) {
-              console.error("[CurrencyContext] Failed to load currency:", error);
+              console.error(
+                "[CurrencyContext] Failed to load currency:",
+                error
+              );
               return;
             }
             if (data?.currency) {
@@ -65,7 +75,7 @@ export const CurrencyContextProvider = ({ children }: PropsWithChildren) => {
             }
           });
       } else if (event === "SIGNED_OUT") {
-        isAuthenticatedRef.current = false;
+        currentUserIdRef.current = null;
         const stored =
           localStorage.getItem(CURRENCY_STORAGE_KEY) ?? DEFAULT_CURRENCY;
         setCurrencyState(stored);
@@ -81,7 +91,7 @@ export const CurrencyContextProvider = ({ children }: PropsWithChildren) => {
     localStorage.setItem(CURRENCY_STORAGE_KEY, newCurrency);
 
     // Only persist to Supabase when authenticated; user_id set by DB trigger
-    if (!isAuthenticatedRef.current) return;
+    if (!currentUserIdRef.current) return;
     supabaseClient
       .from("user_settings")
       .upsert({ currency: newCurrency }, { onConflict: "user_id" })
