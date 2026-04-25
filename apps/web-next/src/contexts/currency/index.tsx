@@ -5,6 +5,7 @@ import {
   useEffect,
   type PropsWithChildren,
 } from "react";
+import { supabaseClient } from "../../utility";
 
 export const SUPPORTED_CURRENCIES = [
   { value: "GBP", label: "GBP — British Pound (£)" },
@@ -34,12 +35,47 @@ export const CurrencyContextProvider = ({ children }: PropsWithChildren) => {
     return localStorage.getItem(CURRENCY_STORAGE_KEY) ?? DEFAULT_CURRENCY;
   });
 
+  // Hydrate from Supabase on auth state changes (INITIAL_SESSION, SIGNED_IN, SIGNED_OUT).
+  // This ensures cross-device sync: server value always wins on session start.
   useEffect(() => {
-    localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
-  }, [currency]);
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((event) => {
+      if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
+        supabaseClient
+          .from("user_settings")
+          .select("currency")
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.currency) {
+              setCurrencyState(data.currency);
+              localStorage.setItem(CURRENCY_STORAGE_KEY, data.currency);
+            }
+          });
+      } else if (event === "SIGNED_OUT") {
+        const stored =
+          localStorage.getItem(CURRENCY_STORAGE_KEY) ?? DEFAULT_CURRENCY;
+        setCurrencyState(stored);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const setCurrency = (newCurrency: string) => {
+    // Optimistic update: apply immediately to state and localStorage
     setCurrencyState(newCurrency);
+    localStorage.setItem(CURRENCY_STORAGE_KEY, newCurrency);
+
+    // Persist to Supabase; user_id is set automatically by the DB trigger
+    supabaseClient
+      .from("user_settings")
+      .upsert({ currency: newCurrency }, { onConflict: "user_id" })
+      .then(({ error }) => {
+        if (error) {
+          console.error("[CurrencyContext] Failed to save currency:", error);
+        }
+      });
   };
 
   return (
