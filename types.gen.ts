@@ -471,36 +471,6 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }
-        Insert: {
-          category_count?: never
-          created_at?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          id?: string | null
-          name?: string | null
-          start_date?: string | null
-          tag_count?: never
-          target_amount?: number | null
-          type?: Database["public"]["Enums"]["transaction_type"] | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          category_count?: never
-          created_at?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          id?: string | null
-          name?: string | null
-          start_date?: string | null
-          tag_count?: never
-          target_amount?: number | null
-          type?: Database["public"]["Enums"]["transaction_type"] | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
         Relationships: []
       }
       categories_with_usage: {
