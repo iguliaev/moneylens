@@ -116,7 +116,9 @@ Test structure mirrors `aggregation_logic_test.sql`: `BEGIN`, `SELECT plan(N)`, 
 
 ---
 
-### 2.2 `view_monthly_tagged_type_totals` — Edge Cases Not Tested
+### 2.2 `view_monthly_tagged_type_totals` — Edge Cases Not Tested ✅ Done
+
+> **Implemented:** extended `supabase/tests/aggregation_logic_test.sql` (tests 12–14) — PR [#151](https://github.com/iguliaev/moneylens/pull/151)
 
 **What**  
 `aggregation_logic_test.sql` tests happy-path tagged totals but does not cover:
@@ -317,7 +319,7 @@ This makes the dashboard live without any page reload.
 2. ~~**2.3 — RETURN NEXT bugfix**~~ ✅ Done (PR #147)
 3. ~~**3.1 — `user_settings` table**~~ ✅ Done (PR #149)
 4. ~~**2.1 — Budget progress pgTAP tests**~~ ✅ Done (PR #150)
-5. **2.2 — Tag view edge-case tests** (extend existing test file)
+5. ~~**2.2 — Tag view edge-case tests**~~ ✅ Done (PR #151)
 6. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
 7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
 8. **2.6 — Dual tag storage resolution** (requires full audit, do last)
