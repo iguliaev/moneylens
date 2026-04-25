@@ -190,7 +190,9 @@ Correctness of the "in use" badge on the Tags list page, and potential silent di
 
 ## 3. Data Model Improvements
 
-### 3.1 No `user_settings` Table
+### 3.1 No `user_settings` Table ✅ Done
+
+> **Implemented:** `supabase/migrations/20260425000002_add_user_settings.sql` + `supabase/tests/user_settings_rls_test.sql` + `apps/web-next/src/contexts/currency/index.tsx` — PR [#149](https://github.com/iguliaev/moneylens/pull/149)
 
 **What**  
 Currency preference (`USD`, `GBP`, etc.) is stored exclusively in the browser's `localStorage` via `CurrencyContextProvider`. There is no server-side record of this preference.
@@ -200,40 +202,11 @@ Currency preference (`USD`, `GBP`, etc.) is stored exclusively in the browser's 
 - **Correctness:** Currency is display-critical — it affects how all monetary values are labelled and formatted.
 - **Future-proofing:** Any future backend-driven feature (email summaries, reports) has no currency context to use.
 
-**How to implement**  
-Create a new migration `20260419000002_add_user_settings.sql`:
-
-```sql
-CREATE TABLE IF NOT EXISTS public.user_settings (
-    user_id  UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-    currency TEXT NOT NULL DEFAULT 'USD'
-                  CHECK (char_length(currency) = 3),  -- ISO 4217
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY user_settings_select ON public.user_settings
-    FOR SELECT USING (user_id = (SELECT auth.uid()));
-
-CREATE POLICY user_settings_insert ON public.user_settings
-    FOR INSERT WITH CHECK (user_id = (SELECT auth.uid()));
-
-CREATE POLICY user_settings_update ON public.user_settings
-    FOR UPDATE USING (user_id = (SELECT auth.uid()))
-    WITH CHECK (user_id = (SELECT auth.uid()));
-
-DROP TRIGGER IF EXISTS tg_user_settings_updated_at ON public.user_settings;
-CREATE TRIGGER tg_user_settings_updated_at
-    BEFORE UPDATE ON public.user_settings
-    FOR EACH ROW EXECUTE FUNCTION public.tg_set_updated_at();
-```
-
-**Frontend integration steps:**
-1. On first load, read from Supabase `user_settings`; fall back to `localStorage` value for backward compatibility.
-2. On currency change in Settings page, upsert into `user_settings` (and keep `localStorage` in sync for offline resilience).
-3. Add `user_settings` to the pgTAP test suite: verify RLS isolation between users and that the ISO 4217 CHECK constraint rejects invalid codes.
+**What was implemented**
+- `user_settings` table with `user_id PK`, `currency TEXT CHECK(char_length=3)` (ISO 4217), timestamps, RLS (select/insert/update), `tg_set_user_id` trigger (auto-sets user_id, client never supplies it), `tg_set_updated_at` trigger
+- `CurrencyContextProvider` updated: hydrates from Supabase on `INITIAL_SESSION`/`SIGNED_IN` auth events; `setCurrency` does optimistic localStorage update + fire-and-forget upsert; falls back to localStorage when signed out
+- 10 pgTAP tests covering: auto user_id via trigger, RLS isolation between users, updated_at trigger, CHECK constraint (rejects 2-char and 4-char codes)
+- All 153 pgTAP tests pass
 
 **Risk:** Additive DDL, no breaking changes. `localStorage` fallback ensures existing users are unaffected.
 
@@ -330,7 +303,7 @@ This makes the dashboard live without any page reload.
 | ~~2.3~~ | ~~Correctness~~ | ~~`delete_bank_account_safe` / `delete_tag_safe` RETURN NEXT bug~~ | — | — | ✅ Done — PR [#147](https://github.com/iguliaev/moneylens/pull/147) |
 | ~~2.5~~ | ~~Correctness~~ | ~~CHECK constraint on `transactions.amount`~~ | — | — | _Removed — negative amounts intentional_ |
 | 2.6 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
-| 3.1 | Data Model | Add `user_settings` table for currency + RLS | Medium | None | 🔴 High |
+| ~~3.1~~ | ~~Data Model~~ | ~~Add `user_settings` table for currency + RLS~~ | — | — | ✅ Done — PR [#149](https://github.com/iguliaev/moneylens/pull/149) |
 | 3.2 | Data Model | Document `budgets` nullable date semantics | Low | None | 🟢 Low |
 | 4.1 | Real-time | Wire Supabase Realtime into dashboard `usePeriodStats` | Medium | None | 🟡 Medium |
 
@@ -340,7 +313,7 @@ This makes the dashboard live without any page reload.
 
 1. ~~**1.1 — Date index**~~ ✅ Done (PR #146)
 2. ~~**2.3 — RETURN NEXT bugfix**~~ ✅ Done (PR #147)
-3. **3.1 — `user_settings` table** (migration + frontend wiring)
+3. ~~**3.1 — `user_settings` table**~~ ✅ Done (PR #149)
 4. **2.1 — Budget progress pgTAP tests** (coverage for existing complex logic)
 5. **2.2 — Tag view edge-case tests** (extend existing test file)
 6. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
