@@ -499,7 +499,7 @@ export const DashboardPage: FC = () => {
           }, 500);
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         if (err) console.error("Realtime subscription error:", err);
       });
 
