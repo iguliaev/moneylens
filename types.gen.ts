@@ -459,6 +459,7 @@ export type Database = {
         Row: {
           category_count: number | null
           created_at: string | null
+          current_amount: number | null
           deleted_at: string | null
           description: string | null
           end_date: string | null
