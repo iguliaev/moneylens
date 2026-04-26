@@ -1,5 +1,6 @@
 import { Authenticated, Refine } from "@refinedev/core";
 import {
+  AppstoreOutlined,
   BankOutlined,
   DashboardOutlined,
   TagsOutlined,
@@ -140,6 +141,10 @@ function App() {
                     create: "/categories/create",
                     edit: "/categories/edit/:id",
                     show: "/categories/show/:id",
+                    meta: {
+                      label: "Categories",
+                      icon: <AppstoreOutlined />,
+                    },
                   },
                   {
                     name: "bank_accounts", // Database table name
