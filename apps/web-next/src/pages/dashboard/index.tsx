@@ -585,7 +585,7 @@ export const DashboardPage: FC = () => {
   return (
     <Show title="Dashboard" headerButtons={() => null}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        <Tabs items={tabItems} defaultActiveKey="yearly" />
+        <Tabs items={tabItems} defaultActiveKey="monthly" />
         <BudgetsSection />
       </div>
     </Show>
