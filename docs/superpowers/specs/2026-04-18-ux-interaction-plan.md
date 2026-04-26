@@ -4,7 +4,7 @@
 
 ---
 
-## 1. Dashboard: Default to "Monthly Statistics" Tab
+## 1. Dashboard: Default to "Monthly Statistics" Tab ✅ Done — [PR #154](https://github.com/iguliaev/moneylens/pull/154)
 
 **Priority:** 🔴 High Impact / 🟢 Low Complexity — **Quick Win #1**
 
