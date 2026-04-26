@@ -21,7 +21,7 @@ The app opens on "Monthly Statistics", scoped to the current month and year auto
 
 ---
 
-## 2. Categories Resource: Add Sidebar Icon
+## 2. Categories Resource: Add Sidebar Icon ✅ Done — [PR #155](https://github.com/iguliaev/moneylens/pull/155)
 
 **Priority:** 🔴 High Impact / 🟢 Low Complexity — **Quick Win #2**
 
