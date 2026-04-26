@@ -16,7 +16,7 @@ export interface BudgetProgress {
   updated_at: string;
 }
 
-export const useBudgets = () => {
+export const useBudgets = (refreshTrigger?: number) => {
   const [budgets, setBudgets] = useState<BudgetProgress[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +40,7 @@ export const useBudgets = () => {
 
   useEffect(() => {
     fetchBudgets();
-  }, [fetchBudgets]);
+  }, [fetchBudgets, refreshTrigger]);
 
   return { budgets, loading, refresh: fetchBudgets };
 };

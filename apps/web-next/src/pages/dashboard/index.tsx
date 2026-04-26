@@ -14,7 +14,7 @@ import { Show } from "@refinedev/antd";
 import { BudgetsSection } from "./BudgetsSection";
 import { ChartsTab } from "./ChartsTab";
 
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useRef, useState, type FC } from "react";
 import { useCurrency } from "../../contexts/currency";
 import dayjs from "dayjs";
 import { supabaseClient } from "../../utility";
@@ -199,10 +199,12 @@ const usePeriodStats = ({
   period,
   startDate,
   endDate,
+  refreshTrigger,
 }: {
   period: Period;
   startDate: string;
   endDate: string;
+  refreshTrigger?: number;
 }) => {
   const [stats, setStats] = useState<PeriodStats>({
     typeSummary: [],
@@ -258,7 +260,7 @@ const usePeriodStats = ({
     return () => {
       cancelled = true;
     };
-  }, [endDate, period, startDate]);
+  }, [endDate, period, startDate, refreshTrigger]);
 
   return { ...stats, previousTypeSummary, loading };
 };
@@ -478,6 +480,34 @@ const CategoryBreakdownSection = ({
 export const DashboardPage: FC = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().month());
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Subscribe to transaction changes and refresh all dashboard data.
+  // RLS on the transactions table ensures only the current user's rows
+  // trigger events — no client-side filter needed.
+  useEffect(() => {
+    const channel = supabaseClient
+      .channel("dashboard-transactions")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transactions" },
+        () => {
+          if (debounceRef.current) clearTimeout(debounceRef.current);
+          debounceRef.current = setTimeout(() => {
+            setRefreshTrigger((n) => n + 1);
+          }, 500);
+        }
+      )
+      .subscribe((_status, err) => {
+        if (err) console.error("Realtime subscription error:", err);
+      });
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      supabaseClient.removeChannel(channel);
+    };
+  }, []);
 
   // Compute date ranges
   const yearDateRange = {
@@ -508,11 +538,13 @@ export const DashboardPage: FC = () => {
     period: "year",
     startDate: yearDateRange.start,
     endDate: yearDateRange.end,
+    refreshTrigger,
   });
   const monthStats = usePeriodStats({
     period: "month",
     startDate: monthDateRange.start,
     endDate: monthDateRange.end,
+    refreshTrigger,
   });
 
   const tabItems = [
@@ -578,7 +610,7 @@ export const DashboardPage: FC = () => {
     {
       key: "charts",
       label: "📊 Charts",
-      children: <ChartsTab />,
+      children: <ChartsTab refreshTrigger={refreshTrigger} />,
     },
   ];
 
@@ -586,7 +618,7 @@ export const DashboardPage: FC = () => {
     <Show title="Dashboard" headerButtons={() => null}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <Tabs items={tabItems} defaultActiveKey="yearly" />
-        <BudgetsSection />
+        <BudgetsSection refreshTrigger={refreshTrigger} />
       </div>
     </Show>
   );
