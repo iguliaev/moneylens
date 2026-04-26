@@ -18,7 +18,6 @@ import { useEffect, useRef, useState, type FC } from "react";
 import { useCurrency } from "../../contexts/currency";
 import dayjs from "dayjs";
 import { supabaseClient } from "../../utility";
-import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Tables } from "../../types/database.types";
 import {
   TRANSACTION_TYPES,
@@ -484,40 +483,29 @@ export const DashboardPage: FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Subscribe to transaction changes and refresh all dashboard data
+  // Subscribe to transaction changes and refresh all dashboard data.
+  // RLS on the transactions table ensures only the current user's rows
+  // trigger events — no client-side filter needed.
   useEffect(() => {
-    let disposed = false;
-    let channel: RealtimeChannel | undefined;
-
-    supabaseClient.auth.getUser().then(({ data }) => {
-      if (disposed) return;
-      const userId = data.user?.id;
-      if (!userId) return;
-
-      channel = supabaseClient
-        .channel("dashboard-transactions")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "transactions",
-            filter: `user_id=eq.${userId}`,
-          },
-          () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-            debounceRef.current = setTimeout(() => {
-              setRefreshTrigger((n) => n + 1);
-            }, 500);
-          }
-        )
-        .subscribe();
-    });
+    const channel = supabaseClient
+      .channel("dashboard-transactions")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transactions" },
+        () => {
+          if (debounceRef.current) clearTimeout(debounceRef.current);
+          debounceRef.current = setTimeout(() => {
+            setRefreshTrigger((n) => n + 1);
+          }, 500);
+        }
+      )
+      .subscribe((status, err) => {
+        if (err) console.error("Realtime subscription error:", err);
+      });
 
     return () => {
-      disposed = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (channel) supabaseClient.removeChannel(channel);
+      supabaseClient.removeChannel(channel);
     };
   }, []);
 
