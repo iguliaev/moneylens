@@ -245,6 +245,7 @@ test.describe("Budget alert states", () => {
       .select("id")
       .eq("user_id", userId)
       .eq("type", "spend")
+      .eq("name", "Groceries")
       .single();
     if (catError) throw new Error(`Category fetch failed: ${catError.message}`);
 
@@ -300,7 +301,11 @@ test.describe("Budget alert states", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
-    const card = page.getByRole("main").getByText(budgetName).locator("..");
+    const card = page
+      .getByRole("main")
+      .locator("div")
+      .filter({ hasText: budgetName })
+      .first();
     await expect(card.getByText("Over budget")).toBeVisible();
   });
 });
