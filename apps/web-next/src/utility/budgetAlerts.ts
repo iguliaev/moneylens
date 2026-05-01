@@ -3,9 +3,9 @@ import type { TransactionType } from "../constants/transactionTypes";
 export type BudgetAlertLevel = "over" | "warn" | "none";
 
 export interface BudgetAlertState {
-  /** Display percent, clamped to 0–100 for the Progress bar */
+  /** Display percent, rounded and clamped to 0–100 for the Progress bar */
   percent: number;
-  /** Uncapped percent for threshold comparisons */
+  /** Exact (unrounded) uncapped percent — use this for threshold comparisons */
   rawPercent: number;
   alertLevel: BudgetAlertLevel;
 }
@@ -19,11 +19,12 @@ export function getBudgetAlertState(
   targetAmount: number,
   type: TransactionType,
 ): BudgetAlertState {
-  const rawPercent =
-    targetAmount > 0 ? Math.round((currentAmount / targetAmount) * 100) : 0;
-  // Clamp to [0, 100]: negative currentAmount (e.g. refunds) must not produce
-  // a negative percent, which AntD <Progress> cannot render correctly.
-  const percent = Math.max(0, Math.min(100, rawPercent));
+  // Exact ratio — used for threshold comparisons so that e.g. 79.6% does not
+  // round up to 80 and falsely trigger "Near limit".
+  const rawPercent = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
+  // Rounded and clamped to [0, 100] for the AntD <Progress> bar.
+  // Negative currentAmount (e.g. refunds) is clamped to 0.
+  const percent = Math.max(0, Math.min(100, Math.round(rawPercent)));
   const isSpend = type === "spend";
 
   const alertLevel: BudgetAlertLevel =
