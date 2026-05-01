@@ -16,6 +16,7 @@ import { formatCurrency } from "../../utility/currency";
 import { useCurrency } from "../../contexts/currency";
 import {
   getBudgetAlertState,
+  getProgressStatus,
   WARN_STROKE_COLOR,
 } from "../../utility/budgetAlerts";
 
@@ -73,17 +74,11 @@ export const BudgetList = () => {
                 <Progress
                   percent={percent}
                   size="small"
-                  status={
-                    alertLevel === "warn"
-                      ? "normal"
-                      : alertLevel === "over"
-                        ? "exception"
-                        : record.type === "save"
-                          ? percent >= 100
-                            ? "success"
-                            : "normal"
-                          : "normal"
-                  }
+                  status={getProgressStatus(
+                    alertLevel,
+                    percent,
+                    record.type as TransactionType,
+                  )}
                   strokeColor={
                     alertLevel === "warn" ? WARN_STROKE_COLOR : undefined
                   }

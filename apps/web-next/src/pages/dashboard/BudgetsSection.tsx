@@ -15,26 +15,17 @@ import { useEffect, useState } from "react";
 import { useBudgets } from "./useBudgets";
 import {
   TRANSACTION_TYPE_LABELS,
-  TransactionType,
   TYPE_COLORS,
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
 import { useCurrency } from "../../contexts/currency";
 import {
   getBudgetAlertState,
+  getProgressStatus,
   WARN_STROKE_COLOR,
 } from "../../utility/budgetAlerts";
 
 const { Text, Title } = Typography;
-
-const PROGRESS_STATUS: Record<
-  TransactionType,
-  "normal" | "exception" | "success"
-> = {
-  earn: "normal",
-  spend: "exception",
-  save: "success",
-};
 
 export const BudgetsSection = () => {
   const { budgets, loading } = useBudgets();
@@ -90,14 +81,11 @@ export const BudgetsSection = () => {
               budget.type,
             );
 
-            const progressStatus =
-              alertLevel === "warn"
-                ? "normal"
-                : percent >= 100
-                  ? budget.type === "spend"
-                    ? "exception"
-                    : "success"
-                  : PROGRESS_STATUS[budget.type];
+            const progressStatus = getProgressStatus(
+              alertLevel,
+              percent,
+              budget.type,
+            );
 
             return (
               <Col xs={24} sm={12} lg={8} key={budget.id}>

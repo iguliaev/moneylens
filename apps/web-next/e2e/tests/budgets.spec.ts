@@ -195,3 +195,112 @@ test.describe("Budgets", () => {
     await expect(page.getByRole("progressbar").first()).toBeVisible();
   });
 });
+
+test.describe("Budget alert states", () => {
+  let testUser: { email: string; password: string; userId: string };
+
+  test.beforeAll(async () => {
+    testUser = await createTestUser();
+    await seedReferenceDataForUser(testUser.userId);
+  });
+
+  test.afterAll(async () => {
+    await supabaseAdmin
+      .from("transactions")
+      .delete()
+      .eq("user_id", testUser.userId);
+    await supabaseAdmin.from("budgets").delete().eq("user_id", testUser.userId);
+    await cleanupReferenceDataForUser(testUser.userId);
+    await deleteTestUser(testUser.userId);
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await loginUser(page, testUser.email, testUser.password);
+  });
+
+  async function seedBudgetAtPercent(userId: string, percent: number) {
+    const now = new Date().toISOString();
+    const ts = Date.now();
+    const targetAmount = 100;
+    const transactionAmount = percent;
+
+    // Insert a spend budget
+    const { data: budgetData, error: budgetError } = await supabaseAdmin
+      .from("budgets")
+      .insert({
+        user_id: userId,
+        name: `e2e-alert-budget-${percent}-${ts}`,
+        type: "spend",
+        target_amount: targetAmount,
+        created_at: now,
+        updated_at: now,
+      })
+      .select("id, name")
+      .single();
+    if (budgetError) throw new Error(`Budget insert failed: ${budgetError.message}`);
+
+    // Get the seeded Groceries (spend) category
+    const { data: catData, error: catError } = await supabaseAdmin
+      .from("categories")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("type", "spend")
+      .single();
+    if (catError) throw new Error(`Category fetch failed: ${catError.message}`);
+
+    // Link the category to the budget
+    const { error: linkError } = await supabaseAdmin
+      .from("budget_categories")
+      .insert({ budget_id: budgetData.id, category_id: catData.id });
+    if (linkError) throw new Error(`Budget-category link failed: ${linkError.message}`);
+
+    // Insert a transaction that pushes the budget to the target percent
+    const { error: txError } = await supabaseAdmin.from("transactions").insert({
+      user_id: userId,
+      date: new Date().toISOString().split("T")[0],
+      type: "spend",
+      amount: transactionAmount,
+      category_id: catData.id,
+      notes: `e2e-alert-txn-${percent}-${ts}`,
+      created_at: now,
+      updated_at: now,
+    });
+    if (txError) throw new Error(`Transaction insert failed: ${txError.message}`);
+
+    return budgetData.name;
+  }
+
+  test("spend budget at 85% shows Near limit tag in list", async ({ page }) => {
+    const budgetName = await seedBudgetAtPercent(testUser.userId, 85);
+
+    await page.goto("/budgets");
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+
+    const row = page.getByRole("row").filter({ hasText: budgetName });
+    await expect(row).toBeVisible();
+    await expect(row.getByText("⚠ Near limit")).toBeVisible();
+  });
+
+  test("spend budget at 100% shows Over budget tag in list", async ({ page }) => {
+    const budgetName = await seedBudgetAtPercent(testUser.userId, 100);
+
+    await page.goto("/budgets");
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+
+    const row = page.getByRole("row").filter({ hasText: budgetName });
+    await expect(row).toBeVisible();
+    await expect(row.getByText("Over budget")).toBeVisible();
+  });
+
+  test("spend budget at 100% shows Over budget tag on dashboard", async ({
+    page,
+  }) => {
+    const budgetName = await seedBudgetAtPercent(testUser.userId, 100);
+
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+
+    const card = page.getByRole("main").getByText(budgetName).locator("..");
+    await expect(card.getByText("Over budget")).toBeVisible();
+  });
+});
