@@ -301,11 +301,12 @@ test.describe("Budget alert states", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
+    // Use .ant-card as the boundary so we scope to a single budget card
+    // and avoid matching ancestor divs that contain multiple cards.
     const card = page
       .getByRole("main")
-      .locator("div")
-      .filter({ hasText: budgetName })
-      .first();
-    await expect(card.getByText("Over budget")).toBeVisible();
+      .locator(".ant-card")
+      .filter({ hasText: budgetName });
+    await expect(card.getByText("Over budget").first()).toBeVisible();
   });
 });
