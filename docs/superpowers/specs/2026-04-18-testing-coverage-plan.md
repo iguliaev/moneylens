@@ -260,15 +260,16 @@ Use `vi.fn()` to assert call args and return values. No network needed.
 
 **What to add:**
 
-| Test case | Scenario |
-|-----------|----------|
-| Budget shows 0 progress | Create budget with no matching transactions → progress = 0% / $0 |
-| Budget reflects transactions | Create spend budget for "Groceries"; add a $100 spend transaction in Groceries → budget shows $100 progress |
-| Budget with category link | Budget linked to category "Salary"; earn $500 → progress updates |
-| Budget with tag link | Budget linked to tag "essentials"; add tagged spend → progress updates |
-| No double-counting | Transaction matches both category and tag link → counted once, not twice |
-| Over-budget display | Spend $600 against a $500 budget → UI shows correct amount and "over budget" state |
-| Date-bounded budget | Budget with `start_date`/`end_date`; transactions outside range not counted |
+| Test case | Scenario | Status |
+|-----------|----------|--------|
+| Budget shows 0 progress | Create budget with no matching transactions → progress = 0% / $0 | ⬜ Pending |
+| Budget reflects transactions | Create spend budget for "Groceries"; add a $100 spend transaction in Groceries → budget shows $100 progress | ⬜ Pending |
+| Budget with category link | Budget linked to category "Salary"; earn $500 → progress updates | ⬜ Pending |
+| Budget with tag link | Budget linked to tag "essentials"; add tagged spend → progress updates | ⬜ Pending |
+| No double-counting | Transaction matches both category and tag link → counted once, not twice | ⬜ Pending |
+| Near-limit display (warn) | Spend 85% of budget → list and dashboard show ⚠ Near limit tag | ✅ Done (PR #156) |
+| Over-budget display | Spend 100% of budget → list and dashboard show Over budget tag | ✅ Done (PR #156) |
+| Date-bounded budget | Budget with `start_date`/`end_date`; transactions outside range not counted | ⬜ Pending |
 
 **Why:** `get_budget_progress()` has UNION deduplication logic that is complex and untested end-to-end. The "counted once" invariant must be verified through the UI to confirm the RPC, view, and display all work together.
 

@@ -15,22 +15,17 @@ import { useEffect, useState } from "react";
 import { useBudgets } from "./useBudgets";
 import {
   TRANSACTION_TYPE_LABELS,
-  TransactionType,
   TYPE_COLORS,
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
 import { useCurrency } from "../../contexts/currency";
+import {
+  getBudgetAlertState,
+  getProgressStatus,
+  WARN_STROKE_COLOR,
+} from "../../utility/budgetAlerts";
 
 const { Text, Title } = Typography;
-
-const PROGRESS_STATUS: Record<
-  TransactionType,
-  "normal" | "exception" | "success"
-> = {
-  earn: "normal",
-  spend: "exception",
-  save: "success",
-};
 
 export const BudgetsSection = () => {
   const { budgets, loading } = useBudgets();
@@ -80,15 +75,17 @@ export const BudgetsSection = () => {
       ) : (
         <Row gutter={[16, 16]}>
           {budgets.map((budget) => {
-            const percent =
-              budget.target_amount > 0
-                ? Math.min(
-                    100,
-                    Math.round(
-                      (budget.current_amount / budget.target_amount) * 100
-                    )
-                  )
-                : 0;
+            const { percent, alertLevel } = getBudgetAlertState(
+              budget.current_amount,
+              budget.target_amount,
+              budget.type,
+            );
+
+            const progressStatus = getProgressStatus(
+              alertLevel,
+              percent,
+              budget.type,
+            );
 
             return (
               <Col xs={24} sm={12} lg={8} key={budget.id}>
@@ -101,6 +98,12 @@ export const BudgetsSection = () => {
                       <Tag color={TYPE_COLORS[budget.type]}>
                         {TRANSACTION_TYPE_LABELS[budget.type]}
                       </Tag>
+                      {alertLevel === "warn" && (
+                        <Tag color="warning">⚠ Near limit</Tag>
+                      )}
+                      {alertLevel === "over" && (
+                        <Tag color="error">Over budget</Tag>
+                      )}
                     </Space>
                     {budget.description && (
                       <Text type="secondary" style={{ fontSize: 12 }}>
@@ -109,12 +112,9 @@ export const BudgetsSection = () => {
                     )}
                     <Progress
                       percent={animated ? percent : 0}
-                      status={
-                        percent >= 100
-                          ? budget.type === "spend"
-                            ? "exception"
-                            : "success"
-                          : PROGRESS_STATUS[budget.type]
+                      status={progressStatus}
+                      strokeColor={
+                        alertLevel === "warn" ? WARN_STROKE_COLOR : undefined
                       }
                       format={() => `${percent}%`}
                     />

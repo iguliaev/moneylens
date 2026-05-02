@@ -6,7 +6,7 @@ import {
   ShowButton,
   DeleteButton,
 } from "@refinedev/antd";
-import { Table, Space, Tag } from "antd";
+import { Table, Space, Tag, Progress } from "antd";
 import {
   TRANSACTION_TYPE_LABELS,
   TransactionType,
@@ -14,6 +14,11 @@ import {
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
 import { useCurrency } from "../../contexts/currency";
+import {
+  getBudgetAlertState,
+  getProgressStatus,
+  WARN_STROKE_COLOR,
+} from "../../utility/budgetAlerts";
 
 export const BudgetList = () => {
   const invalidate = useInvalidate();
@@ -51,6 +56,48 @@ export const BudgetList = () => {
           align="center"
         />
         <Table.Column dataIndex="tag_count" title="Tags" align="center" />
+        <Table.Column
+          title="Progress"
+          key="progress"
+          align="center"
+          width={160}
+          render={(_: unknown, record: BaseRecord) => {
+            const currentAmount = Number(record.current_amount ?? 0);
+            const targetAmount = Number(record.target_amount ?? 0);
+            const { percent, alertLevel } = getBudgetAlertState(
+              currentAmount,
+              targetAmount,
+              record.type as TransactionType,
+            );
+            return (
+              <Space direction="vertical" size={2} style={{ width: "100%" }}>
+                <Progress
+                  percent={percent}
+                  size="small"
+                  status={getProgressStatus(
+                    alertLevel,
+                    percent,
+                    record.type as TransactionType,
+                  )}
+                  strokeColor={
+                    alertLevel === "warn" ? WARN_STROKE_COLOR : undefined
+                  }
+                  format={() => `${percent}%`}
+                />
+                {alertLevel === "warn" && (
+                  <Tag color="warning" style={{ fontSize: 11 }}>
+                    ⚠ Near limit
+                  </Tag>
+                )}
+                {alertLevel === "over" && (
+                  <Tag color="error" style={{ fontSize: 11 }}>
+                    Over budget
+                  </Tag>
+                )}
+              </Space>
+            );
+          }}
+        />
         <Table.Column
           title="Actions"
           dataIndex="actions"

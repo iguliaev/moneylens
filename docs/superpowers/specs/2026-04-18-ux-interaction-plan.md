@@ -43,23 +43,21 @@ Categories has a recognisable icon, giving the sidebar a uniform, professional l
 ## 3. Budget Threshold Alerts (80% / 100% Warning)
 
 **Priority:** 🔴 High Impact / 🟢 Low Complexity — **Quick Win #3**
+**Status: ✅ Implemented (PR #156)**
 
 ### Current Experience
 `BudgetsSection.tsx` shows a progress bar with status change only at exactly 100%. There is no visual warning between 80–99% — the most actionable window for a user to adjust behaviour.
 
-### Improved Experience
+### Implemented Experience
 - **≥ 80% (spend budget):** Progress bar turns orange (`strokeColor="#faad14"`); a small `<Tag>` badge reads "⚠ Near limit".
-- **≥ 100% (spend budget):** Existing red `"exception"` status plus `<Tag color="error">Over budget</Tag>`.
+- **≥ 100% (spend budget):** Red `"exception"` status plus `<Tag color="error">Over budget</Tag>`.
+- Both `BudgetsSection` (dashboard) and `BudgetList` (list page) render the same colours via a shared `getProgressStatus()` helper.
+- `getBudgetAlertState()` in `src/utility/budgetAlerts.ts` encapsulates the threshold logic and clamps `percent` to `[0, 100]` to handle negative `currentAmount` (e.g. refunds).
 
-### How to Implement
-In `BudgetsSection.tsx`, derive an alert level before `<Progress>` render:
-```
-const isSpend = budget.type === "spend";
-const alertLevel = percent >= 100 ? "over" : percent >= 80 && isSpend ? "warn" : "none";
-```
-Use `strokeColor` prop on `<Progress>` for the warning state, and render a conditional `<Tag>` beneath the progress bar.
-
-Also add a compact **"Progress"** column to `BudgetList` with the same colour logic, so budget status is visible at a glance without clicking into each budget.
+### Implementation Notes
+- `src/utility/budgetAlerts.ts` — exports `getBudgetAlertState()`, `getProgressStatus()`, and `WARN_STROKE_COLOR`.
+- `BudgetsSection.tsx` and `pages/budgets/list.tsx` both consume the shared helpers.
+- E2E coverage added in `e2e/tests/budgets.spec.ts` (`"Budget alert states"` describe block): 85% → Near limit, 100% → Over budget (list and dashboard).
 
 ---
 
