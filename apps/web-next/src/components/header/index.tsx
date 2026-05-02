@@ -10,6 +10,7 @@ import {
 } from "antd";
 import React, { useContext } from "react";
 import { ColorModeContext } from "../../contexts/color-mode";
+import { useQuickActions } from "../../hooks/useQuickActions";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -26,6 +27,7 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
   const { token } = useToken();
   const { data: user } = useGetIdentity<IUser>();
   const { mode, setMode } = useContext(ColorModeContext);
+  useQuickActions();
 
   const headerStyles: React.CSSProperties = {
     backgroundColor: token.colorBgElevated,

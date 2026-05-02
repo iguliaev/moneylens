@@ -101,25 +101,13 @@ A search bar above the table filters across `notes` using `containsi`. Amount fi
 
 **Priority:** 🟡 Medium Impact / 🟢 Low Complexity — **Quick Win #4**
 
-### Current Experience
-`<RefineKbar>` is set up but no custom actions are registered — the palette only shows auto-generated navigation shortcuts.
-
-### Improved Experience
+### Experience
 Pressing Cmd+K and typing "add" shows an **"Add Transaction"** action that navigates to `/transactions/create`.
 
-### How to Implement
-Create `src/hooks/useQuickActions.ts` using `useRegisterActions` from `@refinedev/kbar`:
-```ts
-useRegisterActions([{
-  id: "add-transaction",
-  name: "Add Transaction",
-  keywords: "new transaction add spend earn save",
-  perform: () => create("transactions"),
-  section: "Quick Actions",
-  priority: Priority.HIGH,
-}], []);
-```
-Call `useQuickActions()` inside the authenticated layout (e.g., in `Header`).
+### Implementation Notes
+- `src/hooks/useQuickActions.ts` — calls `useRegisterActions` from `@refinedev/kbar` with a single "Add Transaction" action (`Priority.HIGH`, section "Quick Actions", keywords `new transaction add spend earn save`)
+- `useNavigation().create("transactions")` navigates to the create page
+- `useQuickActions()` is called inside `Header` so it's always active in the authenticated layout
 
 ---
 
