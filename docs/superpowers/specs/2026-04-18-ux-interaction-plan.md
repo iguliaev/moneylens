@@ -101,13 +101,7 @@ A search bar above the table filters across `notes` using `containsi`. Amount fi
 
 **Priority:** 🟡 Medium Impact / 🟢 Low Complexity — **Quick Win #4**
 
-### Current Experience
-`<RefineKbar>` is set up but no custom actions are registered — the palette only shows auto-generated navigation shortcuts.
-
-### Improved Experience
-Pressing Cmd+K and typing "add" shows an **"Add Transaction"** action that navigates to `/transactions/create`.
-
-### Implemented Experience
+### Experience
 Pressing Cmd+K and typing "add" shows an **"Add Transaction"** action that navigates to `/transactions/create`.
 
 ### Implementation Notes
