@@ -97,7 +97,7 @@ A search bar above the table filters across `notes` using `containsi`. Amount fi
 
 ---
 
-## 6. Register KBar Quick-Add Transaction Action
+## 6. Register KBar Quick-Add Transaction Action ✅ Done — [PR #157](https://github.com/iguliaev/moneylens/pull/157)
 
 **Priority:** 🟡 Medium Impact / 🟢 Low Complexity — **Quick Win #4**
 
