@@ -40,10 +40,9 @@ Categories has a recognisable icon, giving the sidebar a uniform, professional l
 
 ---
 
-## 3. Budget Threshold Alerts (80% / 100% Warning)
+## 3. Budget Threshold Alerts (80% / 100% Warning) ✅ Done — [PR #156](https://github.com/iguliaev/moneylens/pull/156)
 
 **Priority:** 🔴 High Impact / 🟢 Low Complexity — **Quick Win #3**
-**Status: ✅ Implemented (PR #156)**
 
 ### Current Experience
 `BudgetsSection.tsx` shows a progress bar with status change only at exactly 100%. There is no visual warning between 80–99% — the most actionable window for a user to adjust behaviour.
