@@ -127,7 +127,7 @@ Also fix the hardcoded `"GBP"` currency on line 42 — replace with `useCurrency
 
 ---
 
-## 8. Budget List: Inline Progress Column
+## 8. Budget List: Inline Progress Column ✅ Done — [PR #156](https://github.com/iguliaev/moneylens/pull/156)
 
 **Priority:** 🟡 Medium Impact / 🟡 Medium Complexity
 
