@@ -110,7 +110,7 @@ Pressing Cmd+K and typing "add" shows an **"Add Transaction"** action that navig
 
 ---
 
-## 7. Transaction Show Page: Replace "Loading…" with Skeleton
+## 7. Transaction Show Page: Replace "Loading…" with Skeleton ✅ Done
 
 **Priority:** 🟡 Medium Impact / 🟢 Low Complexity — **Quick Win #5**
 
