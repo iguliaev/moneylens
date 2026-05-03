@@ -17,6 +17,7 @@ import { supabaseClient } from "../../utility";
 import { useCurrency } from "../../contexts/currency";
 import {
   TRANSACTION_TYPES,
+  TRANSACTION_TYPE_ALL,
   TRANSACTION_TYPE_LABELS,
   TYPE_VALUE_COLORS,
   TransactionType,
@@ -145,7 +146,7 @@ const useChartsData = (startDate: string, endDate: string) => {
         );
 
         for (const row of trendRes.data ?? []) {
-          if (!row.month || !isTransactionType(row.type) || row.type === TRANSACTION_TYPES.ALL) continue;
+          if (!row.month || !isTransactionType(row.type) || (row.type as string) === TRANSACTION_TYPE_ALL) continue;
           const monthKey = dayjs(row.month).format("YYYY-MM");
           if (!trendMap[monthKey]) continue;
           trendMap[monthKey][row.type] += Number(row.total) || 0;
@@ -154,7 +155,7 @@ const useChartsData = (startDate: string, endDate: string) => {
 
         const catSpend: CategorySpendPoint[] = [];
         for (const row of catRes.data ?? []) {
-          if (!isTransactionType(row.type) || row.type === TRANSACTION_TYPES.ALL) continue;
+          if (!isTransactionType(row.type) || (row.type as string) === TRANSACTION_TYPE_ALL) continue;
 
           // Monthly spend breakdown for trendline
           if (row.type === TRANSACTION_TYPES.SPEND && row.month) {
@@ -171,7 +172,7 @@ const useChartsData = (startDate: string, endDate: string) => {
         const tagMap: Record<string, TagTotal> = {};
         const tagSpend: TagSpendPoint[] = [];
         for (const row of tagRes.data ?? []) {
-          if (!isTransactionType(row.type) || row.type === TRANSACTION_TYPES.ALL || !row.tags?.length) continue;
+          if (!isTransactionType(row.type) || (row.type as string) === TRANSACTION_TYPE_ALL || !row.tags?.length) continue;
           for (const tag of row.tags) {
             const key = `${row.type}__${tag}`;
             if (!tagMap[key]) tagMap[key] = { tag, type: row.type, total: 0 };

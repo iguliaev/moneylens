@@ -17,7 +17,10 @@ import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
+  TRANSACTION_TYPE_ALL,
+  TRANSACTION_TYPE_OPTIONS_WITH_ALL,
   TYPE_COLORS,
+  type TransactionType,
 } from "../../constants/transactionTypes";
 import { formatAmount } from "../../utility";
 
@@ -52,7 +55,7 @@ const MultiSelectFilter = ({
 export const TransactionList = () => {
   const invalidate = useInvalidate();
   const [transactionType, setTransactionType] = useState<string>(
-    TRANSACTION_TYPES.ALL
+    TRANSACTION_TYPE_ALL
   );
 
   const { tableProps, filters, setFilters } = useTable({
@@ -63,7 +66,7 @@ export const TransactionList = () => {
     },
     filters: {
       permanent:
-        transactionType !== TRANSACTION_TYPES.ALL
+        transactionType !== TRANSACTION_TYPE_ALL
           ? [
               {
                 field: "type",
@@ -81,8 +84,8 @@ export const TransactionList = () => {
     optionLabel: "name",
     optionValue: "id",
     filters:
-      transactionType !== TRANSACTION_TYPES.ALL
-        ? [{ field: "type", operator: "eq", value: transactionType }]
+      transactionType !== TRANSACTION_TYPE_ALL
+        ? [{ field: "type", operator: "eq", value: transactionType as TransactionType }]
         : [],
     ...commonSelectOptions,
     defaultValue: getDefaultFilter("category_id", filters, "in"),
@@ -110,22 +113,22 @@ export const TransactionList = () => {
     <List>
       <Segmented
         aria-label="segmented control"
-        options={Object.values(TRANSACTION_TYPES).map((type) => ({
-          label: TRANSACTION_TYPE_LABELS[type],
-          value: type,
+        options={TRANSACTION_TYPE_OPTIONS_WITH_ALL.map((opt) => ({
+          label: opt.label,
+          value: opt.value,
         }))}
         value={transactionType}
         onChange={(value) => setTransactionType(value as string)}
       />
       <Table {...tableProps} rowKey="id">
-        {transactionType === TRANSACTION_TYPES.ALL && (
+        {transactionType === TRANSACTION_TYPE_ALL && (
           <Table.Column
             dataIndex="type"
             title="Type"
             sorter
-            render={(value: string) => (
-              <Tag color={TYPE_COLORS[value as keyof typeof TYPE_COLORS]}>
-                {TRANSACTION_TYPE_LABELS[value as keyof typeof TRANSACTION_TYPE_LABELS]}
+            render={(value: TransactionType) => (
+              <Tag color={TYPE_COLORS[value]}>
+                {TRANSACTION_TYPE_LABELS[value]}
               </Tag>
             )}
           />
