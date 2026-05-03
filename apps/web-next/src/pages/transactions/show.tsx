@@ -1,13 +1,15 @@
 import { useShow, useOne } from "@refinedev/core";
 import { Show, TextField, DateField } from "@refinedev/antd";
-import { Typography } from "antd";
+import { Typography, Skeleton } from "antd";
 import { formatCurrency } from "../../utility";
+import { useCurrency } from "../../contexts/currency";
 
 const { Title } = Typography;
 
 export const TransactionShow = () => {
   const { query, result: record } = useShow();
   const { isLoading } = query;
+  const { currency } = useCurrency();
 
   const categoryQuery = useOne({
     resource: "categories",
@@ -36,11 +38,19 @@ export const TransactionShow = () => {
       <Title level={5}>Type</Title>
       <TextField value={record?.type} />
       <Title level={5}>Category</Title>
-      {categoryIsLoading ? <>Loading...</> : <>{categoryData?.name}</>}
+      {categoryIsLoading ? (
+        <Skeleton.Input active size="small" style={{ width: 120 }} />
+      ) : (
+        <>{categoryData?.name}</>
+      )}
       <Title level={5}>Amount</Title>
-      <TextField value={formatCurrency(record?.amount ?? 0, "GBP")} />
+      <TextField value={formatCurrency(record?.amount ?? 0, currency)} />
       <Title level={5}>Bank Account</Title>
-      {bankAccountIsLoading ? <>Loading...</> : <>{bankAccountData?.name}</>}
+      {bankAccountIsLoading ? (
+        <Skeleton.Input active size="small" style={{ width: 120 }} />
+      ) : (
+        <>{bankAccountData?.name}</>
+      )}
       <Title level={5}>Notes</Title>
       <TextField value={record?.notes} />
     </Show>
