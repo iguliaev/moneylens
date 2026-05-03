@@ -110,7 +110,7 @@ Pressing Cmd+K and typing "add" shows an **"Add Transaction"** action that navig
 
 ---
 
-## 7. Transaction Show Page: Replace "Loading…" with Skeleton ✅ Done
+## 7. Transaction Show Page: Replace "Loading…" with Skeleton ✅ Done — [PR #162](https://github.com/iguliaev/moneylens/pull/162)
 
 **Priority:** 🟡 Medium Impact / 🟢 Low Complexity — **Quick Win #5**
 
