@@ -60,7 +60,7 @@ Categories has a recognisable icon, giving the sidebar a uniform, professional l
 
 ---
 
-## 4. "All Transactions" View in Transaction List
+## 4. "All Transactions" View in Transaction List ✅ Done — [PR #158](https://github.com/iguliaev/moneylens/pull/158)
 
 **Priority:** 🔴 High Impact / 🟡 Medium Complexity
 
