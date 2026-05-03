@@ -1,0 +1,446 @@
+- generic [ref=e3]:
+  - alert [ref=e56]:
+    - generic [ref=e57]:
+      - generic [ref=e59]: 🔧 DEVELOPMENT Environment
+      - generic [ref=e60]: This is a local development environment
+  - generic [ref=e61]:
+    - complementary [ref=e62]:
+      - generic [ref=e63]:
+        - link [ref=e65] [cursor=pointer]:
+          - /url: /
+          - img [ref=e66]:
+            - generic [ref=e67]: MoneyLens
+        - menu [ref=e68]:
+          - menuitem "dashboard Dashboard" [ref=e69] [cursor=pointer]:
+            - img "dashboard" [ref=e70]:
+              - img [ref=e71]
+            - link "Dashboard" [ref=e74]:
+              - /url: /
+          - menuitem "swap Transactions" [ref=e75] [cursor=pointer]:
+            - img "swap" [ref=e76]:
+              - img [ref=e77]
+            - link "Transactions" [ref=e80]:
+              - /url: /transactions
+          - menuitem "aim Budgets" [ref=e81] [cursor=pointer]:
+            - img "aim" [ref=e82]:
+              - img [ref=e83]
+            - link "Budgets" [ref=e87]:
+              - /url: /budgets
+          - menuitem "unordered-list Categories" [ref=e88] [cursor=pointer]:
+            - img "unordered-list" [ref=e89]:
+              - img [ref=e90]
+            - link "Categories" [ref=e93]:
+              - /url: /categories
+          - menuitem "bank Bank Accounts" [ref=e94] [cursor=pointer]:
+            - img "bank" [ref=e95]:
+              - img [ref=e96]
+            - link "Bank Accounts" [ref=e99]:
+              - /url: /bank-accounts
+          - menuitem "tags Tags" [ref=e100] [cursor=pointer]:
+            - img "tags" [ref=e101]:
+              - img [ref=e102]
+            - link "Tags" [ref=e105]:
+              - /url: /tags
+          - menuitem "setting Settings" [ref=e106] [cursor=pointer]:
+            - img "setting" [ref=e107]:
+              - img [ref=e108]
+            - link "Settings" [ref=e111]:
+              - /url: /settings
+          - menuitem "logout Logout" [ref=e112] [cursor=pointer]:
+            - img "logout" [ref=e113]:
+              - img [ref=e114]
+            - generic [ref=e116]: Logout
+      - button "left" [ref=e118] [cursor=pointer]:
+        - img "left" [ref=e119]:
+          - img [ref=e120]
+    - generic [ref=e122]:
+      - banner [ref=e123]:
+        - generic [ref=e124]:
+          - switch "Toggle color mode" [ref=e126] [cursor=pointer]:
+            - generic [ref=e128]:
+              - generic: 🌛
+              - generic: 🔆
+          - strong [ref=e133]: test@account.me
+      - main [ref=e134]:
+        - generic [ref=e137]:
+          - generic [ref=e138]:
+            - generic [ref=e139]:
+              - heading "Transactions" [level=4] [ref=e141]
+              - generic:
+                - heading [level=5]
+            - link "plus-square Create" [ref=e145] [cursor=pointer]:
+              - /url: /transactions/create
+              - button "plus-square Create" [ref=e146]:
+                - img "plus-square" [ref=e148]:
+                  - img [ref=e149]
+                - generic [ref=e152]: Create
+          - generic [ref=e154]:
+            - radiogroup "segmented control" [ref=e155]:
+              - generic [ref=e156]:
+                - generic [ref=e157] [cursor=pointer]:
+                  - radio "Earn"
+                  - generic "Earn" [ref=e158]
+                - generic [ref=e159] [cursor=pointer]:
+                  - radio "Spend" [checked]
+                  - generic "Spend" [ref=e160]
+                - generic [ref=e161] [cursor=pointer]:
+                  - radio "Save"
+                  - generic "Save" [ref=e162]
+            - generic [ref=e165]:
+              - table [ref=e169]:
+                - rowgroup [ref=e170]:
+                  - row "Date Category Amount Tags filter Bank Account Notes Actions" [ref=e171]:
+                    - columnheader "Date" [ref=e172] [cursor=pointer]:
+                      - generic [ref=e173]:
+                        - generic [ref=e175]:
+                          - generic [ref=e176]: Date
+                          - generic [ref=e178]:
+                            - img [ref=e179]:
+                              - img [ref=e180]
+                            - img [ref=e182]:
+                              - img [ref=e183]
+                        - button "filter" [ref=e185]:
+                          - img "filter" [ref=e186]:
+                            - img [ref=e187]
+                    - columnheader "Category" [ref=e189] [cursor=pointer]:
+                      - generic [ref=e190]:
+                        - generic [ref=e192]:
+                          - generic [ref=e193]: Category
+                          - generic [ref=e195]:
+                            - img [ref=e196]:
+                              - img [ref=e197]
+                            - img [ref=e199]:
+                              - img [ref=e200]
+                        - button "filter" [ref=e202]:
+                          - img "filter" [ref=e203]:
+                            - img [ref=e204]
+                    - columnheader "Amount" [ref=e206] [cursor=pointer]:
+                      - generic [ref=e207]:
+                        - generic [ref=e209]:
+                          - generic [ref=e210]: Amount
+                          - generic [ref=e212]:
+                            - img [ref=e213]:
+                              - img [ref=e214]
+                            - img [ref=e216]:
+                              - img [ref=e217]
+                        - button "filter" [ref=e219]:
+                          - img "filter" [ref=e220]:
+                            - img [ref=e221]
+                    - columnheader "Tags filter" [ref=e223]:
+                      - generic [ref=e224]:
+                        - generic [ref=e225]: Tags
+                        - button "filter" [ref=e226] [cursor=pointer]:
+                          - img "filter" [ref=e227]:
+                            - img [ref=e228]
+                    - columnheader "Bank Account" [ref=e230] [cursor=pointer]:
+                      - generic [ref=e231]:
+                        - generic [ref=e233]:
+                          - generic [ref=e234]: Bank Account
+                          - generic [ref=e236]:
+                            - img [ref=e237]:
+                              - img [ref=e238]
+                            - img [ref=e240]:
+                              - img [ref=e241]
+                        - button "filter" [ref=e243]:
+                          - img "filter" [ref=e244]:
+                            - img [ref=e245]
+                    - columnheader "Notes" [ref=e247]
+                    - columnheader "Actions" [ref=e248]
+                - rowgroup [ref=e249]:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Category
+                        - generic:
+                          - generic:
+                            - img:
+                              - img
+                            - img:
+                              - img
+                    - button:
+                      - img:
+                        - img
+                  - generic:
+                    - generic: Tags
+                    - button:
+                      - img:
+                        - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Bank Account
+                        - generic:
+                          - generic:
+                            - img:
+                              - img
+                            - img:
+                              - img
+                    - button:
+                      - img:
+                        - img
+                  - row "12/31/2025 Subscriptions 2.99 NatWest iCloud edit eye delete" [ref=e250]:
+                    - cell "12/31/2025" [ref=e251]
+                    - cell "Subscriptions" [ref=e252]
+                    - cell "2.99" [ref=e253]
+                    - cell [ref=e254]
+                    - cell "NatWest" [ref=e255]
+                    - cell "iCloud" [ref=e256]
+                    - cell "edit eye delete" [ref=e257]:
+                      - generic [ref=e258]:
+                        - link "edit" [ref=e260] [cursor=pointer]:
+                          - /url: /transactions/edit/c8d44b53-22d6-4e5f-b601-2dfd822cf27f
+                          - button "edit" [ref=e261]:
+                            - img "edit" [ref=e263]:
+                              - img [ref=e264]
+                        - link "eye" [ref=e267] [cursor=pointer]:
+                          - /url: /transactions/show/c8d44b53-22d6-4e5f-b601-2dfd822cf27f
+                          - button "eye" [ref=e268]:
+                            - img "eye" [ref=e270]:
+                              - img [ref=e271]
+                        - button "delete" [ref=e274] [cursor=pointer]:
+                          - img "delete" [ref=e276]:
+                            - img [ref=e277]
+                  - row "12/31/2025 Transportation 2.80 AmEx edit eye delete" [ref=e279]:
+                    - cell "12/31/2025" [ref=e280]
+                    - cell "Transportation" [ref=e281]
+                    - cell "2.80" [ref=e282]
+                    - cell [ref=e283]
+                    - cell "AmEx" [ref=e284]
+                    - cell [ref=e285]
+                    - cell "edit eye delete" [ref=e286]:
+                      - generic [ref=e287]:
+                        - link "edit" [ref=e289] [cursor=pointer]:
+                          - /url: /transactions/edit/bba08aa0-128f-4835-aea8-d803a835f8bc
+                          - button "edit" [ref=e290]:
+                            - img "edit" [ref=e292]:
+                              - img [ref=e293]
+                        - link "eye" [ref=e296] [cursor=pointer]:
+                          - /url: /transactions/show/bba08aa0-128f-4835-aea8-d803a835f8bc
+                          - button "eye" [ref=e297]:
+                            - img "eye" [ref=e299]:
+                              - img [ref=e300]
+                        - button "delete" [ref=e303] [cursor=pointer]:
+                          - img "delete" [ref=e305]:
+                            - img [ref=e306]
+                  - row "12/31/2025 Transportation 2.80 AmEx edit eye delete" [ref=e308]:
+                    - cell "12/31/2025" [ref=e309]
+                    - cell "Transportation" [ref=e310]
+                    - cell "2.80" [ref=e311]
+                    - cell [ref=e312]
+                    - cell "AmEx" [ref=e313]
+                    - cell [ref=e314]
+                    - cell "edit eye delete" [ref=e315]:
+                      - generic [ref=e316]:
+                        - link "edit" [ref=e318] [cursor=pointer]:
+                          - /url: /transactions/edit/b2c9f353-fbdd-404b-92f9-a5fbacf5f73e
+                          - button "edit" [ref=e319]:
+                            - img "edit" [ref=e321]:
+                              - img [ref=e322]
+                        - link "eye" [ref=e325] [cursor=pointer]:
+                          - /url: /transactions/show/b2c9f353-fbdd-404b-92f9-a5fbacf5f73e
+                          - button "eye" [ref=e326]:
+                            - img "eye" [ref=e328]:
+                              - img [ref=e329]
+                        - button "delete" [ref=e332] [cursor=pointer]:
+                          - img "delete" [ref=e334]:
+                            - img [ref=e335]
+                  - row "12/30/2025 Groceries 37.74 AmEx edit eye delete" [ref=e337]:
+                    - cell "12/30/2025" [ref=e338]
+                    - cell "Groceries" [ref=e339]
+                    - cell "37.74" [ref=e340]
+                    - cell [ref=e341]
+                    - cell "AmEx" [ref=e342]
+                    - cell [ref=e343]
+                    - cell "edit eye delete" [ref=e344]:
+                      - generic [ref=e345]:
+                        - link "edit" [ref=e347] [cursor=pointer]:
+                          - /url: /transactions/edit/99ee8fe8-d8f9-4d1b-8e9b-00e071b8160f
+                          - button "edit" [ref=e348]:
+                            - img "edit" [ref=e350]:
+                              - img [ref=e351]
+                        - link "eye" [ref=e354] [cursor=pointer]:
+                          - /url: /transactions/show/99ee8fe8-d8f9-4d1b-8e9b-00e071b8160f
+                          - button "eye" [ref=e355]:
+                            - img "eye" [ref=e357]:
+                              - img [ref=e358]
+                        - button "delete" [ref=e361] [cursor=pointer]:
+                          - img "delete" [ref=e363]:
+                            - img [ref=e364]
+                  - row "12/30/2025 Transportation 3.50 Monzo edit eye delete" [ref=e366]:
+                    - cell "12/30/2025" [ref=e367]
+                    - cell "Transportation" [ref=e368]
+                    - cell "3.50" [ref=e369]
+                    - cell [ref=e370]
+                    - cell "Monzo" [ref=e371]
+                    - cell [ref=e372]
+                    - cell "edit eye delete" [ref=e373]:
+                      - generic [ref=e374]:
+                        - link "edit" [ref=e376] [cursor=pointer]:
+                          - /url: /transactions/edit/10aabb3f-7490-4e9b-af3c-2bc05b86721a
+                          - button "edit" [ref=e377]:
+                            - img "edit" [ref=e379]:
+                              - img [ref=e380]
+                        - link "eye" [ref=e383] [cursor=pointer]:
+                          - /url: /transactions/show/10aabb3f-7490-4e9b-af3c-2bc05b86721a
+                          - button "eye" [ref=e384]:
+                            - img "eye" [ref=e386]:
+                              - img [ref=e387]
+                        - button "delete" [ref=e390] [cursor=pointer]:
+                          - img "delete" [ref=e392]:
+                            - img [ref=e393]
+                  - row "12/30/2025 Groceries 9.50 AmEx edit eye delete" [ref=e395]:
+                    - cell "12/30/2025" [ref=e396]
+                    - cell "Groceries" [ref=e397]
+                    - cell "9.50" [ref=e398]
+                    - cell [ref=e399]
+                    - cell "AmEx" [ref=e400]
+                    - cell [ref=e401]
+                    - cell "edit eye delete" [ref=e402]:
+                      - generic [ref=e403]:
+                        - link "edit" [ref=e405] [cursor=pointer]:
+                          - /url: /transactions/edit/6ddfe035-9e0b-4d02-b5e1-2d7bd116e046
+                          - button "edit" [ref=e406]:
+                            - img "edit" [ref=e408]:
+                              - img [ref=e409]
+                        - link "eye" [ref=e412] [cursor=pointer]:
+                          - /url: /transactions/show/6ddfe035-9e0b-4d02-b5e1-2d7bd116e046
+                          - button "eye" [ref=e413]:
+                            - img "eye" [ref=e415]:
+                              - img [ref=e416]
+                        - button "delete" [ref=e419] [cursor=pointer]:
+                          - img "delete" [ref=e421]:
+                            - img [ref=e422]
+                  - row "12/30/2025 Transportation 2.90 AmEx edit eye delete" [ref=e424]:
+                    - cell "12/30/2025" [ref=e425]
+                    - cell "Transportation" [ref=e426]
+                    - cell "2.90" [ref=e427]
+                    - cell [ref=e428]
+                    - cell "AmEx" [ref=e429]
+                    - cell [ref=e430]
+                    - cell "edit eye delete" [ref=e431]:
+                      - generic [ref=e432]:
+                        - link "edit" [ref=e434] [cursor=pointer]:
+                          - /url: /transactions/edit/b1365faf-d8e6-4971-82cd-293a10b99445
+                          - button "edit" [ref=e435]:
+                            - img "edit" [ref=e437]:
+                              - img [ref=e438]
+                        - link "eye" [ref=e441] [cursor=pointer]:
+                          - /url: /transactions/show/b1365faf-d8e6-4971-82cd-293a10b99445
+                          - button "eye" [ref=e442]:
+                            - img "eye" [ref=e444]:
+                              - img [ref=e445]
+                        - button "delete" [ref=e448] [cursor=pointer]:
+                          - img "delete" [ref=e450]:
+                            - img [ref=e451]
+                  - row "12/30/2025 Eating out 11.74 Wise Virtual edit eye delete" [ref=e453]:
+                    - cell "12/30/2025" [ref=e454]
+                    - cell "Eating out" [ref=e455]
+                    - cell "11.74" [ref=e456]
+                    - cell [ref=e457]
+                    - cell "Wise Virtual" [ref=e458]
+                    - cell [ref=e459]
+                    - cell "edit eye delete" [ref=e460]:
+                      - generic [ref=e461]:
+                        - link "edit" [ref=e463] [cursor=pointer]:
+                          - /url: /transactions/edit/cb32dd3b-83d6-43b3-a5e1-b46e816a9d2a
+                          - button "edit" [ref=e464]:
+                            - img "edit" [ref=e466]:
+                              - img [ref=e467]
+                        - link "eye" [ref=e470] [cursor=pointer]:
+                          - /url: /transactions/show/cb32dd3b-83d6-43b3-a5e1-b46e816a9d2a
+                          - button "eye" [ref=e471]:
+                            - img "eye" [ref=e473]:
+                              - img [ref=e474]
+                        - button "delete" [ref=e477] [cursor=pointer]:
+                          - img "delete" [ref=e479]:
+                            - img [ref=e480]
+                  - row "12/29/2025 Subscriptions 19.99 AmEx YouTube Premium edit eye delete" [ref=e482]:
+                    - cell "12/29/2025" [ref=e483]
+                    - cell "Subscriptions" [ref=e484]
+                    - cell "19.99" [ref=e485]
+                    - cell [ref=e486]
+                    - cell "AmEx" [ref=e487]
+                    - cell "YouTube Premium" [ref=e488]
+                    - cell "edit eye delete" [ref=e489]:
+                      - generic [ref=e490]:
+                        - link "edit" [ref=e492] [cursor=pointer]:
+                          - /url: /transactions/edit/a9adc96f-3fbc-4e72-ab3a-3cdabd4e6dc5
+                          - button "edit" [ref=e493]:
+                            - img "edit" [ref=e495]:
+                              - img [ref=e496]
+                        - link "eye" [ref=e499] [cursor=pointer]:
+                          - /url: /transactions/show/a9adc96f-3fbc-4e72-ab3a-3cdabd4e6dc5
+                          - button "eye" [ref=e500]:
+                            - img "eye" [ref=e502]:
+                              - img [ref=e503]
+                        - button "delete" [ref=e506] [cursor=pointer]:
+                          - img "delete" [ref=e508]:
+                            - img [ref=e509]
+                  - row "12/29/2025 Transportation 3.50 Monzo edit eye delete" [ref=e511]:
+                    - cell "12/29/2025" [ref=e512]
+                    - cell "Transportation" [ref=e513]
+                    - cell "3.50" [ref=e514]
+                    - cell [ref=e515]
+                    - cell "Monzo" [ref=e516]
+                    - cell [ref=e517]
+                    - cell "edit eye delete" [ref=e518]:
+                      - generic [ref=e519]:
+                        - link "edit" [ref=e521] [cursor=pointer]:
+                          - /url: /transactions/edit/670a7c4d-4226-48e3-9806-aa92bad92040
+                          - button "edit" [ref=e522]:
+                            - img "edit" [ref=e524]:
+                              - img [ref=e525]
+                        - link "eye" [ref=e528] [cursor=pointer]:
+                          - /url: /transactions/show/670a7c4d-4226-48e3-9806-aa92bad92040
+                          - button "eye" [ref=e529]:
+                            - img "eye" [ref=e531]:
+                              - img [ref=e532]
+                        - button "delete" [ref=e535] [cursor=pointer]:
+                          - img "delete" [ref=e537]:
+                            - img [ref=e538]
+              - list [ref=e540]:
+                - listitem "Previous Page" [ref=e541]:
+                  - link "left" [disabled] [ref=e542] [cursor=pointer]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                    - button "left" [disabled] [ref=e543]:
+                      - img "left" [ref=e544]:
+                        - img [ref=e545]
+                - listitem "1" [ref=e547] [cursor=pointer]:
+                  - link "1" [ref=e548]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "2" [ref=e549] [cursor=pointer]:
+                  - link "2" [ref=e550]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "3" [ref=e551] [cursor=pointer]:
+                  - link "3" [ref=e552]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "4" [ref=e553] [cursor=pointer]:
+                  - link "4" [ref=e554]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "5" [ref=e555] [cursor=pointer]:
+                  - link "5" [ref=e556]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "Next 5 Pages" [ref=e557] [cursor=pointer]:
+                  - link "double-right •••" [ref=e558]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                    - generic [ref=e559]:
+                      - img "double-right" [ref=e560]:
+                        - img [ref=e561]
+                      - generic [ref=e563]: •••
+                - listitem "143" [ref=e564] [cursor=pointer]:
+                  - link "143" [ref=e565]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "Next Page" [ref=e566] [cursor=pointer]:
+                  - link "right" [ref=e567]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=date&sorters[0][order]=desc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                    - button "right" [ref=e568]:
+                      - img "right" [ref=e569]:
+                        - img [ref=e570]
+                - listitem [ref=e572]:
+                  - generic "Page Size" [ref=e573] [cursor=pointer]:
+                    - generic [ref=e575]:
+                      - combobox "Page Size" [ref=e577]
+                      - generic "10 / page" [ref=e578]
+                    - generic:
+                      - img:
+                        - img

@@ -1,0 +1,192 @@
+- generic [ref=e3]:
+  - alert [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e7]: 🔧 DEVELOPMENT Environment
+      - generic [ref=e8]: This is a local development environment
+  - generic [ref=e9]:
+    - complementary [ref=e10]:
+      - generic [ref=e11]:
+        - link [ref=e13] [cursor=pointer]:
+          - /url: /
+          - img [ref=e14]:
+            - generic [ref=e15]: MoneyLens
+        - menu [ref=e16]:
+          - menuitem "dashboard Dashboard" [ref=e17] [cursor=pointer]:
+            - img "dashboard" [ref=e18]:
+              - img [ref=e19]
+            - link "Dashboard" [ref=e22]:
+              - /url: /
+          - menuitem "swap Transactions" [ref=e23] [cursor=pointer]:
+            - img "swap" [ref=e24]:
+              - img [ref=e25]
+            - link "Transactions" [ref=e28]:
+              - /url: /transactions
+          - menuitem "aim Budgets" [ref=e29] [cursor=pointer]:
+            - img "aim" [ref=e30]:
+              - img [ref=e31]
+            - link "Budgets" [ref=e35]:
+              - /url: /budgets
+          - menuitem "unordered-list Categories" [ref=e36] [cursor=pointer]:
+            - img "unordered-list" [ref=e37]:
+              - img [ref=e38]
+            - link "Categories" [ref=e41]:
+              - /url: /categories
+          - menuitem "bank Bank Accounts" [ref=e42] [cursor=pointer]:
+            - img "bank" [ref=e43]:
+              - img [ref=e44]
+            - link "Bank Accounts" [ref=e47]:
+              - /url: /bank-accounts
+          - menuitem "tags Tags" [ref=e48] [cursor=pointer]:
+            - img "tags" [ref=e49]:
+              - img [ref=e50]
+            - link "Tags" [ref=e53]:
+              - /url: /tags
+          - menuitem "setting Settings" [ref=e54] [cursor=pointer]:
+            - img "setting" [ref=e55]:
+              - img [ref=e56]
+            - link "Settings" [ref=e59]:
+              - /url: /settings
+          - menuitem "logout Logout" [ref=e60] [cursor=pointer]:
+            - img "logout" [ref=e61]:
+              - img [ref=e62]
+            - generic [ref=e64]: Logout
+      - button "left" [ref=e66] [cursor=pointer]:
+        - img "left" [ref=e67]:
+          - img [ref=e68]
+    - generic [ref=e70]:
+      - banner [ref=e71]:
+        - switch "Toggle color mode" [ref=e74] [cursor=pointer]:
+          - generic [ref=e76]:
+            - generic: 🌛
+            - generic: 🔆
+      - main [ref=e78]:
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - heading "Transactions" [level=4] [ref=e85]
+              - generic:
+                - heading [level=5]
+            - link "plus-square Create" [ref=e89] [cursor=pointer]:
+              - /url: /transactions/create
+              - button "plus-square Create" [ref=e90]:
+                - img "plus-square" [ref=e92]:
+                  - img [ref=e93]
+                - generic [ref=e96]: Create
+          - generic [ref=e98]:
+            - radiogroup "segmented control" [ref=e99]:
+              - generic [ref=e100]:
+                - generic [ref=e101] [cursor=pointer]:
+                  - radio "Earn"
+                  - generic "Earn" [ref=e102]
+                - generic [ref=e103] [cursor=pointer]:
+                  - radio "Spend" [checked]
+                  - generic "Spend" [ref=e104]
+                - generic [ref=e105] [cursor=pointer]:
+                  - radio "Save"
+                  - generic "Save" [ref=e106]
+            - generic [ref=e108]:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row "Date Category Amount Tags filter Bank Account Notes Actions":
+                            - columnheader "Date":
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic: Date
+                                    - generic:
+                                      - generic:
+                                        - img:
+                                          - img
+                                        - img:
+                                          - img
+                                - button "filter":
+                                  - img "filter":
+                                    - img
+                            - columnheader "Category":
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic: Category
+                                    - generic:
+                                      - generic:
+                                        - img:
+                                          - img
+                                        - img:
+                                          - img
+                                - button "filter":
+                                  - img "filter":
+                                    - img
+                            - columnheader "Amount":
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic: Amount
+                                    - generic:
+                                      - generic:
+                                        - img:
+                                          - img
+                                        - img:
+                                          - img
+                                - button "filter":
+                                  - img "filter":
+                                    - img
+                            - columnheader "Tags filter":
+                              - generic:
+                                - generic: Tags
+                                - button "filter":
+                                  - img "filter":
+                                    - img
+                            - columnheader "Bank Account":
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic: Bank Account
+                                    - generic:
+                                      - generic:
+                                        - img:
+                                          - img
+                                        - img:
+                                          - img
+                                - button "filter":
+                                  - img "filter":
+                                    - img
+                            - columnheader "Notes"
+                            - columnheader "Actions"
+                        - rowgroup:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Category
+                                - generic:
+                                  - generic:
+                                    - img:
+                                      - img
+                                    - img:
+                                      - img
+                            - button:
+                              - img:
+                                - img
+                          - generic:
+                            - generic: Tags
+                            - button:
+                              - img:
+                                - img
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Bank Account
+                                - generic:
+                                  - generic:
+                                    - img:
+                                      - img
+                                    - img:
+                                      - img
+                            - button:
+                              - img:
+                                - img
+                          - row:
+                            - cell

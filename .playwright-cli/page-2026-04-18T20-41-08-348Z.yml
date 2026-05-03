@@ -1,0 +1,446 @@
+- generic [ref=e3]:
+  - alert [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e7]: 🔧 DEVELOPMENT Environment
+      - generic [ref=e8]: This is a local development environment
+  - generic [ref=e9]:
+    - complementary [ref=e10]:
+      - generic [ref=e11]:
+        - link [ref=e13] [cursor=pointer]:
+          - /url: /
+          - img [ref=e14]:
+            - generic [ref=e15]: MoneyLens
+        - menu [ref=e16]:
+          - menuitem "dashboard Dashboard" [ref=e17] [cursor=pointer]:
+            - img "dashboard" [ref=e18]:
+              - img [ref=e19]
+            - link "Dashboard" [ref=e22]:
+              - /url: /
+          - menuitem "swap Transactions" [ref=e23] [cursor=pointer]:
+            - img "swap" [ref=e24]:
+              - img [ref=e25]
+            - link "Transactions" [ref=e28]:
+              - /url: /transactions
+          - menuitem "aim Budgets" [ref=e29] [cursor=pointer]:
+            - img "aim" [ref=e30]:
+              - img [ref=e31]
+            - link "Budgets" [ref=e35]:
+              - /url: /budgets
+          - menuitem "unordered-list Categories" [ref=e36] [cursor=pointer]:
+            - img "unordered-list" [ref=e37]:
+              - img [ref=e38]
+            - link "Categories" [ref=e41]:
+              - /url: /categories
+          - menuitem "bank Bank Accounts" [ref=e42] [cursor=pointer]:
+            - img "bank" [ref=e43]:
+              - img [ref=e44]
+            - link "Bank Accounts" [ref=e47]:
+              - /url: /bank-accounts
+          - menuitem "tags Tags" [ref=e48] [cursor=pointer]:
+            - img "tags" [ref=e49]:
+              - img [ref=e50]
+            - link "Tags" [ref=e53]:
+              - /url: /tags
+          - menuitem "setting Settings" [ref=e54] [cursor=pointer]:
+            - img "setting" [ref=e55]:
+              - img [ref=e56]
+            - link "Settings" [ref=e59]:
+              - /url: /settings
+          - menuitem "logout Logout" [ref=e60] [cursor=pointer]:
+            - img "logout" [ref=e61]:
+              - img [ref=e62]
+            - generic [ref=e64]: Logout
+      - button "left" [ref=e66] [cursor=pointer]:
+        - img "left" [ref=e67]:
+          - img [ref=e68]
+    - generic [ref=e70]:
+      - banner [ref=e71]:
+        - generic [ref=e72]:
+          - switch "Toggle color mode" [ref=e74] [cursor=pointer]:
+            - generic [ref=e76]:
+              - generic: 🌛
+              - generic: 🔆
+          - strong [ref=e119]: test@account.me
+      - main [ref=e78]:
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - heading "Transactions" [level=4] [ref=e85]
+              - generic:
+                - heading [level=5]
+            - link "plus-square Create" [ref=e89] [cursor=pointer]:
+              - /url: /transactions/create
+              - button "plus-square Create" [ref=e90]:
+                - img "plus-square" [ref=e92]:
+                  - img [ref=e93]
+                - generic [ref=e96]: Create
+          - generic [ref=e98]:
+            - radiogroup "segmented control" [ref=e99]:
+              - generic [ref=e100]:
+                - generic [ref=e101] [cursor=pointer]:
+                  - radio "Earn"
+                  - generic "Earn" [ref=e102]
+                - generic [ref=e103] [cursor=pointer]:
+                  - radio "Spend" [checked]
+                  - generic "Spend" [ref=e104]
+                - generic [ref=e105] [cursor=pointer]:
+                  - radio "Save"
+                  - generic "Save" [ref=e106]
+            - generic [ref=e120]:
+              - table [ref=e124]:
+                - rowgroup [ref=e125]:
+                  - row "Date Category Amount Tags filter Bank Account Notes Actions" [ref=e126]:
+                    - columnheader "Date" [ref=e127] [cursor=pointer]:
+                      - generic [ref=e128]:
+                        - generic [ref=e130]:
+                          - generic [ref=e131]: Date
+                          - generic [ref=e133]:
+                            - img [ref=e134]:
+                              - img [ref=e135]
+                            - img [ref=e137]:
+                              - img [ref=e138]
+                        - button "filter" [ref=e140]:
+                          - img "filter" [ref=e141]:
+                            - img [ref=e142]
+                    - columnheader "Category" [active] [ref=e144] [cursor=pointer]:
+                      - generic [ref=e145]:
+                        - generic [ref=e147]:
+                          - generic [ref=e148]: Category
+                          - generic [ref=e150]:
+                            - img [ref=e151]:
+                              - img [ref=e152]
+                            - img [ref=e154]:
+                              - img [ref=e155]
+                        - button "filter" [ref=e157]:
+                          - img "filter" [ref=e158]:
+                            - img [ref=e159]
+                    - columnheader "Amount" [ref=e161] [cursor=pointer]:
+                      - generic [ref=e162]:
+                        - generic [ref=e164]:
+                          - generic [ref=e165]: Amount
+                          - generic [ref=e167]:
+                            - img [ref=e168]:
+                              - img [ref=e169]
+                            - img [ref=e171]:
+                              - img [ref=e172]
+                        - button "filter" [ref=e174]:
+                          - img "filter" [ref=e175]:
+                            - img [ref=e176]
+                    - columnheader "Tags filter" [ref=e178]:
+                      - generic [ref=e179]:
+                        - generic [ref=e180]: Tags
+                        - button "filter" [ref=e181] [cursor=pointer]:
+                          - img "filter" [ref=e182]:
+                            - img [ref=e183]
+                    - columnheader "Bank Account" [ref=e185] [cursor=pointer]:
+                      - generic [ref=e186]:
+                        - generic [ref=e188]:
+                          - generic [ref=e189]: Bank Account
+                          - generic [ref=e191]:
+                            - img [ref=e192]:
+                              - img [ref=e193]
+                            - img [ref=e195]:
+                              - img [ref=e196]
+                        - button "filter" [ref=e198]:
+                          - img "filter" [ref=e199]:
+                            - img [ref=e200]
+                    - columnheader "Notes" [ref=e202]
+                    - columnheader "Actions" [ref=e203]
+                - rowgroup [ref=e204]:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Category
+                        - generic:
+                          - generic:
+                            - img:
+                              - img
+                            - img:
+                              - img
+                    - button:
+                      - img:
+                        - img
+                  - generic:
+                    - generic: Tags
+                    - button:
+                      - img:
+                        - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Bank Account
+                        - generic:
+                          - generic:
+                            - img:
+                              - img
+                            - img:
+                              - img
+                    - button:
+                      - img:
+                        - img
+                  - row "07/18/2025 Gifts 85.00 AmEx edit eye delete" [ref=e786]:
+                    - cell "07/18/2025" [ref=e787]
+                    - cell "Gifts" [ref=e788]
+                    - cell "85.00" [ref=e789]
+                    - cell [ref=e790]
+                    - cell "AmEx" [ref=e791]
+                    - cell [ref=e792]
+                    - cell "edit eye delete" [ref=e793]:
+                      - generic [ref=e794]:
+                        - link "edit" [ref=e796] [cursor=pointer]:
+                          - /url: /transactions/edit/317ef07b-c0c8-49ff-85bf-959127ce9147
+                          - button "edit" [ref=e797]:
+                            - img "edit" [ref=e799]:
+                              - img [ref=e800]
+                        - link "eye" [ref=e803] [cursor=pointer]:
+                          - /url: /transactions/show/317ef07b-c0c8-49ff-85bf-959127ce9147
+                          - button "eye" [ref=e804]:
+                            - img "eye" [ref=e806]:
+                              - img [ref=e807]
+                        - button "delete" [ref=e810] [cursor=pointer]:
+                          - img "delete" [ref=e812]:
+                            - img [ref=e813]
+                  - row "09/22/2025 Gifts 1999.00 Monzo new iPhone 17 Pro Max for Anna edit eye delete" [ref=e815]:
+                    - cell "09/22/2025" [ref=e816]
+                    - cell "Gifts" [ref=e817]
+                    - cell "1999.00" [ref=e818]
+                    - cell [ref=e819]
+                    - cell "Monzo" [ref=e820]
+                    - cell "new iPhone 17 Pro Max for Anna" [ref=e821]
+                    - cell "edit eye delete" [ref=e822]:
+                      - generic [ref=e823]:
+                        - link "edit" [ref=e825] [cursor=pointer]:
+                          - /url: /transactions/edit/389ffe65-1e50-45bf-a0a6-467da5598c59
+                          - button "edit" [ref=e826]:
+                            - img "edit" [ref=e828]:
+                              - img [ref=e829]
+                        - link "eye" [ref=e832] [cursor=pointer]:
+                          - /url: /transactions/show/389ffe65-1e50-45bf-a0a6-467da5598c59
+                          - button "eye" [ref=e833]:
+                            - img "eye" [ref=e835]:
+                              - img [ref=e836]
+                        - button "delete" [ref=e839] [cursor=pointer]:
+                          - img "delete" [ref=e841]:
+                            - img [ref=e842]
+                  - row "07/19/2025 Gifts 92.00 AmEx edit eye delete" [ref=e844]:
+                    - cell "07/19/2025" [ref=e845]
+                    - cell "Gifts" [ref=e846]
+                    - cell "92.00" [ref=e847]
+                    - cell [ref=e848]
+                    - cell "AmEx" [ref=e849]
+                    - cell [ref=e850]
+                    - cell "edit eye delete" [ref=e851]:
+                      - generic [ref=e852]:
+                        - link "edit" [ref=e854] [cursor=pointer]:
+                          - /url: /transactions/edit/259076a7-421e-4816-9a09-dbeb1a877395
+                          - button "edit" [ref=e855]:
+                            - img "edit" [ref=e857]:
+                              - img [ref=e858]
+                        - link "eye" [ref=e861] [cursor=pointer]:
+                          - /url: /transactions/show/259076a7-421e-4816-9a09-dbeb1a877395
+                          - button "eye" [ref=e862]:
+                            - img "eye" [ref=e864]:
+                              - img [ref=e865]
+                        - button "delete" [ref=e868] [cursor=pointer]:
+                          - img "delete" [ref=e870]:
+                            - img [ref=e871]
+                  - row "12/05/2025 Gifts 9.98 AmEx Parcel boxes edit eye delete" [ref=e873]:
+                    - cell "12/05/2025" [ref=e874]
+                    - cell "Gifts" [ref=e875]
+                    - cell "9.98" [ref=e876]
+                    - cell [ref=e877]
+                    - cell "AmEx" [ref=e878]
+                    - cell "Parcel boxes" [ref=e879]
+                    - cell "edit eye delete" [ref=e880]:
+                      - generic [ref=e881]:
+                        - link "edit" [ref=e883] [cursor=pointer]:
+                          - /url: /transactions/edit/11e9d6c8-40fd-418f-a4f8-85ed0e06c1e1
+                          - button "edit" [ref=e884]:
+                            - img "edit" [ref=e886]:
+                              - img [ref=e887]
+                        - link "eye" [ref=e890] [cursor=pointer]:
+                          - /url: /transactions/show/11e9d6c8-40fd-418f-a4f8-85ed0e06c1e1
+                          - button "eye" [ref=e891]:
+                            - img "eye" [ref=e893]:
+                              - img [ref=e894]
+                        - button "delete" [ref=e897] [cursor=pointer]:
+                          - img "delete" [ref=e899]:
+                            - img [ref=e900]
+                  - row "04/08/2025 Gifts 43.00 Wise Virtual edit eye delete" [ref=e902]:
+                    - cell "04/08/2025" [ref=e903]
+                    - cell "Gifts" [ref=e904]
+                    - cell "43.00" [ref=e905]
+                    - cell [ref=e906]
+                    - cell "Wise Virtual" [ref=e907]
+                    - cell [ref=e908]
+                    - cell "edit eye delete" [ref=e909]:
+                      - generic [ref=e910]:
+                        - link "edit" [ref=e912] [cursor=pointer]:
+                          - /url: /transactions/edit/291dae88-d256-4bab-be4c-bce45960cbb2
+                          - button "edit" [ref=e913]:
+                            - img "edit" [ref=e915]:
+                              - img [ref=e916]
+                        - link "eye" [ref=e919] [cursor=pointer]:
+                          - /url: /transactions/show/291dae88-d256-4bab-be4c-bce45960cbb2
+                          - button "eye" [ref=e920]:
+                            - img "eye" [ref=e922]:
+                              - img [ref=e923]
+                        - button "delete" [ref=e926] [cursor=pointer]:
+                          - img "delete" [ref=e928]:
+                            - img [ref=e929]
+                  - row "12/29/2025 Gifts 21.53 AmEx edit eye delete" [ref=e931]:
+                    - cell "12/29/2025" [ref=e932]
+                    - cell "Gifts" [ref=e933]
+                    - cell "21.53" [ref=e934]
+                    - cell [ref=e935]
+                    - cell "AmEx" [ref=e936]
+                    - cell [ref=e937]
+                    - cell "edit eye delete" [ref=e938]:
+                      - generic [ref=e939]:
+                        - link "edit" [ref=e941] [cursor=pointer]:
+                          - /url: /transactions/edit/31cec9c0-f89f-4ce0-ab8c-31f783b8d924
+                          - button "edit" [ref=e942]:
+                            - img "edit" [ref=e944]:
+                              - img [ref=e945]
+                        - link "eye" [ref=e948] [cursor=pointer]:
+                          - /url: /transactions/show/31cec9c0-f89f-4ce0-ab8c-31f783b8d924
+                          - button "eye" [ref=e949]:
+                            - img "eye" [ref=e951]:
+                              - img [ref=e952]
+                        - button "delete" [ref=e955] [cursor=pointer]:
+                          - img "delete" [ref=e957]:
+                            - img [ref=e958]
+                  - row "04/11/2025 Gifts 18.00 AmEx edit eye delete" [ref=e960]:
+                    - cell "04/11/2025" [ref=e961]
+                    - cell "Gifts" [ref=e962]
+                    - cell "18.00" [ref=e963]
+                    - cell [ref=e964]
+                    - cell "AmEx" [ref=e965]
+                    - cell [ref=e966]
+                    - cell "edit eye delete" [ref=e967]:
+                      - generic [ref=e968]:
+                        - link "edit" [ref=e970] [cursor=pointer]:
+                          - /url: /transactions/edit/04ae7f99-224d-4d78-a30c-345520b1bf45
+                          - button "edit" [ref=e971]:
+                            - img "edit" [ref=e973]:
+                              - img [ref=e974]
+                        - link "eye" [ref=e977] [cursor=pointer]:
+                          - /url: /transactions/show/04ae7f99-224d-4d78-a30c-345520b1bf45
+                          - button "eye" [ref=e978]:
+                            - img "eye" [ref=e980]:
+                              - img [ref=e981]
+                        - button "delete" [ref=e984] [cursor=pointer]:
+                          - img "delete" [ref=e986]:
+                            - img [ref=e987]
+                  - row "12/12/2025 Gifts 16.05 Wise Virtual edit eye delete" [ref=e989]:
+                    - cell "12/12/2025" [ref=e990]
+                    - cell "Gifts" [ref=e991]
+                    - cell "16.05" [ref=e992]
+                    - cell [ref=e993]
+                    - cell "Wise Virtual" [ref=e994]
+                    - cell [ref=e995]
+                    - cell "edit eye delete" [ref=e996]:
+                      - generic [ref=e997]:
+                        - link "edit" [ref=e999] [cursor=pointer]:
+                          - /url: /transactions/edit/1613b44e-ae55-4cc8-990c-2b56d8dd28e3
+                          - button "edit" [ref=e1000]:
+                            - img "edit" [ref=e1002]:
+                              - img [ref=e1003]
+                        - link "eye" [ref=e1006] [cursor=pointer]:
+                          - /url: /transactions/show/1613b44e-ae55-4cc8-990c-2b56d8dd28e3
+                          - button "eye" [ref=e1007]:
+                            - img "eye" [ref=e1009]:
+                              - img [ref=e1010]
+                        - button "delete" [ref=e1013] [cursor=pointer]:
+                          - img "delete" [ref=e1015]:
+                            - img [ref=e1016]
+                  - row "12/24/2025 Gifts 6.00 NatWest postcards for Anna edit eye delete" [ref=e1018]:
+                    - cell "12/24/2025" [ref=e1019]
+                    - cell "Gifts" [ref=e1020]
+                    - cell "6.00" [ref=e1021]
+                    - cell [ref=e1022]
+                    - cell "NatWest" [ref=e1023]
+                    - cell "postcards for Anna" [ref=e1024]
+                    - cell "edit eye delete" [ref=e1025]:
+                      - generic [ref=e1026]:
+                        - link "edit" [ref=e1028] [cursor=pointer]:
+                          - /url: /transactions/edit/0230c56b-999a-43ef-a28d-5491ebf3801b
+                          - button "edit" [ref=e1029]:
+                            - img "edit" [ref=e1031]:
+                              - img [ref=e1032]
+                        - link "eye" [ref=e1035] [cursor=pointer]:
+                          - /url: /transactions/show/0230c56b-999a-43ef-a28d-5491ebf3801b
+                          - button "eye" [ref=e1036]:
+                            - img "eye" [ref=e1038]:
+                              - img [ref=e1039]
+                        - button "delete" [ref=e1042] [cursor=pointer]:
+                          - img "delete" [ref=e1044]:
+                            - img [ref=e1045]
+                  - row "12/08/2025 Gifts 86.60 AmEx edit eye delete" [ref=e1047]:
+                    - cell "12/08/2025" [ref=e1048]
+                    - cell "Gifts" [ref=e1049]
+                    - cell "86.60" [ref=e1050]
+                    - cell [ref=e1051]
+                    - cell "AmEx" [ref=e1052]
+                    - cell [ref=e1053]
+                    - cell "edit eye delete" [ref=e1054]:
+                      - generic [ref=e1055]:
+                        - link "edit" [ref=e1057] [cursor=pointer]:
+                          - /url: /transactions/edit/394b724b-fcfa-40b3-a5ab-adcd571c707f
+                          - button "edit" [ref=e1058]:
+                            - img "edit" [ref=e1060]:
+                              - img [ref=e1061]
+                        - link "eye" [ref=e1064] [cursor=pointer]:
+                          - /url: /transactions/show/394b724b-fcfa-40b3-a5ab-adcd571c707f
+                          - button "eye" [ref=e1065]:
+                            - img "eye" [ref=e1067]:
+                              - img [ref=e1068]
+                        - button "delete" [ref=e1071] [cursor=pointer]:
+                          - img "delete" [ref=e1073]:
+                            - img [ref=e1074]
+              - list [ref=e495]:
+                - listitem "Previous Page" [ref=e496]:
+                  - link "left" [disabled] [ref=e497] [cursor=pointer]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                    - button "left" [disabled] [ref=e498]:
+                      - img "left" [ref=e499]:
+                        - img [ref=e500]
+                - listitem "1" [ref=e502] [cursor=pointer]:
+                  - link "1" [ref=e503]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "2" [ref=e504] [cursor=pointer]:
+                  - link "2" [ref=e505]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "3" [ref=e506] [cursor=pointer]:
+                  - link "3" [ref=e507]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "4" [ref=e508] [cursor=pointer]:
+                  - link "4" [ref=e509]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "5" [ref=e510] [cursor=pointer]:
+                  - link "5" [ref=e511]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "Next 5 Pages" [ref=e512] [cursor=pointer]:
+                  - link "double-right •••" [ref=e513]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                    - generic [ref=e514]:
+                      - img "double-right" [ref=e515]:
+                        - img [ref=e516]
+                      - generic [ref=e518]: •••
+                - listitem "143" [ref=e519] [cursor=pointer]:
+                  - link "143" [ref=e520]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                - listitem "Next Page" [ref=e521] [cursor=pointer]:
+                  - link "right" [ref=e522]:
+                    - /url: /transactions?pageSize=10&currentPage=1&sorters[0][field]=category_id&sorters[0][order]=asc&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend
+                    - button "right" [ref=e523]:
+                      - img "right" [ref=e524]:
+                        - img [ref=e525]
+                - listitem [ref=e527]:
+                  - generic "Page Size" [ref=e528] [cursor=pointer]:
+                    - generic [ref=e530]:
+                      - combobox "Page Size" [ref=e532]
+                      - generic "10 / page" [ref=e533]
+                    - generic:
+                      - img:
+                        - img

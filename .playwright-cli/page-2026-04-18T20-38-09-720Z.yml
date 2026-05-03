@@ -1,0 +1,226 @@
+- generic [ref=e3]:
+  - alert [ref=e56]:
+    - generic [ref=e57]:
+      - generic [ref=e59]: 🔧 DEVELOPMENT Environment
+      - generic [ref=e60]: This is a local development environment
+  - generic [ref=e61]:
+    - complementary [ref=e62]:
+      - generic [ref=e63]:
+        - link [ref=e65] [cursor=pointer]:
+          - /url: /
+          - img [ref=e66]:
+            - generic [ref=e67]: MoneyLens
+        - menu [ref=e68]:
+          - menuitem "dashboard Dashboard" [ref=e69] [cursor=pointer]:
+            - img "dashboard" [ref=e70]:
+              - img [ref=e71]
+            - link "Dashboard" [ref=e74]:
+              - /url: /
+          - menuitem "swap Transactions" [ref=e75] [cursor=pointer]:
+            - img "swap" [ref=e76]:
+              - img [ref=e77]
+            - link "Transactions" [ref=e80]:
+              - /url: /transactions
+          - menuitem "aim Budgets" [ref=e81] [cursor=pointer]:
+            - img "aim" [ref=e82]:
+              - img [ref=e83]
+            - link "Budgets" [ref=e87]:
+              - /url: /budgets
+          - menuitem "unordered-list Categories" [ref=e88] [cursor=pointer]:
+            - img "unordered-list" [ref=e89]:
+              - img [ref=e90]
+            - link "Categories" [ref=e93]:
+              - /url: /categories
+          - menuitem "bank Bank Accounts" [ref=e94] [cursor=pointer]:
+            - img "bank" [ref=e95]:
+              - img [ref=e96]
+            - link "Bank Accounts" [ref=e99]:
+              - /url: /bank-accounts
+          - menuitem "tags Tags" [ref=e100] [cursor=pointer]:
+            - img "tags" [ref=e101]:
+              - img [ref=e102]
+            - link "Tags" [ref=e105]:
+              - /url: /tags
+          - menuitem "setting Settings" [ref=e106] [cursor=pointer]:
+            - img "setting" [ref=e107]:
+              - img [ref=e108]
+            - link "Settings" [ref=e111]:
+              - /url: /settings
+          - menuitem "logout Logout" [ref=e112] [cursor=pointer]:
+            - img "logout" [ref=e113]:
+              - img [ref=e114]
+            - generic [ref=e116]: Logout
+      - button "left" [ref=e118] [cursor=pointer]:
+        - img "left" [ref=e119]:
+          - img [ref=e120]
+    - generic [ref=e122]:
+      - banner [ref=e123]:
+        - generic [ref=e124]:
+          - switch "Toggle color mode" [ref=e126] [cursor=pointer]:
+            - generic [ref=e128]:
+              - generic: 🌛
+              - generic: 🔆
+          - strong [ref=e133]: test@account.me
+      - main [ref=e134]:
+        - generic [ref=e137]:
+          - generic [ref=e139]:
+            - heading "Dashboard" [level=4] [ref=e141]
+            - generic:
+              - heading [level=5]
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - tablist [ref=e149]:
+                - generic [ref=e151]:
+                  - tab "Yearly Statistics" [selected] [ref=e153] [cursor=pointer]
+                  - tab "Monthly Statistics" [ref=e155] [cursor=pointer]
+                  - tab "📊 Charts" [ref=e157] [cursor=pointer]
+              - tabpanel "Yearly Statistics" [ref=e160]:
+                - generic [ref=e161]:
+                  - generic [ref=e162]:
+                    - strong [ref=e164]: "Year:"
+                    - generic [ref=e165] [cursor=pointer]:
+                      - generic [ref=e167]:
+                        - combobox [ref=e169]
+                        - generic "2026" [ref=e170]
+                      - generic:
+                        - img:
+                          - img
+                  - generic [ref=e171]:
+                    - generic [ref=e174]:
+                      - generic [ref=e175]:
+                        - generic [ref=e176]: Earn
+                        - generic [ref=e178]: £0.00
+                      - generic [ref=e179]: ↓ 100.0% vs prev period
+                    - generic [ref=e182]:
+                      - generic [ref=e183]:
+                        - generic [ref=e184]: Spend
+                        - generic [ref=e186]: £0.00
+                      - generic [ref=e187]: ↓ 100.0% vs prev period
+                    - generic [ref=e190]:
+                      - generic [ref=e191]:
+                        - generic [ref=e192]: Save
+                        - generic [ref=e194]: £0.00
+                      - generic [ref=e195]: ↓ 100.0% vs prev period
+                    - generic [ref=e198]:
+                      - generic [ref=e199]:
+                        - generic [ref=e200]: Net Income
+                        - generic [ref=e202]: £0.00
+                      - generic [ref=e203]: ↓ 100.0% vs prev period
+                  - heading "By Category" [level=4] [ref=e204]
+                  - generic [ref=e205]:
+                    - generic [ref=e207]:
+                      - generic [ref=e210]: Earn
+                      - table [ref=e218]:
+                        - rowgroup [ref=e219]:
+                          - row "Category Amount" [ref=e220]:
+                            - columnheader "Category" [ref=e221] [cursor=pointer]:
+                              - generic [ref=e222]:
+                                - generic [ref=e223]: Category
+                                - generic [ref=e225]:
+                                  - img [ref=e226]:
+                                    - img [ref=e227]
+                                  - img [ref=e229]:
+                                    - img [ref=e230]
+                            - columnheader "Amount" [ref=e232] [cursor=pointer]:
+                              - generic [ref=e233]:
+                                - generic [ref=e234]: Amount
+                                - generic [ref=e236]:
+                                  - img [ref=e237]:
+                                    - img [ref=e238]
+                                  - img [ref=e240]:
+                                    - img [ref=e241]
+                        - rowgroup [ref=e243]:
+                          - row "No data No data" [ref=e244]:
+                            - cell "No data No data" [ref=e245]:
+                              - generic [ref=e246]:
+                                - img "No data" [ref=e248]
+                                - generic [ref=e254]: No data
+                        - rowgroup [ref=e255]:
+                          - row "Total £0.00" [ref=e256]:
+                            - cell "Total" [ref=e257]:
+                              - strong [ref=e259]: Total
+                            - cell "£0.00" [ref=e260]:
+                              - strong [ref=e262]: £0.00
+                    - generic [ref=e264]:
+                      - generic [ref=e267]: Spend
+                      - table [ref=e275]:
+                        - rowgroup [ref=e276]:
+                          - row "Category Amount" [ref=e277]:
+                            - columnheader "Category" [ref=e278] [cursor=pointer]:
+                              - generic [ref=e279]:
+                                - generic [ref=e280]: Category
+                                - generic [ref=e282]:
+                                  - img [ref=e283]:
+                                    - img [ref=e284]
+                                  - img [ref=e286]:
+                                    - img [ref=e287]
+                            - columnheader "Amount" [ref=e289] [cursor=pointer]:
+                              - generic [ref=e290]:
+                                - generic [ref=e291]: Amount
+                                - generic [ref=e293]:
+                                  - img [ref=e294]:
+                                    - img [ref=e295]
+                                  - img [ref=e297]:
+                                    - img [ref=e298]
+                        - rowgroup [ref=e300]:
+                          - row "No data No data" [ref=e301]:
+                            - cell "No data No data" [ref=e302]:
+                              - generic [ref=e303]:
+                                - img "No data" [ref=e305]
+                                - generic [ref=e311]: No data
+                        - rowgroup [ref=e312]:
+                          - row "Total £0.00" [ref=e313]:
+                            - cell "Total" [ref=e314]:
+                              - strong [ref=e316]: Total
+                            - cell "£0.00" [ref=e317]:
+                              - strong [ref=e319]: £0.00
+                    - generic [ref=e321]:
+                      - generic [ref=e324]: Save
+                      - table [ref=e332]:
+                        - rowgroup [ref=e333]:
+                          - row "Category Amount" [ref=e334]:
+                            - columnheader "Category" [ref=e335] [cursor=pointer]:
+                              - generic [ref=e336]:
+                                - generic [ref=e337]: Category
+                                - generic [ref=e339]:
+                                  - img [ref=e340]:
+                                    - img [ref=e341]
+                                  - img [ref=e343]:
+                                    - img [ref=e344]
+                            - columnheader "Amount" [ref=e346] [cursor=pointer]:
+                              - generic [ref=e347]:
+                                - generic [ref=e348]: Amount
+                                - generic [ref=e350]:
+                                  - img [ref=e351]:
+                                    - img [ref=e352]
+                                  - img [ref=e354]:
+                                    - img [ref=e355]
+                        - rowgroup [ref=e357]:
+                          - row "No data No data" [ref=e358]:
+                            - cell "No data No data" [ref=e359]:
+                              - generic [ref=e360]:
+                                - img "No data" [ref=e362]
+                                - generic [ref=e368]: No data
+                        - rowgroup [ref=e369]:
+                          - row "Total £0.00" [ref=e370]:
+                            - cell "Total" [ref=e371]:
+                              - strong [ref=e373]: Total
+                            - cell "£0.00" [ref=e374]:
+                              - strong [ref=e376]: £0.00
+            - generic [ref=e377]:
+              - generic [ref=e379]:
+                - generic [ref=e381]:
+                  - img "aim" [ref=e383]:
+                    - img [ref=e384]
+                  - generic [ref=e387]: Budgets
+                - button "Manage Budgets" [ref=e389] [cursor=pointer]:
+                  - generic [ref=e390]: Manage Budgets
+              - generic [ref=e396]:
+                - generic [ref=e398]:
+                  - heading "New budget" [level=5] [ref=e400]
+                  - generic [ref=e402]: Spend
+                - progressbar [ref=e404]:
+                  - generic "0%" [ref=e407]
+                - generic [ref=e409]:
+                  - generic [ref=e411]: £0.00 of £1,000.00
+                  - generic [ref=e413]: 2026-03-31 → 2026-04-29
