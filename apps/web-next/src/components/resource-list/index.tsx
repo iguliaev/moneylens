@@ -20,6 +20,7 @@ export interface ResourceListProps {
   columns: Column[];
   showActions?: boolean;
   deleteResource?: string;
+  emptyStateBuilder?: () => React.ReactNode;
 }
 
 export const ResourceList: React.FC<ResourceListProps> = ({
@@ -27,6 +28,7 @@ export const ResourceList: React.FC<ResourceListProps> = ({
   columns,
   showActions = true,
   deleteResource,
+  emptyStateBuilder,
 }) => {
   const invalidate = useInvalidate();
   const { tableProps } = useTable({
@@ -36,7 +38,11 @@ export const ResourceList: React.FC<ResourceListProps> = ({
 
   return (
     <List>
-      <Table {...tableProps} rowKey="id">
+      <Table
+        {...tableProps}
+        rowKey="id"
+        locale={emptyStateBuilder ? { emptyText: emptyStateBuilder() } : undefined}
+      >
         {columns.map((column) => (
           <Table.Column
             key={column.dataIndex}

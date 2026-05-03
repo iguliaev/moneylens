@@ -19,6 +19,7 @@ import {
   getProgressStatus,
   WARN_STROKE_COLOR,
 } from "../../utility/budgetAlerts";
+import { getBudgetEmptyState } from "../../components";
 
 export const BudgetList = () => {
   const invalidate = useInvalidate();
@@ -31,7 +32,7 @@ export const BudgetList = () => {
 
   return (
     <List>
-      <Table {...tableProps} rowKey="id">
+      <Table {...tableProps} rowKey="id" locale={{ emptyText: getBudgetEmptyState() }}>
         <Table.Column dataIndex="name" title="Name" sorter />
         <Table.Column
           dataIndex="type"
