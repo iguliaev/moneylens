@@ -11,12 +11,16 @@ import {
   FilterDropdown,
   getDefaultFilter,
 } from "@refinedev/antd";
-import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
+import { Table, Space, Segmented, Select, DatePicker, InputNumber, Tag } from "antd";
 import { useState } from "react";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
+  TRANSACTION_TYPE_ALL,
+  TRANSACTION_TYPE_OPTIONS_WITH_ALL,
+  TYPE_COLORS,
+  type TransactionType,
 } from "../../constants/transactionTypes";
 import { formatAmount } from "../../utility";
 
@@ -51,7 +55,7 @@ const MultiSelectFilter = ({
 export const TransactionList = () => {
   const invalidate = useInvalidate();
   const [transactionType, setTransactionType] = useState<string>(
-    TRANSACTION_TYPES.SPEND
+    TRANSACTION_TYPE_ALL
   );
 
   const { tableProps, filters, setFilters } = useTable({
@@ -61,22 +65,28 @@ export const TransactionList = () => {
       initial: [{ field: "date", order: "desc" }],
     },
     filters: {
-      permanent: [
-        {
-          field: "type",
-          operator: "eq",
-          value: transactionType,
-        },
-      ],
+      permanent:
+        transactionType !== TRANSACTION_TYPE_ALL
+          ? [
+              {
+                field: "type",
+                operator: "eq",
+                value: transactionType,
+              },
+            ]
+          : [],
     },
   });
 
-  // Category select - filtered by current transaction type
+  // Category select - filtered by current transaction type only if not "all"
   const { selectProps: categorySelectProps } = useSelect({
     resource: "categories",
     optionLabel: "name",
     optionValue: "id",
-    filters: [{ field: "type", operator: "eq", value: transactionType }],
+    filters:
+      transactionType !== TRANSACTION_TYPE_ALL
+        ? [{ field: "type", operator: "eq", value: transactionType as TransactionType }]
+        : [],
     ...commonSelectOptions,
     defaultValue: getDefaultFilter("category_id", filters, "in"),
   });
@@ -103,14 +113,26 @@ export const TransactionList = () => {
     <List>
       <Segmented
         aria-label="segmented control"
-        options={Object.values(TRANSACTION_TYPES).map((type) => ({
-          label: TRANSACTION_TYPE_LABELS[type],
-          value: type,
+        options={TRANSACTION_TYPE_OPTIONS_WITH_ALL.map((opt) => ({
+          label: opt.label,
+          value: opt.value,
         }))}
         value={transactionType}
         onChange={(value) => setTransactionType(value as string)}
       />
       <Table {...tableProps} rowKey="id">
+        {transactionType === TRANSACTION_TYPE_ALL && (
+          <Table.Column
+            dataIndex="type"
+            title="Type"
+            sorter
+            render={(value: TransactionType) => (
+              <Tag color={TYPE_COLORS[value]}>
+                {TRANSACTION_TYPE_LABELS[value]}
+              </Tag>
+            )}
+          />
+        )}
         <Table.Column
           dataIndex={["date"]}
           title="Date"

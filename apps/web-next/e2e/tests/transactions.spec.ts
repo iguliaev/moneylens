@@ -444,4 +444,38 @@ test.describe("Transactions", () => {
     await page.getByLabel("Amount").blur();
     await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
+
+  test.describe("All Transactions View", () => {
+    test("Type column visible in All view and hidden in type-specific views", async ({
+      page,
+    }) => {
+      // Navigate to transactions list (defaults to "All" view)
+      await page.goto("/transactions");
+      
+      // Verify Type column is visible when on "All" view
+      await expect(page.getByRole("columnheader", { name: "Type" })).toBeVisible();
+
+      // Switch to "Spend" tab
+      const segmented = page.getByRole("radiogroup", { name: "segmented control" });
+      await segmented.getByText("Spend").click();
+      await page.waitForLoadState("networkidle");
+
+      // Type column should be hidden when viewing specific type
+      await expect(page.getByRole("columnheader", { name: "Type" })).not.toBeVisible();
+
+      // Switch to "Earn" tab
+      await segmented.getByText("Earn").click();
+      await page.waitForLoadState("networkidle");
+
+      // Type column should still be hidden
+      await expect(page.getByRole("columnheader", { name: "Type" })).not.toBeVisible();
+
+      // Switch back to "All" tab
+      await segmented.getByText("All").click();
+      await page.waitForLoadState("networkidle");
+
+      // Type column should be visible again
+      await expect(page.getByRole("columnheader", { name: "Type" })).toBeVisible();
+    });
+  });
 });
