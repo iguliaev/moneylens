@@ -12,6 +12,7 @@ import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
 } from "../../constants/transactionTypes";
+import { getCategoryEmptyState } from "../../components";
 
 export const CategoryList = () => {
   const invalidate = useInvalidate();
@@ -44,7 +45,7 @@ export const CategoryList = () => {
         value={categoryType}
         onChange={(value) => setCategoryType(value as string)}
       />
-      <Table {...tableProps} rowKey="id">
+      <Table {...tableProps} rowKey="id" locale={{ emptyText: getCategoryEmptyState() }}>
         <Table.Column dataIndex="name" title="Name" sorter />
         <Table.Column dataIndex="description" title="Description" sorter />
         <Table.Column dataIndex="in_use_count" title="Usage Count" sorter />

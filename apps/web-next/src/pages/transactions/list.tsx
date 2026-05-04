@@ -19,6 +19,7 @@ import {
   TRANSACTION_TYPES,
 } from "../../constants/transactionTypes";
 import { formatAmount } from "../../utility";
+import { getTransactionEmptyState } from "../../components";
 
 const commonSelectOptions = {
   sorters: [{ field: "name", order: "asc" as const }],
@@ -110,7 +111,7 @@ export const TransactionList = () => {
         value={transactionType}
         onChange={(value) => setTransactionType(value as string)}
       />
-      <Table {...tableProps} rowKey="id">
+      <Table {...tableProps} rowKey="id" locale={{ emptyText: getTransactionEmptyState() }}>
         <Table.Column
           dataIndex={["date"]}
           title="Date"
