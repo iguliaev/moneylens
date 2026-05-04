@@ -198,18 +198,18 @@ Each list renders skeleton rows during initial load, giving a stable, content-sh
 
 ## Summary Table
 
-| # | Improvement | Impact | Complexity | Rough Effort |
-|---|-------------|--------|------------|-------------|
-| 1 | Dashboard defaults to Monthly tab | 🔴 High | 🟢 Low | 1 line |
-| 2 | Categories sidebar icon | 🔴 High | 🟢 Low | 3 lines |
-| 3 | Budget threshold alerts (80%/100%) | 🔴 High | 🟢 Low | ~30 lines |
-| 4 | "All Transactions" segmented option | 🔴 High | 🟡 Medium | ~40 lines |
-| 5 | Notes full-text search + amount range | 🔴 High | 🟡 Medium | ~50 lines |
-| 6 | KBar quick-add transaction action | 🟡 Medium | 🟢 Low | ~20 lines |
-| 7 | Transaction show: Skeleton loading | 🟡 Medium | 🟢 Low | ~10 lines |
-| 8 | Budget list: inline progress column | 🟡 Medium | 🟡 Medium | ~30 lines |
-| 9 | Empty states with CTA | 🟡 Medium | 🟡 Medium | ~60 lines |
-| 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines | ✅ PR #167 |
-| 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines | ✅ PR #169 |
+| # | Improvement | Impact | Complexity | Rough Effort | Status |
+|---|-------------|--------|------------|-------------|--------|
+| 1 | Dashboard defaults to Monthly tab | 🔴 High | 🟢 Low | 1 line | ✅ [PR #154](https://github.com/iguliaev/moneylens/pull/154) |
+| 2 | Categories sidebar icon | 🔴 High | 🟢 Low | 3 lines | ✅ [PR #155](https://github.com/iguliaev/moneylens/pull/155) |
+| 3 | Budget threshold alerts (80%/100%) | 🔴 High | 🟢 Low | ~30 lines | ✅ [PR #156](https://github.com/iguliaev/moneylens/pull/156) |
+| 4 | "All Transactions" segmented option | 🔴 High | 🟡 Medium | ~40 lines | |
+| 5 | Notes full-text search + amount range | 🔴 High | 🟡 Medium | ~50 lines | |
+| 6 | KBar quick-add transaction action | 🟡 Medium | 🟢 Low | ~20 lines | ✅ [PR #157](https://github.com/iguliaev/moneylens/pull/157) |
+| 7 | Transaction show: Skeleton loading | 🟡 Medium | 🟢 Low | ~10 lines | ✅ [PR #162](https://github.com/iguliaev/moneylens/pull/162) |
+| 8 | Budget list: inline progress column | 🟡 Medium | 🟡 Medium | ~30 lines | ✅ [PR #156](https://github.com/iguliaev/moneylens/pull/156) |
+| 9 | Empty states with CTA | 🟡 Medium | 🟡 Medium | ~60 lines | ✅ [PR #164](https://github.com/iguliaev/moneylens/pull/164) |
+| 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines | ✅ [PR #167](https://github.com/iguliaev/moneylens/pull/167) |
+| 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines | ✅ [PR #169](https://github.com/iguliaev/moneylens/pull/169) |
 
 **Items 1–3** can ship in a single PR in under an hour. **Items 4–7** are self-contained and can be parallelised. **Items 8–11** suit a dedicated UX sprint.
