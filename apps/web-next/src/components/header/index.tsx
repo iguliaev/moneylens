@@ -108,9 +108,13 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
       setOptions([]);
       return;
     }
+    // stale flag: prevents results from an earlier search populating the dropdown
+    // after a newer search has already started (race condition when typing slowly).
+    let stale = false;
     const timer = setTimeout(() => {
       setOptions([]);
       txQuery.refetch().then((res) => {
+        if (stale) return;
         const items = (res.data?.data ?? []) as Array<{ id: string | number; notes?: string }>;
         if (items.length) {
           setOptions((prev) => [
@@ -129,6 +133,7 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
         }
       });
       catQuery.refetch().then((res) => {
+        if (stale) return;
         const items = (res.data?.data ?? []) as Array<{ id: string | number; name: string }>;
         if (items.length) {
           setOptions((prev) => [
@@ -143,6 +148,7 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
         }
       });
       bankQuery.refetch().then((res) => {
+        if (stale) return;
         const items = (res.data?.data ?? []) as Array<{ id: string | number; name: string }>;
         if (items.length) {
           setOptions((prev) => [
@@ -157,7 +163,10 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
         }
       });
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const headerStyles: React.CSSProperties = {
