@@ -97,7 +97,10 @@ test.describe("Data Reset Isolation", () => {
     // User A resets their data
     await loginUser(pageA, userA.email, userA.password);
     await pageA.goto("/settings");
-    await pageA.getByText("Danger Zone").scrollIntoViewIfNeeded();
+
+    // Click on Danger Zone tab
+    await pageA.getByRole("tab", { name: /danger zone/i }).click();
+
     await pageA.getByRole("button", { name: /reset.*data/i }).click();
     await pageA
       .getByRole("button", { name: /yes.*delete.*everything/i })

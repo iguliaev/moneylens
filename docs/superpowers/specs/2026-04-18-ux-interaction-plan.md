@@ -164,14 +164,56 @@ Each list page shows a tailored empty state with a contextual CTA ("Add Transact
 
 **Priority:** 🟡 Medium Impact / 🟡 Medium Complexity
 
+**Status:** ✅ Done (PR #167)
+
 ### Current Experience
 The Settings page is a single vertically scrolling page with all sections stacked with `<Divider>`. Destructive actions (data reset) are reachable by scrolling past normal content.
 
 ### Improved Experience
 Settings are grouped into logical tabs: **General** | **Import & Export** | **⚠ Danger Zone**. The danger tab requires deliberate navigation.
 
-### How to Implement
-In `pages/settings/index.tsx`, wrap existing section components in `<Tabs>` items and extract each into a named sub-component.
+### Implementation Details
+
+**Component Changes:**
+- Modified `apps/web-next/src/pages/settings/index.tsx`
+  - Replaced `<Divider>` with Ant Design `<Tabs>` component
+  - Restructured SettingsPage component with three tab items:
+    1. **General** tab — Contains CurrencySection
+    2. **Import & Export** tab — Contains BulkUploadSection
+    3. **⚠ Danger Zone** tab — Contains DataResetSection (positioned last for safety)
+  - General tab is active by default for optimal UX
+  - All existing section components preserved and wrapped unchanged
+
+**E2E Test Updates:**
+- Updated 9 existing tests to navigate tabs before accessing content:
+  - `data-reset.spec.ts` — 4 tests: Click "Danger Zone" tab before reset actions
+  - `bulk-upload.spec.ts` — 3 tests: Click "Import & Export" tab before file operations
+  - `data-reset-isolation.spec.ts` — 1 test: Multi-user data reset with tab navigation
+  - `bulk-upload-isolation.spec.ts` — 1 test: Multi-user bulk upload with tab navigation
+
+- Created new comprehensive test suite `settings-tabs.spec.ts` with 6 tests:
+  1. All three tabs render and are clickable
+  2. General tab is active by default
+  3. Switching to Import & Export tab shows upload section
+  4. Switching to Danger Zone requires explicit click (deliberate navigation)
+  5. Content remains isolated between tabs
+  6. Tab switching doesn't lose form state
+
+**Test Results:**
+- All 68+ e2e tests passing
+- No regressions or flaky tests
+- Full coverage of tab functionality and existing settings features
+
+**Files Modified:**
+- `apps/web-next/src/pages/settings/index.tsx` — Settings page with tabs
+- `apps/web-next/e2e/tests/data-reset.spec.ts` — Tab navigation for reset tests
+- `apps/web-next/e2e/tests/bulk-upload.spec.ts` — Tab navigation for upload tests
+- `apps/web-next/e2e/tests/data-reset-isolation.spec.ts` — Multi-user reset test
+- `apps/web-next/e2e/tests/bulk-upload-isolation.spec.ts` — Multi-user upload test
+- `apps/web-next/e2e/tests/settings-tabs.spec.ts` — New tab functionality tests
+- `.gitignore` — Added `apps/fiery-trams-battle/` to prevent accidental commits
+
+**PR:** See [#167](https://github.com/iguliaev/moneylens/pull/167) for full diff and review
 
 ---
 
@@ -203,7 +245,7 @@ Create a `<TableSkeleton columns={N} rows={8} />` component using `<Skeleton.Inp
 | 7 | Transaction show: Skeleton loading | 🟡 Medium | 🟢 Low | ~10 lines |
 | 8 | Budget list: inline progress column | 🟡 Medium | 🟡 Medium | ~30 lines |
 | 9 | Empty states with CTA | 🟡 Medium | 🟡 Medium | ~60 lines |
-| 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines |
+| 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines | ✅ PR #167 |
 | 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines |
 
 **Items 1–3** can ship in a single PR in under an hour. **Items 4–7** are self-contained and can be parallelised. **Items 8–11** suit a dedicated UX sprint.

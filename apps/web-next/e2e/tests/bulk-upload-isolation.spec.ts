@@ -47,6 +47,10 @@ test.describe("Bulk Upload Data Isolation", () => {
     // User A uploads data
     await loginUser(pageA, userA.email, userA.password);
     await pageA.goto("/settings");
+
+    // Click on Import & Export tab
+    await pageA.getByRole("tab", { name: /import.*export/i }).click();
+
     await pageA.locator("input[type='file']").setInputFiles(fixturePath);
     await pageA.getByRole("button", { name: /^upload$/i, exact: true }).click();
     await expect(
@@ -82,6 +86,10 @@ test.describe("Bulk Upload Data Isolation", () => {
     // User B uploads their own data
     await loginUser(pageB, userB.email, userB.password);
     await pageB.goto("/settings");
+
+    // Click on Import & Export tab
+    await pageB.getByRole("tab", { name: /import.*export/i }).click();
+
     await pageB.locator("input[type='file']").setInputFiles(fixturePath);
     await pageB.getByRole("button", { name: /^upload$/i, exact: true }).click();
     await expect(
