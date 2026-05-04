@@ -445,3 +445,87 @@ test.describe("Transactions", () => {
     await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
 });
+
+test.describe("Transaction list filters", () => {
+  let testUser: { email: string; password: string; userId: string };
+
+  test.beforeAll(async () => {
+    testUser = await createTestUser();
+    await seedReferenceDataForUser(testUser.userId);
+  });
+
+  test.afterAll(async () => {
+    await cleanupReferenceDataForUser(testUser.userId);
+    await deleteTestUser(testUser.userId);
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await loginUser(page, testUser.email, testUser.password);
+  });
+
+  test.afterEach(async () => {
+    await cleanupTransactionsForUser(testUser.userId);
+  });
+
+  test("notes search filters transactions by matching text", async ({ page }) => {
+    const date = e2eCurrentMonthDate();
+    const uniqueNote = `unique-search-note-${Date.now()}`;
+
+    // Create two transactions — one with the unique note, one without
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "50.00", "Main Account", uniqueNote);
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "75.00", "Main Account", "other-note");
+
+    // Navigate to the spend tab
+    await page.goto("/transactions");
+    await page.getByRole("radiogroup", { name: "segmented control" }).getByText(/spend/i).click();
+    await page.waitForLoadState("networkidle");
+
+    // Type the unique note in the search bar
+    await page.getByRole("searchbox", { name: /search notes/i }).fill(uniqueNote);
+
+    // Wait for debounce + table re-render
+    await page.waitForTimeout(600);
+    await page.waitForLoadState("networkidle");
+
+    // Only the matching row should be visible
+    await expect(page.getByText(uniqueNote)).toBeVisible();
+    await expect(page.getByText("other-note")).not.toBeVisible();
+  });
+
+  test("notes search shows empty state when no match", async ({ page }) => {
+    const date = e2eCurrentMonthDate();
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "50.00", "Main Account", "some-note");
+
+    await page.goto("/transactions");
+    await page.getByRole("radiogroup", { name: "segmented control" }).getByText(/spend/i).click();
+    await page.waitForLoadState("networkidle");
+
+    await page.getByRole("searchbox", { name: /search notes/i }).fill("zzz-no-match-zzz");
+
+    await page.waitForTimeout(600);
+    await page.waitForLoadState("networkidle");
+
+    await expect(page.getByText("some-note")).not.toBeVisible();
+  });
+
+  test("amount range filter shows only transactions within range", async ({ page }) => {
+    const date = e2eCurrentMonthDate();
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "30.00", "Main Account", "low-amount");
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "200.00", "Main Account", "high-amount");
+
+    await page.goto("/transactions");
+    await page.getByRole("radiogroup", { name: "segmented control" }).getByText(/spend/i).click();
+    await page.waitForLoadState("networkidle");
+
+    // Open amount filter dropdown
+    await page.getByRole("columnheader", { name: "Amount" }).locator(".ant-table-filter-trigger").click();
+    await page.getByPlaceholder("Min").fill("100");
+    // Trigger onChange by pressing Tab
+    await page.keyboard.press("Tab");
+    await page.waitForLoadState("networkidle");
+
+    // Only the high-amount row should be visible
+    await expect(page.getByText("high-amount")).toBeVisible();
+    await expect(page.getByText("low-amount")).not.toBeVisible();
+  });
+});

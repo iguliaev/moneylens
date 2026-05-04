@@ -11,8 +11,8 @@ import {
   FilterDropdown,
   getDefaultFilter,
 } from "@refinedev/antd";
-import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
-import { useState } from "react";
+import { Table, Space, Segmented, Select, DatePicker, InputNumber, Input } from "antd";
+import { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_LABELS,
@@ -54,6 +54,7 @@ export const TransactionList = () => {
   const [transactionType, setTransactionType] = useState<string>(
     TRANSACTION_TYPES.SPEND
   );
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const { tableProps, filters, setFilters } = useTable({
     syncWithLocation: true,
@@ -71,6 +72,20 @@ export const TransactionList = () => {
       ],
     },
   });
+
+  // Debounce notes search → update table filter
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters([
+        {
+          field: "notes",
+          operator: "contains",
+          value: searchQuery || undefined,
+        },
+      ]);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Category select - filtered by current transaction type
   const { selectProps: categorySelectProps } = useSelect({
@@ -104,7 +119,19 @@ export const TransactionList = () => {
   const transactionEmptyState = getTransactionEmptyState();
 
   return (
-    <List>
+    <List
+      headerButtons={
+        <Input.Search
+          placeholder="Search notes…"
+          allowClear
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onSearch={(val) => setSearchQuery(val)}
+          style={{ width: 260 }}
+          aria-label="search notes"
+        />
+      }
+    >
       <Segmented
         aria-label="segmented control"
         options={Object.values(TRANSACTION_TYPES).map((type) => ({
@@ -178,15 +205,48 @@ export const TransactionList = () => {
           title="Amount"
           sorter
           render={(value: number) => formatAmount(value)}
-          filterDropdown={(props) => (
-            <FilterDropdown {...props}>
-              <InputNumber
-                placeholder="Filter by amount"
-                style={{ width: "100%" }}
-              />
-            </FilterDropdown>
-          )}
-          defaultFilteredValue={getDefaultFilter("amount", filters, "eq")}
+          filteredValue={getDefaultFilter("amount", filters, "between") ?? null}
+          filterDropdown={({ confirm }) => {
+            const activeVal = getDefaultFilter("amount", filters, "between");
+            const [minVal, maxVal] = Array.isArray(activeVal) && activeVal.length === 2
+              ? [activeVal[0] as number, activeVal[1] as number]
+              : [undefined, undefined];
+            return (
+              <div style={{ padding: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                <InputNumber
+                  placeholder="Min"
+                  value={minVal}
+                  style={{ width: 110 }}
+                  onChange={(min) => {
+                    setFilters([
+                      {
+                        field: "amount",
+                        operator: "between",
+                        value: min != null || maxVal != null ? [min ?? 0, maxVal ?? Infinity] : undefined,
+                      },
+                    ]);
+                    confirm({ closeDropdown: false });
+                  }}
+                />
+                <span>–</span>
+                <InputNumber
+                  placeholder="Max"
+                  value={maxVal}
+                  style={{ width: 110 }}
+                  onChange={(max) => {
+                    setFilters([
+                      {
+                        field: "amount",
+                        operator: "between",
+                        value: minVal != null || max != null ? [minVal ?? 0, max ?? Infinity] : undefined,
+                      },
+                    ]);
+                    confirm({ closeDropdown: false });
+                  }}
+                />
+              </div>
+            );
+          }}
         />
         <Table.Column
           key="tag_ids"
