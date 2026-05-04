@@ -60,24 +60,11 @@ Categories has a recognisable icon, giving the sidebar a uniform, professional l
 
 ---
 
-## 4. "All Transactions" View in Transaction List
+## 4. "All Transactions" View in Transaction List 🚫 Won't Do
 
-**Priority:** 🔴 High Impact / 🟡 Medium Complexity
+**Priority:** ~~🔴 High Impact / 🟡 Medium Complexity~~ — **Deprioritised**: does not provide meaningful value to users at this stage. The per-type segmented view covers all practical use cases.
 
-### Current Experience
-`TransactionList` passes `transactionType` as a **permanent filter** (`operator: "eq"`). The segmented control only shows Spend / Earn / Save — no way to see all transactions at once.
 
-### Improved Experience
-An **"All"** option in the segmented control removes the type filter, showing every transaction with a new "Type" column to differentiate rows.
-
-### How to Implement
-1. Change the initial state to a sentinel value: `const [transactionType, setTransactionType] = useState("all")`
-2. Make the permanent filter conditional — omit it when `transactionType === "all"`
-3. Add `"All"` as the first option in the `<Segmented>` options array
-4. When `"all"` is active, render a Type column with a coloured tag
-5. Remove the type filter from `categorySelectProps` `useSelect` when `"all"` is active
-
----
 
 ## 5. Full-Text Search in Transaction List (Notes / Amount Range)
 
@@ -203,7 +190,7 @@ Each list renders skeleton rows during initial load, giving a stable, content-sh
 | 1 | Dashboard defaults to Monthly tab | 🔴 High | 🟢 Low | 1 line | ✅ [PR #154](https://github.com/iguliaev/moneylens/pull/154) |
 | 2 | Categories sidebar icon | 🔴 High | 🟢 Low | 3 lines | ✅ [PR #155](https://github.com/iguliaev/moneylens/pull/155) |
 | 3 | Budget threshold alerts (80%/100%) | 🔴 High | 🟢 Low | ~30 lines | ✅ [PR #156](https://github.com/iguliaev/moneylens/pull/156) |
-| 4 | "All Transactions" segmented option | 🔴 High | 🟡 Medium | ~40 lines | |
+| 4 | "All Transactions" segmented option | ~~🔴 High~~ | ~~🟡 Medium~~ | ~~~40 lines~~ | 🚫 Won't Do |
 | 5 | Notes full-text search + amount range | 🔴 High | 🟡 Medium | ~50 lines | |
 | 6 | KBar quick-add transaction action | 🟡 Medium | 🟢 Low | ~20 lines | ✅ [PR #157](https://github.com/iguliaev/moneylens/pull/157) |
 | 7 | Transaction show: Skeleton loading | 🟡 Medium | 🟢 Low | ~10 lines | ✅ [PR #162](https://github.com/iguliaev/moneylens/pull/162) |
