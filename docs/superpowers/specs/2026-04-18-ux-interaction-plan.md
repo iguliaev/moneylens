@@ -164,14 +164,21 @@ Each list page shows a tailored empty state with a contextual CTA ("Add Transact
 
 **Priority:** 🟡 Medium Impact / 🟡 Medium Complexity
 
+**Status:** ✅ Done (PR #167)
+
 ### Current Experience
 The Settings page is a single vertically scrolling page with all sections stacked with `<Divider>`. Destructive actions (data reset) are reachable by scrolling past normal content.
 
 ### Improved Experience
 Settings are grouped into logical tabs: **General** | **Import & Export** | **⚠ Danger Zone**. The danger tab requires deliberate navigation.
 
-### How to Implement
-In `pages/settings/index.tsx`, wrap existing section components in `<Tabs>` items and extract each into a named sub-component.
+### Implementation
+✅ In `pages/settings/index.tsx`, wrapped existing section components in `<Tabs>` items with three tabs:
+- **General** — Currency settings
+- **Import & Export** — Bulk upload functionality
+- **⚠ Danger Zone** — Data reset (requires explicit tab click)
+
+All e2e tests updated and passing. See PR #167 for details.
 
 ---
 
@@ -203,7 +210,7 @@ Create a `<TableSkeleton columns={N} rows={8} />` component using `<Skeleton.Inp
 | 7 | Transaction show: Skeleton loading | 🟡 Medium | 🟢 Low | ~10 lines |
 | 8 | Budget list: inline progress column | 🟡 Medium | 🟡 Medium | ~30 lines |
 | 9 | Empty states with CTA | 🟡 Medium | 🟡 Medium | ~60 lines |
-| 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines |
+| 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines | ✅ PR #167 |
 | 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines |
 
 **Items 1–3** can ship in a single PR in under an hour. **Items 4–7** are self-contained and can be parallelised. **Items 8–11** suit a dedicated UX sprint.
