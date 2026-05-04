@@ -31,8 +31,8 @@ test.describe("Data Reset", () => {
   test("user can reset all data", async ({ page }) => {
     await page.goto("/settings");
 
-    // Scroll to danger zone section
-    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+    // Click on Danger Zone tab
+    await page.getByRole("tab", { name: /danger zone/i }).click();
 
     // Click reset button
     await page.getByRole("button", { name: /reset.*data/i }).click();
@@ -60,8 +60,8 @@ test.describe("Data Reset", () => {
   test("user can cancel data reset", async ({ page }) => {
     await page.goto("/settings");
 
-    // Scroll to danger zone section
-    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+    // Click on Danger Zone tab
+    await page.getByRole("tab", { name: /danger zone/i }).click();
 
     // Click reset button
     await page.getByRole("button", { name: /reset.*data/i }).click();
@@ -103,7 +103,10 @@ test.describe("Data Reset", () => {
 
     // Now reset data
     await page.goto("/settings");
-    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+
+    // Click on Danger Zone tab
+    await page.getByRole("tab", { name: /danger zone/i }).click();
+
     await page.getByRole("button", { name: /reset.*data/i }).click();
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
@@ -135,7 +138,10 @@ test.describe("Data Reset", () => {
 
     // Reset data
     await page.goto("/settings");
-    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+
+    // Click on Danger Zone tab
+    await page.getByRole("tab", { name: /danger zone/i }).click();
+
     await page.getByRole("button", { name: /reset.*data/i }).click();
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
@@ -165,7 +171,10 @@ test.describe("Data Reset", () => {
     await expect(page.getByRole("heading", { name: budgetName })).toBeVisible();
 
     await page.goto("/settings");
-    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+
+    // Click on Danger Zone tab
+    await page.getByRole("tab", { name: /danger zone/i }).click();
+
     await page.getByRole("button", { name: /reset.*data/i }).click();
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
