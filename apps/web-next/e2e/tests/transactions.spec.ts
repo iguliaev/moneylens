@@ -444,4 +444,23 @@ test.describe("Transactions", () => {
     await page.getByLabel("Amount").blur();
     await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
+  test("amount range filter shows only transactions within range", async ({ page }) => {
+    const date = e2eCurrentMonthDate();
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "30.00", "Main Account", "low-amount");
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "200.00", "Main Account", "high-amount");
+
+    // Navigate directly with amount between filter applied via URL params (syncWithLocation: true)
+    await page.goto(
+      "/transactions?" +
+        "sorters[0][field]=date&sorters[0][order]=desc" +
+        "&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend" +
+        "&filters[1][field]=amount&filters[1][operator]=between&filters[1][value][0]=100&filters[1][value][1]=999999"
+    );
+    await page.waitForLoadState("networkidle");
+
+    // Only the high-amount row should be visible
+    await expect(page.getByText("high-amount")).toBeVisible();
+    await expect(page.getByText("low-amount")).not.toBeVisible();
+  });
 });
+
