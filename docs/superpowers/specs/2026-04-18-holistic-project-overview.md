@@ -27,7 +27,7 @@ Three phases of the internal roadmap are complete:
 | 2 — Visual Identity | 🔲 Pending | Design tokens, font, dark-mode brand colours |
 | 3 — Data Visualisation | ✅ Done | Net income card, trendline chart, MoM comparisons, budget progress bars, Charts tab E2E test |
 | 4 / 4b — Feature Depth + Settings | 🟡 Mostly Done | `user_settings` table ✅, KBar quick-add ✅, Settings tabbed layout ✅; CSV export / bank balance / recurring transactions still open |
-| 5 — Polish | 🟡 Mostly Done | Empty states ✅, loading skeletons ✅, budget alerts ✅, transaction show skeleton ✅, dashboard monthly default ✅; "All Transactions" view and full-text search still open |
+| 5 — Polish | 🟡 Mostly Done | Empty states ✅, loading skeletons ✅, budget alerts ✅, transaction show skeleton ✅, dashboard monthly default ✅; full-text search still open; "All Transactions" view 🚫 Won't Do |
 
 The codebase is functional and tested at the happy-path level, but several structural issues have accumulated that will slow down all future work if left unaddressed.
 
@@ -77,7 +77,7 @@ Users cannot export their data, add transactions quickly from the keyboard, set 
 
 The dashboard opens on the "All time" tab instead of the current month, which is almost never what a user wants when they open the app. Categories have no icons. Budgets show no alert when a user is at 80 % or 100 % of their limit. The transactions list has no all-time view. Several forms have no empty states (blank screens instead of helpful prompts). These are quick wins — items 1–3 are under 30 lines of code each.
 
-**Progress**: 9 of 11 items shipped (PRs #154–#157, #162, #164, #167, #169). Remaining: "All Transactions" view (#4) and full-text search (#5).
+**Progress**: 9 of 11 items shipped (PRs #154–#157, #162, #164, #167, #169); item #4 "All Transactions" view marked 🚫 Won't Do. Only remaining open item: full-text search (#5).
 
 → **Plan**: [`2026-04-18-ux-interaction-plan.md`](./2026-04-18-ux-interaction-plan.md)  
 → **Roadmap phase it enables**: Phase 5 (polish)
@@ -143,7 +143,7 @@ Frontend Architecture (structural)            Feature Completeness
 
 The UX quick wins (items 1–3, 6–11) have shipped. The three remaining high-value work streams are:
 
-If you want the **fastest visible win**: implement the two remaining UX gaps — "All Transactions" segmented view and notes full-text search — both in `apps/web-next/src/pages/transactions/list.tsx`.
+If you want the **fastest visible win**: implement the one remaining UX gap — notes full-text search + amount range filter — in `apps/web-next/src/pages/transactions/list.tsx`.
 
 If you want the **highest-risk item removed first**: write the pgTAP tests for `get_budget_progress()` — pure SQL, no frontend changes, prevents silent regressions in the most complex DB function.
 
