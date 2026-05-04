@@ -12,7 +12,7 @@ import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
 } from "../../constants/transactionTypes";
-import { getCategoryEmptyState } from "../../components";
+import { getCategoryEmptyState, TableSkeleton } from "../../components";
 
 export const CategoryList = () => {
   const invalidate = useInvalidate();
@@ -34,6 +34,9 @@ export const CategoryList = () => {
     },
   });
 
+  // Always call to keep React hook call count consistent (internally calls useNavigation())
+  const categoryEmptyState = getCategoryEmptyState();
+
   return (
     <List>
       <Segmented
@@ -45,7 +48,10 @@ export const CategoryList = () => {
         value={categoryType}
         onChange={(value) => setCategoryType(value as string)}
       />
-      <Table {...tableProps} rowKey="id" locale={{ emptyText: getCategoryEmptyState() }}>
+      {tableProps.loading && !tableProps.dataSource?.length ? (
+        <TableSkeleton columns={4} />
+      ) : (
+      <Table {...tableProps} rowKey="id" locale={{ emptyText: categoryEmptyState }}>
         <Table.Column dataIndex="name" title="Name" sorter />
         <Table.Column dataIndex="description" title="Description" sorter />
         <Table.Column dataIndex="in_use_count" title="Usage Count" sorter />
@@ -72,6 +78,7 @@ export const CategoryList = () => {
           )}
         />
       </Table>
+      )}
     </List>
   );
 };

@@ -9,3 +9,4 @@ export {
   getBankAccountEmptyState,
   getTagEmptyState,
 } from "./EmptyStates";
+export { TableSkeleton } from "./TableSkeleton";

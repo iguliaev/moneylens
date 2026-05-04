@@ -19,7 +19,7 @@ import {
   getProgressStatus,
   WARN_STROKE_COLOR,
 } from "../../utility/budgetAlerts";
-import { getBudgetEmptyState } from "../../components";
+import { getBudgetEmptyState, TableSkeleton } from "../../components";
 
 export const BudgetList = () => {
   const invalidate = useInvalidate();
@@ -30,9 +30,15 @@ export const BudgetList = () => {
     resource: "budgets_with_linked",
   });
 
+  // Always call to keep React hook call count consistent (internally calls useNavigation())
+  const budgetEmptyState = getBudgetEmptyState();
+
   return (
     <List>
-      <Table {...tableProps} rowKey="id" locale={{ emptyText: getBudgetEmptyState() }}>
+      {tableProps.loading && !tableProps.dataSource?.length ? (
+        <TableSkeleton columns={9} />
+      ) : (
+      <Table {...tableProps} rowKey="id" locale={{ emptyText: budgetEmptyState }}>
         <Table.Column dataIndex="name" title="Name" sorter />
         <Table.Column
           dataIndex="type"
@@ -122,6 +128,7 @@ export const BudgetList = () => {
           )}
         />
       </Table>
+      )}
     </List>
   );
 };
