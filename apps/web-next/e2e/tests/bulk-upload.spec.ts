@@ -33,15 +33,19 @@ test.describe("Bulk Upload", () => {
   }) => {
     // Reset all data first
     await page.goto("/settings");
-    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+
+    // Click on Danger Zone tab
+    await page.getByRole("tab", { name: /danger zone/i }).click();
+
     await page.getByRole("button", { name: /reset.*data/i }).click();
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
     await expect(page.getByText(/data reset complete/i)).toBeVisible();
 
-    // Go back to settings to upload
+    // Go back to settings and switch to Import & Export tab to upload
     await page.goto("/settings");
+    await page.getByRole("tab", { name: /import.*export/i }).click();
 
     // Upload valid bulk upload file
     const fixturePath = path.join(
@@ -113,12 +117,19 @@ test.describe("Bulk Upload", () => {
   test("shows error when uploading invalid JSON syntax", async ({ page }) => {
     // Reset all data first
     await page.goto("/settings");
-    await page.getByText("Danger Zone").scrollIntoViewIfNeeded();
+
+    // Click on Danger Zone tab
+    await page.getByRole("tab", { name: /danger zone/i }).click();
+
     await page.getByRole("button", { name: /reset.*data/i }).click();
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
     await expect(page.getByText(/data reset complete/i)).toBeVisible();
+
+    // Go to Import & Export tab
+    await page.goto("/settings");
+    await page.getByRole("tab", { name: /import.*export/i }).click();
 
     // Try to upload invalid JSON file
     const fixturePath = path.join(__dirname, "../fixtures/invalid-json.json");
@@ -137,6 +148,9 @@ test.describe("Bulk Upload", () => {
 
   test("shows error when uploading invalid category type", async ({ page }) => {
     await page.goto("/settings");
+
+    // Click on Import & Export tab
+    await page.getByRole("tab", { name: /import.*export/i }).click();
 
     // Try to upload file with invalid category type
     const fixturePath = path.join(

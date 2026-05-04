@@ -1,4 +1,4 @@
 .vscode
 .env*
 venv/
-supabase/.temp/
+supabase/.temp/apps/fiery-trams-battle/

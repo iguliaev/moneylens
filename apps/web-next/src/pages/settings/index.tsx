@@ -9,7 +9,7 @@ import {
   Space,
   Modal,
   message,
-  Divider,
+  Tabs,
   Select,
 } from "antd";
 import {
@@ -456,15 +456,25 @@ const CurrencySection = () => {
 export const SettingsPage = () => {
   return (
     <Show title="Settings" headerButtons={() => null}>
-      <CurrencySection />
-
-      <Divider />
-
-      <BulkUploadSection />
-
-      <Divider />
-
-      <DataResetSection />
+      <Tabs
+        items={[
+          {
+            key: "general",
+            label: "General",
+            children: <CurrencySection />,
+          },
+          {
+            key: "import-export",
+            label: "Import & Export",
+            children: <BulkUploadSection />,
+          },
+          {
+            key: "danger",
+            label: "⚠ Danger Zone",
+            children: <DataResetSection />,
+          },
+        ]}
+      />
     </Show>
   );
 };
