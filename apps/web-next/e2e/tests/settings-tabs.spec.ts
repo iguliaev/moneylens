@@ -42,7 +42,8 @@ test.describe("Settings Tabs", () => {
 
     // Should see currency section
     await expect(page.getByText(/choose the currency/i)).toBeVisible();
-    await expect(page.getByRole("combobox")).toBeVisible();
+    const currencyCard = page.locator(".ant-card").filter({ hasText: /choose the currency/i });
+    await expect(currencyCard.getByRole("combobox")).toBeVisible();
   });
 
   test("import and export tab shows bulk upload section", async ({ page }) => {

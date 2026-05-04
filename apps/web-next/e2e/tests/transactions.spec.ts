@@ -445,3 +445,46 @@ test.describe("Transactions", () => {
     await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
 });
+
+test.describe("Transaction list filters", () => {
+  let testUser: { email: string; password: string; userId: string };
+
+  test.beforeAll(async () => {
+    testUser = await createTestUser();
+    await seedReferenceDataForUser(testUser.userId);
+  });
+
+  test.afterAll(async () => {
+    await cleanupReferenceDataForUser(testUser.userId);
+    await deleteTestUser(testUser.userId);
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await loginUser(page, testUser.email, testUser.password);
+  });
+
+  test.afterEach(async () => {
+    await cleanupTransactionsForUser(testUser.userId);
+  });
+
+  test("amount range filter shows only transactions within range", async ({ page }) => {
+    const date = e2eCurrentMonthDate();
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "30.00", "Main Account", "low-amount");
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "200.00", "Main Account", "high-amount");
+
+    await page.goto("/transactions");
+    await page.getByRole("radiogroup", { name: "segmented control" }).getByText(/spend/i).click();
+    await page.waitForLoadState("networkidle");
+
+    // Open amount filter dropdown
+    await page.getByRole("columnheader", { name: "Amount" }).locator(".ant-table-filter-trigger").click();
+    await page.getByPlaceholder("Min").fill("100");
+    // Trigger onChange by pressing Tab
+    await page.keyboard.press("Tab");
+    await page.waitForLoadState("networkidle");
+
+    // Only the high-amount row should be visible
+    await expect(page.getByText("high-amount")).toBeVisible();
+    await expect(page.getByText("low-amount")).not.toBeVisible();
+  });
+});
