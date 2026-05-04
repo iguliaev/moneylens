@@ -8,6 +8,7 @@ import {
   DeleteButton,
 } from "@refinedev/antd";
 import { Table, Space } from "antd";
+import { TableSkeleton } from "../TableSkeleton";
 
 export interface Column {
   dataIndex: string;
@@ -36,48 +37,58 @@ export const ResourceList: React.FC<ResourceListProps> = ({
     resource,
   });
 
+  // Always call emptyStateBuilder() to keep React hook call count consistent
+  // (emptyStateBuilder functions internally call useNavigation())
+  const emptyText = emptyStateBuilder ? emptyStateBuilder() : undefined;
+  const colCount = columns.length + (showActions ? 1 : 0);
+  const showSkeleton = tableProps.loading && !tableProps.dataSource?.length;
+
   return (
     <List>
-      <Table
-        {...tableProps}
-        rowKey="id"
-        locale={emptyStateBuilder ? { emptyText: emptyStateBuilder() } : undefined}
-      >
-        {columns.map((column) => (
-          <Table.Column
-            key={column.dataIndex}
-            dataIndex={column.dataIndex}
-            title={column.title}
-            render={column.render}
-          />
-        ))}
-        {showActions && (
-          <Table.Column
-            title="Actions"
-            dataIndex="actions"
-            render={(_, record: BaseRecord) => (
-              <Space>
-                <EditButton hideText size="small" recordItemId={record.id} />
-                <ShowButton hideText size="small" recordItemId={record.id} />
-                <DeleteButton
-                  hideText
-                  size="small"
-                  recordItemId={record.id}
-                  resource={deleteResource}
-                  onSuccess={() => {
-                    if (deleteResource && deleteResource !== resource) {
-                      invalidate({
-                        resource: resource,
-                        invalidates: ["list"],
-                      });
-                    }
-                  }}
-                />
-              </Space>
-            )}
-          />
-        )}
-      </Table>
+      {showSkeleton ? (
+        <TableSkeleton columns={colCount} />
+      ) : (
+        <Table
+          {...tableProps}
+          rowKey="id"
+          locale={emptyText ? { emptyText } : undefined}
+        >
+          {columns.map((column) => (
+            <Table.Column
+              key={column.dataIndex}
+              dataIndex={column.dataIndex}
+              title={column.title}
+              render={column.render}
+            />
+          ))}
+          {showActions && (
+            <Table.Column
+              title="Actions"
+              dataIndex="actions"
+              render={(_, record: BaseRecord) => (
+                <Space>
+                  <EditButton hideText size="small" recordItemId={record.id} />
+                  <ShowButton hideText size="small" recordItemId={record.id} />
+                  <DeleteButton
+                    hideText
+                    size="small"
+                    recordItemId={record.id}
+                    resource={deleteResource}
+                    onSuccess={() => {
+                      if (deleteResource && deleteResource !== resource) {
+                        invalidate({
+                          resource: resource,
+                          invalidates: ["list"],
+                        });
+                      }
+                    }}
+                  />
+                </Space>
+              )}
+            />
+          )}
+        </Table>
+      )}
     </List>
   );
 };
