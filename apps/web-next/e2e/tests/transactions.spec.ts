@@ -444,29 +444,6 @@ test.describe("Transactions", () => {
     await page.getByLabel("Amount").blur();
     await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
-});
-
-test.describe("Transaction list filters", () => {
-  let testUser: { email: string; password: string; userId: string };
-
-  test.beforeAll(async () => {
-    testUser = await createTestUser();
-    await seedReferenceDataForUser(testUser.userId);
-  });
-
-  test.afterAll(async () => {
-    await cleanupReferenceDataForUser(testUser.userId);
-    await deleteTestUser(testUser.userId);
-  });
-
-  test.beforeEach(async ({ page }) => {
-    await loginUser(page, testUser.email, testUser.password);
-  });
-
-  test.afterEach(async () => {
-    await cleanupTransactionsForUser(testUser.userId);
-  });
-
   test("amount range filter shows only transactions within range", async ({ page }) => {
     const date = e2eCurrentMonthDate();
     await createTransactionWithoutTags(page, date, "spend", "Groceries", "30.00", "Main Account", "low-amount");
@@ -486,3 +463,4 @@ test.describe("Transaction list filters", () => {
     await expect(page.getByText("low-amount")).not.toBeVisible();
   });
 });
+

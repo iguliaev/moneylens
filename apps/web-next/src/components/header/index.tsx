@@ -21,7 +21,7 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import React, { useContext, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   TRANSACTION_TYPE_LABELS,
   TYPE_COLORS,
@@ -68,7 +68,7 @@ const renderItem = (
   path: string,
   icon: React.ReactNode
 ): IOption => ({
-  value: label,
+  value: path,
   label: (
     <Link to={path} style={{ display: "flex", alignItems: "center", gap: 8 }}>
       {icon}
@@ -101,7 +101,7 @@ const renderTransactionItem = (
   const meta = [t.category_name, formattedDate].filter(Boolean).join(" · ");
 
   return {
-    value: note,
+    value: `/transactions/show/${t.id}`,
     label: (
       <Link
         to={`/transactions/show/${t.id}`}
@@ -142,6 +142,7 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
   const { data: user } = useGetIdentity<IUser>();
   const { mode, setMode } = useContext(ColorModeContext);
   const { currency } = useCurrency();
+  const navigate = useNavigate();
   const screens = useBreakpoint();
   useQuickActions();
 
@@ -169,66 +170,68 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
     queryOptions: { enabled: false },
   });
 
-  // Debounce search → fire all three queries
+  // Extract stable refetch refs so they can be listed as effect deps
+  // without triggering re-runs on every render.
+  const txRefetch = txQuery.refetch;
+  const catRefetch = catQuery.refetch;
+  const bankRefetch = bankQuery.refetch;
+
+  // Debounce search → fire all three queries in parallel, then set results in
+  // a fixed order (Transactions → Categories → Bank Accounts).
+  // The stale flag prevents results from an earlier query populating the
+  // dropdown after a newer query has already started.
   useEffect(() => {
     if (!value.trim()) {
       setOptions([]);
       return;
     }
-    // stale flag: prevents results from an earlier search populating the dropdown
-    // after a newer search has already started (race condition when typing slowly).
     let stale = false;
     const timer = setTimeout(() => {
       setOptions([]);
-      txQuery.refetch().then((res) => {
-        if (stale) return;
-        const items = (res.data?.data ?? []) as ITransactionResult[];
-        if (items.length) {
-          setOptions((prev) => [
-            ...prev,
-            {
+      Promise.all([txRefetch(), catRefetch(), bankRefetch()])
+        .then(([txRes, catRes, bankRes]) => {
+          if (stale) return;
+          const newOptions: IOptionGroup[] = [];
+
+          const txItems = (txRes.data?.data ?? []) as ITransactionResult[];
+          if (txItems.length) {
+            newOptions.push({
               label: renderTitle("Transactions", "/transactions"),
-              options: items.map((t) => renderTransactionItem(t, currency)),
-            },
-          ]);
-        }
-      });
-      catQuery.refetch().then((res) => {
-        if (stale) return;
-        const items = (res.data?.data ?? []) as Array<{ id: string | number; name: string }>;
-        if (items.length) {
-          setOptions((prev) => [
-            ...prev,
-            {
+              options: txItems.map((t) => renderTransactionItem(t, currency)),
+            });
+          }
+
+          const catItems = (catRes.data?.data ?? []) as Array<{ id: string | number; name: string }>;
+          if (catItems.length) {
+            newOptions.push({
               label: renderTitle("Categories", "/categories"),
-              options: items.map((c) =>
+              options: catItems.map((c) =>
                 renderItem(c.name, `/categories/show/${c.id}`, <AppstoreOutlined />)
               ),
-            },
-          ]);
-        }
-      });
-      bankQuery.refetch().then((res) => {
-        if (stale) return;
-        const items = (res.data?.data ?? []) as Array<{ id: string | number; name: string }>;
-        if (items.length) {
-          setOptions((prev) => [
-            ...prev,
-            {
+            });
+          }
+
+          const bankItems = (bankRes.data?.data ?? []) as Array<{ id: string | number; name: string }>;
+          if (bankItems.length) {
+            newOptions.push({
               label: renderTitle("Bank Accounts", "/bank_accounts"),
-              options: items.map((b) =>
+              options: bankItems.map((b) =>
                 renderItem(b.name, `/bank_accounts/show/${b.id}`, <BankOutlined />)
               ),
-            },
-          ]);
-        }
-      });
+            });
+          }
+
+          setOptions(newOptions);
+        })
+        .catch(() => {
+          if (!stale) setOptions([]);
+        });
     }, 300);
     return () => {
       stale = true;
       clearTimeout(timer);
     };
-  }, [value, currency]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [value, currency, txRefetch, catRefetch, bankRefetch]);
 
   const headerStyles: React.CSSProperties = {
     backgroundColor: token.colorBgElevated,
@@ -253,7 +256,10 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
               filterOption={false}
               value={value}
               onSearch={setValue}
-              onSelect={() => setValue("")}
+              onSelect={(path) => {
+                navigate(path);
+                setValue("");
+              }}
             >
               <Input
                 prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
