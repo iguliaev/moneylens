@@ -177,7 +177,7 @@ Settings are grouped into logical tabs: **General** | **Import & Export** | **�
 
 ---
 
-## 11. Loading Skeletons for List Pages
+## 11. Loading Skeletons for List Pages ✅ Done — [PR #169](https://github.com/iguliaev/moneylens/pull/169)
 
 **Priority:** 🟡 Medium Impact / 🔴 High Complexity
 
@@ -187,8 +187,12 @@ Settings are grouped into logical tabs: **General** | **Import & Export** | **�
 ### Improved Experience
 Each list renders skeleton rows during initial load, giving a stable, content-shaped placeholder.
 
-### How to Implement
-Create a `<TableSkeleton columns={N} rows={8} />` component using `<Skeleton.Input>` blocks. Conditionally render when `tableProps.loading && !tableProps.dataSource?.length`.
+### Implementation Notes
+- `src/components/TableSkeleton.tsx` — reusable `<TableSkeleton columns={N} rows={8} />` using `<Skeleton.Input>` blocks inside a real `<table>`.
+- Integrated across all 5 list pages: Transactions (8 cols), Categories (4 cols), Budgets (9 cols), Tags and Bank Accounts via the shared `ResourceList` component.
+- Skeleton shows only on initial load (`tableProps.loading && !tableProps.dataSource?.length`); re-fetches with cached data keep the table visible.
+- Segmented controls (Transactions, Categories) remain visible during skeleton load.
+- `getXxxEmptyState()` calls hoisted unconditionally before any conditional rendering to satisfy React Rules of Hooks (these functions call `useNavigation()` internally).
 
 ---
 
@@ -206,6 +210,6 @@ Create a `<TableSkeleton columns={N} rows={8} />` component using `<Skeleton.Inp
 | 8 | Budget list: inline progress column | 🟡 Medium | 🟡 Medium | ~30 lines |
 | 9 | Empty states with CTA | 🟡 Medium | 🟡 Medium | ~60 lines |
 | 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines | ✅ PR #167 |
-| 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines |
+| 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines | ✅ PR #169 |
 
 **Items 1–3** can ship in a single PR in under an hour. **Items 4–7** are self-contained and can be parallelised. **Items 8–11** suit a dedicated UX sprint.
