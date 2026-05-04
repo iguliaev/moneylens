@@ -1,9 +1,11 @@
 import React from "react";
 import { Skeleton, Table } from "antd";
+import type { TablePaginationConfig } from "antd";
 
 interface TableSkeletonProps {
   columns: number;
   rows?: number;
+  pagination?: false | TablePaginationConfig;
 }
 
 const fakeColumns = (count: number) =>
@@ -22,11 +24,12 @@ const fakeRows = (count: number) =>
 export const TableSkeleton: React.FC<TableSkeletonProps> = ({
   columns,
   rows = 8,
+  pagination = false,
 }) => (
   <Table
     dataSource={fakeRows(rows)}
     columns={fakeColumns(columns)}
-    pagination={false}
+    pagination={pagination}
     rowKey="key"
   />
 );

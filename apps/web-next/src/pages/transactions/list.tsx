@@ -115,7 +115,7 @@ export const TransactionList = () => {
         onChange={(value) => setTransactionType(value as string)}
       />
       {tableProps.loading && !tableProps.dataSource?.length ? (
-        <TableSkeleton columns={8} />
+        <TableSkeleton columns={7} />
       ) : (
       <Table {...tableProps} rowKey="id" locale={{ emptyText: transactionEmptyState }}>
         <Table.Column
