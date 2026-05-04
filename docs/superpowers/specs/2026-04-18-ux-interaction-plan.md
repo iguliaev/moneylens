@@ -66,20 +66,47 @@ Categories has a recognisable icon, giving the sidebar a uniform, professional l
 
 
 
-## 5. Full-Text Search in Transaction List (Notes / Amount Range)
+## 5. Full-Text Search in Transaction List (Notes / Amount Range) ✅ Done — [PR #172](https://github.com/iguliaev/moneylens/pull/172)
 
 **Priority:** 🔴 High Impact / 🟡 Medium Complexity
 
 ### Current Experience
 Column-level filter dropdowns exist for date, category, amount (exact match), bank account, and tags — but **no free-text search** on `notes`, and the amount filter is useless as an exact match.
 
-### Improved Experience
-A search bar above the table filters across `notes` using `containsi`. Amount filter becomes a min/max range.
+### Implemented Experience
+- Amount filter replaced with a **min/max range** (`operator: "between"`) matching the existing date range pattern.
+- Notes full-text search added as `Input.Search` in `<List headerButtons>` (debounced 400ms, `contains` → Supabase `ilike`). **Later superseded by the global header search (item 12).**
 
-### How to Implement
-- Add a debounced `searchQuery` state and pass it to `useTable` as `{ field: "notes", operator: "containsi", value: searchQuery || undefined }`.
-- Render `<Input.Search>` in the `<List headerButtons>` slot.
-- Replace the `<InputNumber>` in the amount filter with two `<InputNumber>` fields (Min/Max) using `operator: "between"` — mirroring the existing date range pattern.
+### Implementation Notes
+- `apps/web-next/src/pages/transactions/list.tsx` — `searchQuery` state + debounce `useEffect` + `Input.Search` in headerButtons; amount column replaced with Min/Max `InputNumber` pair.
+- `contains` operator maps to Supabase `ilike` (case-insensitive) in the Refine data provider — `containsi` is not in Refine's TypeScript union.
+- E2E coverage added in `transactions.spec.ts` (`"Transaction list filters"` describe block).
+
+---
+
+## 12. Global Header Search ✅ Done — [PR #173](https://github.com/iguliaev/moneylens/pull/173)
+
+**Priority:** 🔴 High Impact / 🟡 Medium Complexity
+
+### Current Experience
+After item 5, notes search lived in the transaction list header only, scoped to a single resource.
+
+### Improved Experience
+A global `AutoComplete` search bar in the app header (finefoods-antd pattern) searches across **Transactions** (notes), **Categories** (name), and **Bank Accounts** (name) simultaneously. Results appear as grouped options with "View all →" links; clicking a result navigates to the record's show page.
+
+Each **transaction** result shows a rich two-line layout:
+- Top row: note (bold) · formatted amount (active currency) · colour-coded type tag (Earn / Spend / Save)
+- Bottom row: category name · formatted date
+
+**Categories** and **Bank Accounts** keep a single-line format (name only).
+
+### Implementation Notes
+- `src/components/header/index.tsx` — Header restructured to `Row`/`Col`; `AutoComplete` + `Input` (SearchOutlined prefix) on the left, hidden on `xs`.
+- Three lazy `useList` hooks (`queryOptions: { enabled: false }`); a single debounced `useEffect` (300ms) calls `query.refetch()` on each.
+- Results grouped: `FileTextOutlined` Transactions → `/transactions/show/:id`, `AppstoreOutlined` Categories → `/categories/show/:id`, `BankOutlined` Bank Accounts → `/bank_accounts/show/:id`.
+- **Race condition fix:** a `stale` boolean is set in the `useEffect` cleanup alongside `clearTimeout`. In-flight `.then()` callbacks check `if (stale) return` before calling `setOptions`, preventing results from earlier (broader) queries from polluting the dropdown when a user types slowly.
+- `renderTransactionItem` helper renders the rich layout using `formatCurrency` + `useCurrency()`, `TYPE_COLORS`, and `TRANSACTION_TYPE_LABELS` from existing constants.
+- `Input.Search` removed from `list.tsx` headerButtons; notes-search E2E tests removed; settings combobox E2E test scoped to currency card to fix ambiguity.
 
 ---
 
@@ -191,12 +218,13 @@ Each list renders skeleton rows during initial load, giving a stable, content-sh
 | 2 | Categories sidebar icon | 🔴 High | 🟢 Low | 3 lines | ✅ [PR #155](https://github.com/iguliaev/moneylens/pull/155) |
 | 3 | Budget threshold alerts (80%/100%) | 🔴 High | 🟢 Low | ~30 lines | ✅ [PR #156](https://github.com/iguliaev/moneylens/pull/156) |
 | 4 | "All Transactions" segmented option | ~~🔴 High~~ | ~~🟡 Medium~~ | ~~~40 lines~~ | 🚫 Won't Do |
-| 5 | Notes full-text search + amount range | 🔴 High | 🟡 Medium | ~50 lines | |
+| 5 | Notes full-text search + amount range | 🔴 High | 🟡 Medium | ~50 lines | ✅ [PR #172](https://github.com/iguliaev/moneylens/pull/172) |
 | 6 | KBar quick-add transaction action | 🟡 Medium | 🟢 Low | ~20 lines | ✅ [PR #157](https://github.com/iguliaev/moneylens/pull/157) |
 | 7 | Transaction show: Skeleton loading | 🟡 Medium | 🟢 Low | ~10 lines | ✅ [PR #162](https://github.com/iguliaev/moneylens/pull/162) |
 | 8 | Budget list: inline progress column | 🟡 Medium | 🟡 Medium | ~30 lines | ✅ [PR #156](https://github.com/iguliaev/moneylens/pull/156) |
 | 9 | Empty states with CTA | 🟡 Medium | 🟡 Medium | ~60 lines | ✅ [PR #164](https://github.com/iguliaev/moneylens/pull/164) |
 | 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines | ✅ [PR #167](https://github.com/iguliaev/moneylens/pull/167) |
 | 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines | ✅ [PR #169](https://github.com/iguliaev/moneylens/pull/169) |
+| 12 | Global header search (AutoComplete) | 🔴 High | 🟡 Medium | ~180 lines | ✅ [PR #173](https://github.com/iguliaev/moneylens/pull/173) |
 
 **Items 1–3** can ship in a single PR in under an hour. **Items 4–7** are self-contained and can be parallelised. **Items 8–11** suit a dedicated UX sprint.
