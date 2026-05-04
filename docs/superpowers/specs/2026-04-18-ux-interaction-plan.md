@@ -143,7 +143,7 @@ A **"Progress"** column renders a compact `<Progress>` bar with colour coding (m
 
 ---
 
-## 9. Empty States with Custom CTAs
+## 9. Empty States with Custom CTAs ✅ Done — [PR #164](https://github.com/iguliaev/moneylens/pull/164)
 
 **Priority:** 🟡 Medium Impact / 🟡 Medium Complexity
 
@@ -153,8 +153,10 @@ All list pages show Ant Design's default `<Empty description="No Data" />` — n
 ### Improved Experience
 Each list page shows a tailored empty state with a contextual CTA ("Add Transaction", "Create Budget", etc.).
 
-### How to Implement
-Create a reusable `<EmptyState title description actionLabel onAction />` component in `src/components/EmptyState.tsx`, using AntD's `<Empty>` with the CTA wired to Refine's `useNavigation().create`. Pass it via each `<Table>`'s `locale.emptyText` prop.
+### Implementation Notes
+- `src/components/EmptyState.tsx` — exports reusable `<EmptyState title description actionLabel onAction />` component using AntD's `<Empty>`.
+- The CTA is wired to Refine's `useNavigation().create` for navigation to create pages.
+- Integrated across all list pages (Transactions, Categories, Budgets, Bank Accounts, Tags) via `<Table>` `locale.emptyText` prop.
 
 ---
 
