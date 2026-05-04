@@ -10,6 +10,7 @@ import {
   Row,
   Space,
   Switch,
+  Tag,
   theme,
   Typography,
 } from "antd";
@@ -21,8 +22,15 @@ import {
 } from "@ant-design/icons";
 import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router";
+import {
+  TRANSACTION_TYPE_LABELS,
+  TYPE_COLORS,
+} from "../../constants/transactionTypes";
+import type { TransactionType } from "../../constants/transactionTypes";
 import { ColorModeContext } from "../../contexts/color-mode";
+import { useCurrency } from "../../contexts/currency";
 import { useQuickActions } from "../../hooks/useQuickActions";
+import { formatCurrency } from "../../utility/currency";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -69,12 +77,71 @@ const renderItem = (
   ),
 });
 
+interface ITransactionResult {
+  id: string | number;
+  notes?: string;
+  date?: string;
+  amount?: number;
+  type?: TransactionType;
+  category_name?: string;
+}
+
+const renderTransactionItem = (
+  t: ITransactionResult,
+  currency: string
+): IOption => {
+  const note = t.notes ?? `Transaction #${t.id}`;
+  const formattedDate = t.date
+    ? new Date(t.date).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+  const meta = [t.category_name, formattedDate].filter(Boolean).join(" · ");
+
+  return {
+    value: note,
+    label: (
+      <Link
+        to={`/transactions/show/${t.id}`}
+        style={{ display: "flex", alignItems: "flex-start", gap: 8 }}
+      >
+        <FileTextOutlined style={{ marginTop: 3 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            <Text strong ellipsis style={{ flex: 1 }}>{note}</Text>
+            <Space size={4}>
+              {t.amount != null && (
+                <Text type="secondary" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                  {formatCurrency(t.amount, currency)}
+                </Text>
+              )}
+              {t.type && (
+                <Tag color={TYPE_COLORS[t.type]} style={{ margin: 0, fontSize: 11 }}>
+                  {TRANSACTION_TYPE_LABELS[t.type]}
+                </Tag>
+              )}
+            </Space>
+          </div>
+          {meta && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {meta}
+            </Text>
+          )}
+        </div>
+      </Link>
+    ),
+  };
+};
+
 export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
   sticky = true,
 }) => {
   const { token } = useToken();
   const { data: user } = useGetIdentity<IUser>();
   const { mode, setMode } = useContext(ColorModeContext);
+  const { currency } = useCurrency();
   const screens = useBreakpoint();
   useQuickActions();
 
@@ -115,19 +182,13 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
       setOptions([]);
       txQuery.refetch().then((res) => {
         if (stale) return;
-        const items = (res.data?.data ?? []) as Array<{ id: string | number; notes?: string }>;
+        const items = (res.data?.data ?? []) as ITransactionResult[];
         if (items.length) {
           setOptions((prev) => [
             ...prev,
             {
               label: renderTitle("Transactions", "/transactions"),
-              options: items.map((t) =>
-                renderItem(
-                  t.notes ?? `Transaction #${t.id}`,
-                  `/transactions/show/${t.id}`,
-                  <FileTextOutlined />
-                )
-              ),
+              options: items.map((t) => renderTransactionItem(t, currency)),
             },
           ]);
         }
@@ -167,7 +228,7 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
       stale = true;
       clearTimeout(timer);
     };
-  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [value, currency]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const headerStyles: React.CSSProperties = {
     backgroundColor: token.colorBgElevated,
