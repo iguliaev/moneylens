@@ -96,40 +96,32 @@ export function usePeriodStats({
     { field: dateField, operator: "lt" as const, value: prevEnd },
   ];
 
-  const { query: typeQuery } = useList({
+  const { query: typeQuery } = useList<MonthlyTotalsRow | YearlyTotalsRow>({
     resource: typesResource,
     filters: currentFilters,
     pagination: { mode: "off" },
   });
 
-  const { query: categoryQuery } = useList({
+  const { query: categoryQuery } = useList<
+    MonthlyCategoryTotalsRow | YearlyCategoryTotalsRow
+  >({
     resource: categoriesResource,
     filters: currentFilters,
     pagination: { mode: "off" },
   });
 
-  const { query: prevTypeQuery } = useList({
-    resource: typesResource,
-    filters: prevFilters,
-    pagination: { mode: "off" },
-  });
+  const { query: prevTypeQuery } = useList<MonthlyTotalsRow | YearlyTotalsRow>(
+    {
+      resource: typesResource,
+      filters: prevFilters,
+      pagination: { mode: "off" },
+    }
+  );
 
-  const typeSummary = mapTypeSummary(
-    (typeQuery.data?.data ?? []) as (MonthlyTotalsRow | YearlyTotalsRow)[]
-  );
-  const categorySummary = mapCategorySummary(
-    (categoryQuery.data?.data ?? []) as (
-      | MonthlyCategoryTotalsRow
-      | YearlyCategoryTotalsRow
-    )[]
-  );
+  const typeSummary = mapTypeSummary(typeQuery.data?.data ?? []);
+  const categorySummary = mapCategorySummary(categoryQuery.data?.data ?? []);
   const previousTypeSummary = prevTypeQuery.data
-    ? mapTypeSummary(
-        (prevTypeQuery.data.data ?? []) as (
-          | MonthlyTotalsRow
-          | YearlyTotalsRow
-        )[]
-      )
+    ? mapTypeSummary(prevTypeQuery.data.data ?? [])
     : null;
 
   const loading =
