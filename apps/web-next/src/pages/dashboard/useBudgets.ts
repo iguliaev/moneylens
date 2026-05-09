@@ -17,6 +17,7 @@ export interface BudgetProgress {
 export const useBudgets = () => {
   const { query } = useList<BudgetProgress>({
     resource: "budgets_with_linked",
+    sorters: [{ field: "created_at", order: "desc" }],
     pagination: { mode: "off" },
   });
 
@@ -26,5 +27,5 @@ export const useBudgets = () => {
     current_amount: Number(b.current_amount),
   }));
 
-  return { budgets, loading: query.isLoading, refresh: query.refetch };
+  return { budgets, loading: query.isFetching, refresh: query.refetch };
 };
