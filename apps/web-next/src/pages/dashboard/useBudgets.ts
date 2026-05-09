@@ -1,7 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import { message } from "antd";
-import { supabaseClient } from "../../utility";
-import { TransactionType } from "../../constants/transactionTypes";
+import { useList } from "@refinedev/core";
+import { type TransactionType } from "../../constants/transactionTypes";
 
 export interface BudgetProgress {
   id: string;
@@ -17,30 +15,16 @@ export interface BudgetProgress {
 }
 
 export const useBudgets = () => {
-  const [budgets, setBudgets] = useState<BudgetProgress[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { query } = useList<BudgetProgress>({
+    resource: "budgets_with_linked",
+    pagination: { mode: "off" },
+  });
 
-  const fetchBudgets = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabaseClient.rpc("get_budget_progress");
-    if (error) {
-      message.error("Failed to load budgets");
-      console.error("get_budget_progress error:", error);
-    } else if (data) {
-      setBudgets(
-        (data as BudgetProgress[]).map((b) => ({
-          ...b,
-          target_amount: Number(b.target_amount),
-          current_amount: Number(b.current_amount),
-        }))
-      );
-    }
-    setLoading(false);
-  }, []);
+  const budgets = (query.data?.data ?? []).map((b) => ({
+    ...b,
+    target_amount: Number(b.target_amount),
+    current_amount: Number(b.current_amount),
+  }));
 
-  useEffect(() => {
-    fetchBudgets();
-  }, [fetchBudgets]);
-
-  return { budgets, loading, refresh: fetchBudgets };
+  return { budgets, loading: query.isLoading, refresh: query.refetch };
 };

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Card, Col, Row, Segmented, Select, Typography, message } from "antd";
+import { Card, Col, Row, Segmented, Select, Typography } from "antd";
 import {
   BarChart,
   Bar,
@@ -13,7 +13,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import dayjs from "dayjs";
-import { supabaseClient } from "../../utility";
 import { useCurrency } from "../../contexts/currency";
 import {
   TRANSACTION_TYPES,
@@ -21,6 +20,12 @@ import {
   TYPE_VALUE_COLORS,
   TransactionType,
 } from "../../constants/transactionTypes";
+import { useChartsData } from "../../hooks/useChartsData";
+import type {
+  TrendPoint,
+  CategorySpendPoint,
+  TagSpendPoint,
+} from "../../hooks/useChartsData";
 
 const { Text, Title } = Typography;
 
@@ -46,34 +51,7 @@ const monthOptions = Array.from({ length: 12 }, (_, i) => ({
   value: i,
 }));
 
-// === Types ===
-interface TrendPoint {
-  month: string;
-  earn: number;
-  spend: number;
-  save: number;
-}
-
-interface TagTotal {
-  tag: string;
-  type: TransactionType;
-  total: number;
-}
-
-interface CategorySpendPoint {
-  monthKey: string; // sort key "2025-01"
-  category: string;
-  total: number;
-}
-
-interface TagSpendPoint {
-  monthKey: string;
-  tag: string;
-  total: number;
-}
-
-const isTransactionType = (v: string | null): v is TransactionType =>
-  v !== null && Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
+// === Sub-components ===
 
 const getMonthKeysInRange = (startDate: string, endDate: string): string[] => {
   const monthKeys: string[] = [];
@@ -89,124 +67,6 @@ const getMonthKeysInRange = (startDate: string, endDate: string): string[] => {
 };
 
 const formatMonthLabel = (month: string) => dayjs(month).format("MMM YY");
-
-// === Data hook ===
-const useChartsData = (startDate: string, endDate: string) => {
-  const [trend, setTrend] = useState<TrendPoint[]>([]);
-  const [tags, setTags] = useState<TagTotal[]>([]);
-  const [categorySpendByMonth, setCategorySpendByMonth] = useState<
-    CategorySpendPoint[]
-  >([]);
-  const [tagSpendByMonth, setTagSpendByMonth] = useState<TagSpendPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-
-    const fetchAll = async () => {
-      try {
-        const [trendRes, catRes, tagRes] = await Promise.all([
-          supabaseClient
-            .from("view_monthly_totals")
-            .select("month, type, total")
-            .gte("month", startDate)
-            .lt("month", endDate)
-            .order("month", { ascending: true }),
-          supabaseClient
-            .from("view_monthly_category_totals")
-            .select("month, category, type, total")
-            .gte("month", startDate)
-            .lt("month", endDate),
-          supabaseClient
-            .from("view_monthly_tagged_type_totals")
-            .select("month, tags, type, total")
-            .gte("month", startDate)
-            .lt("month", endDate),
-        ]);
-
-        if (trendRes.error) throw trendRes.error;
-        if (catRes.error) throw catRes.error;
-        if (tagRes.error) throw tagRes.error;
-
-        if (cancelled) return;
-
-        const trendMonthKeys = getMonthKeysInRange(startDate, endDate);
-        const trendMap: Record<string, TrendPoint> = Object.fromEntries(
-          trendMonthKeys.map((monthKey) => [
-            monthKey,
-            {
-              month: formatMonthLabel(`${monthKey}-01`),
-              earn: 0,
-              spend: 0,
-              save: 0,
-            },
-          ])
-        );
-
-        for (const row of trendRes.data ?? []) {
-          if (!row.month || !isTransactionType(row.type)) continue;
-          const monthKey = dayjs(row.month).format("YYYY-MM");
-          if (!trendMap[monthKey]) continue;
-          trendMap[monthKey][row.type] += Number(row.total) || 0;
-        }
-        setTrend(trendMonthKeys.map((monthKey) => trendMap[monthKey]));
-
-        const catSpend: CategorySpendPoint[] = [];
-        for (const row of catRes.data ?? []) {
-          if (!isTransactionType(row.type)) continue;
-
-          // Monthly spend breakdown for trendline
-          if (row.type === TRANSACTION_TYPES.SPEND && row.month) {
-            catSpend.push({
-              monthKey: dayjs(row.month).format("YYYY-MM"),
-              category: row.category ?? "Unknown",
-              total: Number(row.total) || 0,
-            });
-          }
-        }
-        setCategorySpendByMonth(catSpend);
-
-        // Explode tags array and aggregate per tag+type
-        const tagMap: Record<string, TagTotal> = {};
-        const tagSpend: TagSpendPoint[] = [];
-        for (const row of tagRes.data ?? []) {
-          if (!isTransactionType(row.type) || !row.tags?.length) continue;
-          for (const tag of row.tags) {
-            const key = `${row.type}__${tag}`;
-            if (!tagMap[key]) tagMap[key] = { tag, type: row.type, total: 0 };
-            tagMap[key].total += Number(row.total) || 0;
-
-            // Monthly spend breakdown for trendline
-            if (row.type === TRANSACTION_TYPES.SPEND && row.month) {
-              tagSpend.push({
-                monthKey: dayjs(row.month).format("YYYY-MM"),
-                tag,
-                total: Number(row.total) || 0,
-              });
-            }
-          }
-        }
-        setTags(Object.values(tagMap).sort((a, b) => b.total - a.total));
-        setTagSpendByMonth(tagSpend);
-      } catch (err) {
-        console.error("Error fetching chart data:", err);
-        if (!cancelled) message.error("Failed to load chart data");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchAll();
-    return () => {
-      cancelled = true;
-    };
-  }, [startDate, endDate]);
-
-  return { trend, tags, categorySpendByMonth, tagSpendByMonth, loading };
-};
-
-// === Sub-components ===
 
 const CurrencyTooltipFormatter =
   (currency: string) =>
