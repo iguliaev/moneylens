@@ -26,7 +26,7 @@ import {
   usePeriodStats,
   type CategorySummary,
   type TypeSummary,
-} from "../../hooks/usePeriodStats";
+} from "../../hooks";
 
 const { Text, Title } = Typography;
 

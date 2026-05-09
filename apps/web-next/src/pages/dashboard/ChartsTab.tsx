@@ -24,12 +24,12 @@ import {
   getMonthKeysInRange,
   formatMonthLabel,
 } from "../../utility/monthHelpers";
-import { useChartsData } from "../../hooks/useChartsData";
+import { useChartsData } from "../../hooks";
 import type {
   TrendPoint,
   CategorySpendPoint,
   TagSpendPoint,
-} from "../../hooks/useChartsData";
+} from "../../hooks";
 
 const { Text, Title } = Typography;
 
