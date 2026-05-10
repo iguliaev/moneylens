@@ -1,13 +1,14 @@
 import { useMemo } from "react";
 import { Create, useForm, useSelect } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
-import { Form, DatePicker, Select, InputNumber, Input, message } from "antd";
+import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
-import { supabaseClient } from "../../utility";
+import { useTransactionForm } from "../../hooks";
 
 export const TransactionCreate = () => {
   const { formProps, saveButtonProps } = useForm();
+  const { handleFinish, isLoading } = useTransactionForm({ mode: "create" });
 
   const type = Form.useWatch("type", formProps.form);
 
@@ -50,33 +51,13 @@ export const TransactionCreate = () => {
     sorters: [{ field: "name", order: "asc" }],
   });
 
-  // Custom onFinish to handle tags via RPC after transaction is created
-  const handleFinish = async (values: Record<string, unknown>) => {
-    const { tag_ids, ...transactionValues } = values;
-
-    // Create the transaction and get the new ID
-    const result = await formProps.onFinish?.(transactionValues);
-
-    // Then set tags via RPC if we have a transaction ID
-    const transactionId = (result as unknown as { data?: { id?: string } })
-      ?.data?.id;
-    if (transactionId && Array.isArray(tag_ids) && tag_ids.length > 0) {
-      try {
-        await supabaseClient.rpc("set_transaction_tags", {
-          p_transaction_id: transactionId,
-          p_tag_ids: tag_ids,
-        });
-      } catch (error) {
-        console.error("Failed to set transaction tags:", error);
-        // Optionally show user-friendly error message
-        message.error("Transaction created but failed to set tags");
-      }
-    }
-  };
-
   return (
-    <Create saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
+    <Create saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
+      <Form
+        {...formProps}
+        layout="vertical"
+        onFinish={handleFinish as (values: unknown) => void}
+      >
         <Form.Item
           label="Date"
           name={["date"]}

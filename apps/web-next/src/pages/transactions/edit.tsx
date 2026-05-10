@@ -1,19 +1,23 @@
 import { useEffect, useMemo } from "react";
 import { Edit, useForm, useSelect } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
-import { Form, DatePicker, Select, InputNumber, Input, message } from "antd";
+import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_OPTIONS,
   TransactionType,
 } from "../../constants/transactionTypes";
-import { supabaseClient } from "../../utility";
+import { useTransactionForm } from "../../hooks";
 
 export const TransactionEdit = () => {
   const { formProps, saveButtonProps, query, id, formLoading } = useForm({
     meta: {
       select: "*, transaction_tags(tag_id), category:categories(id, name)",
     },
+  });
+  const { handleFinish, isLoading } = useTransactionForm({
+    mode: "edit",
+    id: id?.toString(),
   });
 
   const transactionsData = query?.data?.data;
@@ -82,34 +86,12 @@ export const TransactionEdit = () => {
     }
   }, [currentTagIds, formProps.form]);
 
-  // Custom onFinish to handle tags via RPC
-  const handleFinish = async (values: Record<string, unknown>) => {
-    const { tag_ids, ...transactionValues } = values;
-
-    // First save the transaction (via default form behavior)
-    await formProps.onFinish?.(transactionValues);
-
-    // Then update tags via RPC
-    if (id) {
-      try {
-        await supabaseClient.rpc("set_transaction_tags", {
-          p_transaction_id: id as string,
-          p_tag_ids: tag_ids ?? [],
-        });
-      } catch (error) {
-        console.error("Failed to set transaction tags:", error);
-        // Optionally show user-friendly error message
-        message.error("Transaction saved but failed to update tags");
-      }
-    }
-  };
-
   return (
-    <Edit saveButtonProps={saveButtonProps}>
+    <Edit saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
       <Form
         {...formProps}
         layout="vertical"
-        onFinish={handleFinish}
+        onFinish={handleFinish as (values: unknown) => void}
         data-testid="transaction-edit-form"
         aria-busy={formLoading}
       >
