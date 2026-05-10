@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useInvalidate, useNavigation, useNotification } from "@refinedev/core";
+import { useNavigate } from "react-router";
+import { useInvalidate, useNotification } from "@refinedev/core";
 import { supabaseClient } from "../utility";
 
 type Mode = "create" | "edit";
@@ -22,14 +23,27 @@ interface TransactionFormValues {
 export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
   const { open: openNotification } = useNotification();
   const invalidate = useInvalidate();
-  const { list } = useNavigation();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleFinish(values: TransactionFormValues) {
     setIsLoading(true);
     try {
-      const { tag_ids, ...transactionFields } = values;
+      const { tag_ids, ...rawFields } = values;
       const tagIds: string[] = tag_ids ?? [];
+
+      // DatePicker returns a dayjs object — serialize to YYYY-MM-DD for the RPC
+      const transactionFields = {
+        ...rawFields,
+        date:
+          rawFields.date &&
+          typeof (rawFields.date as unknown as { format?: unknown }).format ===
+            "function"
+            ? (rawFields.date as unknown as { format: (f: string) => string }).format(
+                "YYYY-MM-DD"
+              )
+            : rawFields.date,
+      };
 
       let error: { message: string } | null = null;
 
@@ -55,12 +69,18 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
           message: "Failed to save transaction",
           description: error.message,
         });
+        setIsLoading(false);
         return;
       }
 
       await invalidate({ resource: "transactions", invalidates: ["list"] });
-      list("transactions");
-    } finally {
+      navigate("/transactions");
+    } catch (err) {
+      openNotification?.({
+        type: "error",
+        message: "Failed to save transaction",
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
       setIsLoading(false);
     }
   }

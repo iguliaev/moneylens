@@ -14,6 +14,7 @@ export const TransactionEdit = () => {
     meta: {
       select: "*, transaction_tags(tag_id), category:categories(id, name)",
     },
+    warnWhenUnsavedChanges: false,
   });
   const { handleFinish, isLoading } = useTransactionForm({
     mode: "edit",

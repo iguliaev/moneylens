@@ -7,7 +7,9 @@ import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
 
 export const TransactionCreate = () => {
-  const { formProps, saveButtonProps } = useForm();
+  const { formProps, saveButtonProps } = useForm({
+    warnWhenUnsavedChanges: false,
+  });
   const { handleFinish, isLoading } = useTransactionForm({ mode: "create" });
 
   const type = Form.useWatch("type", formProps.form);

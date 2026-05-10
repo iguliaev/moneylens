@@ -333,31 +333,151 @@ test.describe("Transactions", () => {
     });
   });
 
-  test.skip("user can add tags to a transaction", async ({ page }) => {
+  test("user can create a transaction with a tag", async ({ page }) => {
+    const date = e2eCurrentMonthDate();
+    const note = `txn-with-tag-${Date.now()}-${Math.random()
+      .toString(16)
+      .slice(2, 8)}`;
+
     await page.goto("/transactions/create");
 
-    // Create transaction with tags
-    await page.getByLabel("Type").selectOption("spend");
-    await page.getByLabel("Date").fill(e2eCurrentMonthDate());
-    await page.getByLabel("Category").selectOption("Groceries");
-    await page.getByLabel("Amount").fill("50.00");
-    await page.getByLabel("Bank Account").selectOption("Main Account");
+    // Fill date
+    await page.getByLabel("Date").fill(date);
 
-    // Open tags dropdown (multiple select)
-    await page.getByLabel("Tags").click();
+    // Select transaction type
+    await page.getByRole("combobox", { name: "* Type" }).click();
+    await page.getByTitle(new RegExp("^spend$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^spend$", "i"))
+    ).toBeVisible();
 
-    // Select first tag
-    await page.getByRole("option", { name: "essentials" }).click();
+    // Select category
+    await page.getByRole("combobox", { name: "* Category" }).click();
+    await page.getByTitle(new RegExp("^Groceries$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^Groceries$", "i"))
+    ).toBeVisible();
 
-    // Close dropdown (click elsewhere or press escape)
+    // Fill amount
+    await page.getByLabel("Amount").fill("75.00");
+
+    // Select bank account
+    await page.getByRole("combobox", { name: "* Bank Account" }).click();
+    await page.getByTitle(new RegExp("^Main Account$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^Main Account$", "i"))
+    ).toBeVisible();
+
+    // Select tag (multi-select dropdown)
+    await page.getByRole("combobox", { name: "Tags" }).click();
+    await page.getByTitle(new RegExp("^essentials$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^essentials$", "i"))
+    ).toBeVisible();
     await page.keyboard.press("Escape");
 
-    // Submit
-    await page.getByRole("button", { name: /save|create/i }).click();
+    // Fill notes
+    await page.getByLabel("Notes").fill(note);
 
-    // Verify transaction appears with tags
+    // Submit form
+    await page.getByRole("button", { name: /save/i }).click();
+
+    // Should redirect to transactions list
     await expect(page).toHaveURL(/\/transactions/);
-    await expect(page.getByText("essentials")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Transactions" })
+    ).toBeVisible();
+
+    // Should be on spend tab by default
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(new RegExp("spend", "i"))
+      .click();
+    await page.waitForLoadState("networkidle");
+
+    // Verify the transaction appears in the list with the tag
+    const row = getTransactionRow(page, {
+      note,
+      date,
+      category: "Groceries",
+      amount: "75.00",
+      bankAccount: "Main Account",
+    });
+    await expect(row).toBeVisible({ timeout: 10000 });
+    
+    // Verify the tag is visible in the row
+    await expect(row.getByText("essentials")).toBeVisible();
+  });
+
+  test("user can update tags on a transaction", async ({ page }) => {
+    const originalDate = e2eCurrentMonthDate(15);
+    const originalNote = `txn-tag-update-${Date.now()}-${Math.random()
+      .toString(16)
+      .slice(2, 8)}`;
+
+    // Create a transaction without tags first
+    const row = await createTransactionWithoutTags(
+      page,
+      originalDate,
+      "spend",
+      "Groceries",
+      "100.00",
+      "Main Account",
+      originalNote
+    );
+
+    // Click edit on the created row
+    await row.getByRole("button", { name: "edit" }).click();
+    await expect(page).toHaveURL(/\/transactions\/edit\//);
+    await expect(
+      page.getByRole("heading", { name: "Edit Transaction" })
+    ).toBeVisible();
+
+    // Wait for form to finish loading
+    await waitForFormReady(page, "transaction-edit-form");
+    await page.waitForLoadState("networkidle");
+
+    // Add tags to the transaction
+    await page.getByRole("combobox", { name: "Tags" }).click();
+    await page.getByTitle(new RegExp("^essentials$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^essentials$", "i"))
+    ).toBeVisible();
+    await page.getByTitle(new RegExp("^monthly$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^monthly$", "i"))
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // Save the form
+    await page.getByRole("button", { name: /save/i }).click();
+
+    // Should redirect to transactions list
+    await expect(page).toHaveURL(/\/transactions/);
+    await expect(
+      page.getByRole("heading", { name: "Transactions" })
+    ).toBeVisible();
+
+    // Ensure we're on the spend tab
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(new RegExp("spend", "i"))
+      .click();
+    await page.waitForLoadState("networkidle");
+
+    // Verify the transaction row still exists
+    const updatedRow = getTransactionRow(page, {
+      note: originalNote,
+      date: originalDate,
+      category: "Groceries",
+      amount: "100.00",
+      bankAccount: "Main Account",
+    });
+    await expect(updatedRow).toBeVisible({ timeout: 15000 });
+
+    // Verify both tags are visible in the row
+    await expect(updatedRow.getByText("essentials")).toBeVisible();
+    await expect(updatedRow.getByText("monthly")).toBeVisible();
   });
 
   test("category options change based on transaction type on edit page", async ({
