@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { Edit, useForm, useSelect } from "@refinedev/antd";
-import { useList } from "@refinedev/core";
+import { Edit, useForm, useSelect as useAntSelect } from "@refinedev/antd";
+import { useSelect as useCoreSelect } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import {
@@ -38,7 +38,7 @@ export const TransactionEdit = () => {
 
   // Use useSelect for categories with type filtering
   const { selectProps: categorySelectProps, query: categoriesQuery } =
-    useSelect({
+    useAntSelect({
       resource: "categories",
       optionLabel: "name",
       optionValue: "id",
@@ -58,27 +58,20 @@ export const TransactionEdit = () => {
       },
     });
 
-  const { selectProps: bankAccountSelectProps } = useSelect({
+  const { selectProps: bankAccountSelectProps } = useAntSelect({
     resource: "bank_accounts",
     defaultValue: transactionsData?.bank_account_id,
     optionLabel: "name",
   });
 
   // Fetch all available tags
-  const { query: tagsQuery } = useList({
+  const { options: tagOptions, query: tagsQuery } = useCoreSelect({
     resource: "tags",
+    optionLabel: "name",
+    optionValue: "id",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
   });
-
-  const tagOptions = useMemo(() => {
-    return (
-      tagsQuery.data?.data?.map((tag) => ({
-        label: tag.name as string,
-        value: tag.id as string,
-      })) ?? []
-    );
-  }, [tagsQuery.data]);
 
   // Set initial tag values when transaction data is loaded (including clearing for untagged transactions)
   useEffect(() => {

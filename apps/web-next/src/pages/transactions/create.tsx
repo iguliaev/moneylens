@@ -1,6 +1,5 @@
-import { useMemo } from "react";
-import { Create, useForm, useSelect } from "@refinedev/antd";
-import { useList } from "@refinedev/core";
+import { Create, useForm, useSelect as useAntSelect } from "@refinedev/antd";
+import { useSelect as useCoreSelect } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
@@ -14,7 +13,7 @@ export const TransactionCreate = () => {
 
   const type = Form.useWatch("type", formProps.form);
 
-  const { selectProps: categorySelectProps } = useSelect({
+  const { selectProps: categorySelectProps } = useAntSelect({
     resource: "categories",
     optionLabel: "name",
     pagination: { mode: "off" },
@@ -30,23 +29,15 @@ export const TransactionCreate = () => {
       : undefined,
   });
 
-  // Fetch all available tags
-  const { query: tagsQuery } = useList({
+  const { options: tagOptions, query: tagsQuery } = useCoreSelect({
     resource: "tags",
+    optionLabel: "name",
+    optionValue: "id",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
   });
 
-  const tagOptions = useMemo(() => {
-    return (
-      tagsQuery.data?.data?.map((tag) => ({
-        label: tag.name as string,
-        value: tag.id as string,
-      })) ?? []
-    );
-  }, [tagsQuery.data]);
-
-  const { selectProps: bankAccountSelectProps } = useSelect({
+  const { selectProps: bankAccountSelectProps } = useAntSelect({
     resource: "bank_accounts",
     optionLabel: "name",
     pagination: { mode: "off" },
