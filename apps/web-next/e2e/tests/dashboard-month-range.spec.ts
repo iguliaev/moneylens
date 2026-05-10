@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { createTestUser, deleteTestUser, loginUser } from "../utils/test-helpers";
 
+const chartDataEndpointPattern =
+  /\/rest\/v1\/(view_monthly_totals|view_monthly_category_totals|view_monthly_tagged_type_totals)\b/i;
+
 test.describe("Dashboard month range validation", () => {
   test("charts tab allows single-month range", async ({ page }) => {
     const { email, password, userId } = await createTestUser("dashboard-month-range");
@@ -9,7 +12,9 @@ test.describe("Dashboard month range validation", () => {
       await loginUser(page, email, password);
       await page.getByRole("tab", { name: /charts/i }).click();
 
-      const currentYear = String(new Date().getFullYear());
+      const currentYear = await page.evaluate(() =>
+        String(new Date().getFullYear())
+      );
 
       await page.getByRole("combobox", { name: "From year" }).click();
       await page.getByTitle(currentYear).click();
@@ -35,9 +40,21 @@ test.describe("Dashboard month range validation", () => {
 
     try {
       await loginUser(page, email, password);
-      await page.getByRole("tab", { name: /charts/i }).click();
 
-      const currentYear = String(new Date().getFullYear());
+      let chartRequestCount = 0;
+      page.on("request", (request) => {
+        if (chartDataEndpointPattern.test(request.url())) {
+          chartRequestCount += 1;
+        }
+      });
+
+      await page.getByRole("tab", { name: /charts/i }).click();
+      await page.waitForLoadState("networkidle");
+      const chartRequestCountBeforeInvalidRange = chartRequestCount;
+
+      const currentYear = await page.evaluate(() =>
+        String(new Date().getFullYear())
+      );
 
       await page.getByRole("combobox", { name: "From year" }).click();
       await page.getByTitle(currentYear).click();
@@ -55,6 +72,12 @@ test.describe("Dashboard month range validation", () => {
       await expect(
         page.getByText("Income vs Spending vs Savings")
       ).not.toBeVisible();
+      await expect
+        .poll(() => chartRequestCount, {
+          message: "invalid chart range should suppress chart data network requests",
+          timeout: 2000,
+        })
+        .toBe(chartRequestCountBeforeInvalidRange);
     } finally {
       await deleteTestUser(userId);
     }

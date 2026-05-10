@@ -7,6 +7,7 @@ import {
 
 test.describe("Settings Tabs", () => {
   let testUser: { email: string; password: string; userId: string };
+  const dangerZoneTabName = /danger zone/i;
 
   test.beforeAll(async () => {
     testUser = await createTestUser();
@@ -23,10 +24,12 @@ test.describe("Settings Tabs", () => {
   test("settings page displays three tabs", async ({ page }) => {
     await page.goto("/settings");
 
-    // Verify all three tabs are visible
+    const tabs = page.getByRole("tab");
+    await expect(tabs).toHaveCount(3);
+
     const generalTab = page.getByRole("tab", { name: /^general$/i });
     const importExportTab = page.getByRole("tab", { name: /import.*export/i });
-    const dangerZoneTab = page.getByRole("tab", { name: /danger zone/i });
+    const dangerZoneTab = page.getByRole("tab", { name: dangerZoneTabName });
 
     await expect(generalTab).toBeVisible();
     await expect(importExportTab).toBeVisible();
@@ -66,7 +69,7 @@ test.describe("Settings Tabs", () => {
     await page.goto("/settings");
 
     // Click on Danger Zone tab
-    const dangerZoneTab = page.getByRole("tab", { name: /danger zone/i });
+    const dangerZoneTab = page.getByRole("tab", { name: dangerZoneTabName });
     await dangerZoneTab.click();
 
     // Tab should be active
@@ -93,7 +96,7 @@ test.describe("Settings Tabs", () => {
     await expect(page.getByText(/choose the currency/i)).not.toBeVisible();
 
     // Switch to Danger Zone
-    const dangerZoneTab = page.getByRole("tab", { name: /danger zone/i });
+    const dangerZoneTab = page.getByRole("tab", { name: dangerZoneTabName });
     await dangerZoneTab.click();
     await expect(dangerZoneTab).toHaveAttribute("aria-selected", "true");
     await expect(page.getByText(/permanently delete all your data/i)).toBeVisible();
@@ -117,7 +120,7 @@ test.describe("Settings Tabs", () => {
     await expect(resetButton).not.toBeVisible();
 
     // Reset button should only be visible after explicitly clicking Danger Zone tab
-    const dangerZoneTab = page.getByRole("tab", { name: /danger zone/i });
+    const dangerZoneTab = page.getByRole("tab", { name: dangerZoneTabName });
     await dangerZoneTab.click();
     await expect(resetButton).toBeVisible();
   });
