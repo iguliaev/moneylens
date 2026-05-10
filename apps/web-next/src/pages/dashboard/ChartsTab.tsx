@@ -86,7 +86,7 @@ export const ChartsTab = () => {
           type="error"
           showIcon
           message="Failed to load chart data"
-          description={error}
+          description={error.message}
         />
       )}
 

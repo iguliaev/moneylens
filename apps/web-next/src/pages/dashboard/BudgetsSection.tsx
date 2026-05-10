@@ -64,7 +64,7 @@ export const BudgetsSection = () => {
           type="error"
           showIcon
           message="Failed to load budgets"
-          description={error}
+          description={error.message}
           style={{ marginBottom: 16 }}
         />
       )}

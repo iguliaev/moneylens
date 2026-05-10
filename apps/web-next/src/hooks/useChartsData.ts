@@ -52,18 +52,18 @@ type MonthlyTaggedTypeTotalsRow = Pick<
 const isTransactionType = (v: string | null): v is TransactionType =>
   v !== null && Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
 
-const getErrorMessage = (error: unknown): string | null => {
+const toError = (error: unknown, fallbackMessage: string): Error | null => {
   if (!error) return null;
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) return error;
   if (
     typeof error === "object" &&
     error !== null &&
     "message" in error &&
     typeof (error as { message: unknown }).message === "string"
   ) {
-    return (error as { message: string }).message;
+    return new Error((error as { message: string }).message);
   }
-  return "Failed to load chart data.";
+  return new Error(fallbackMessage);
 };
 
 export function useChartsData(startDate: string, endDate: string) {
@@ -94,9 +94,9 @@ export function useChartsData(startDate: string, endDate: string) {
   const loading =
     trendQuery.isLoading || catQuery.isLoading || tagQuery.isLoading;
   const error =
-    getErrorMessage(trendQuery.error) ??
-    getErrorMessage(catQuery.error) ??
-    getErrorMessage(tagQuery.error);
+    toError(trendQuery.error, "Failed to load chart data.") ??
+    toError(catQuery.error, "Failed to load chart data.") ??
+    toError(tagQuery.error, "Failed to load chart data.");
 
   const trendMonthKeys = useMemo(
     () => getMonthKeysInRange(startDate, endDate),

@@ -19,18 +19,18 @@ export interface BudgetProgress {
 // Supabase views cannot declare NOT NULL constraints.
 type BudgetViewRow = Tables<"budgets_with_linked">;
 
-const getErrorMessage = (error: unknown): string | null => {
+const toError = (error: unknown, fallbackMessage: string): Error | null => {
   if (!error) return null;
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) return error;
   if (
     typeof error === "object" &&
     error !== null &&
     "message" in error &&
     typeof (error as { message: unknown }).message === "string"
   ) {
-    return (error as { message: string }).message;
+    return new Error((error as { message: string }).message);
   }
-  return "Failed to load budgets.";
+  return new Error(fallbackMessage);
 };
 
 export const useBudgets = () => {
@@ -73,7 +73,7 @@ export const useBudgets = () => {
     budgets,
     loading: query.isLoading,
     isFetching: query.isFetching,
-    error: getErrorMessage(query.error),
+    error: toError(query.error, "Failed to load budgets."),
     refresh: query.refetch,
   };
 };

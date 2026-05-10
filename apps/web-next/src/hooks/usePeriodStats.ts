@@ -68,18 +68,18 @@ interface UsePeriodStatsParams {
   endDate: string;
 }
 
-const getErrorMessage = (error: unknown): string | null => {
+const toError = (error: unknown, fallbackMessage: string): Error | null => {
   if (!error) return null;
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) return error;
   if (
     typeof error === "object" &&
     error !== null &&
     "message" in error &&
     typeof (error as { message: unknown }).message === "string"
   ) {
-    return (error as { message: string }).message;
+    return new Error((error as { message: string }).message);
   }
-  return "Failed to load period stats.";
+  return new Error(fallbackMessage);
 };
 
 export function usePeriodStats({
@@ -141,9 +141,9 @@ export function usePeriodStats({
   const loading =
     typeQuery.isLoading || categoryQuery.isLoading || prevTypeQuery.isLoading;
   const error =
-    getErrorMessage(typeQuery.error) ??
-    getErrorMessage(categoryQuery.error) ??
-    getErrorMessage(prevTypeQuery.error);
+    toError(typeQuery.error, "Failed to load period stats.") ??
+    toError(categoryQuery.error, "Failed to load period stats.") ??
+    toError(prevTypeQuery.error, "Failed to load period stats.");
 
   return { typeSummary, categorySummary, previousTypeSummary, loading, error };
 }

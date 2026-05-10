@@ -5,6 +5,20 @@ import { Form, Input, InputNumber, Select, DatePicker } from "antd";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { supabaseClient } from "../../utility";
 
+const extractCreatedBudgetId = (result: unknown): string | null => {
+  if (typeof result !== "object" || result === null || !("data" in result)) {
+    return null;
+  }
+
+  const data = (result as { data?: unknown }).data;
+  if (typeof data !== "object" || data === null || !("id" in data)) {
+    return null;
+  }
+
+  const id = (data as { id?: unknown }).id;
+  return typeof id === "string" && id.length > 0 ? id : null;
+};
+
 export const BudgetCreate = () => {
   const { formProps, saveButtonProps } = useForm();
   const { open: openNotification } = useNotification();
@@ -47,8 +61,7 @@ export const BudgetCreate = () => {
     const { category_ids, tag_ids, ...budgetValues } = values;
 
     const result = await formProps.onFinish?.(budgetValues);
-    const budgetId = (result as unknown as { data?: { id?: string } })?.data
-      ?.id;
+    const budgetId = extractCreatedBudgetId(result);
 
     if (!budgetId) {
       const error = new Error(

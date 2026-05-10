@@ -88,7 +88,7 @@ export const PeriodTab: FC<PeriodTabProps> = ({
           type="error"
           showIcon
           message="Failed to load summary data"
-          description={stats.error}
+          description={stats.error.message}
         />
       )}
       <CategoryBreakdownSection
