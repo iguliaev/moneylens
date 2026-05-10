@@ -8,10 +8,10 @@ import {
   List,
   Space,
   Modal,
-  message,
   Tabs,
   Select,
 } from "antd";
+import { useNotification } from "@refinedev/core";
 import {
   UploadOutlined,
   DeleteOutlined,
@@ -77,6 +77,7 @@ const getUploadSummary = (payload: BulkUploadPayload): string => {
 
 // === Components ===
 const BulkUploadSection = () => {
+  const { open: openNotification } = useNotification();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -180,9 +181,18 @@ const BulkUploadSection = () => {
       setResult(data);
       setFileList([]);
       setPreview(null);
-      message.success("Upload completed successfully!");
+      openNotification?.({
+        type: "success",
+        message: "Upload completed successfully",
+      });
     } catch (err) {
-      setFileError(err instanceof Error ? err.message : "Upload failed");
+      const message = err instanceof Error ? err.message : "Upload failed";
+      setFileError(message);
+      openNotification?.({
+        type: "error",
+        message: "Failed to upload data",
+        description: message,
+      });
     } finally {
       setIsUploading(false);
     }
@@ -275,6 +285,7 @@ const BulkUploadSection = () => {
 };
 
 const DataResetSection = () => {
+  const { open: openNotification } = useNotification();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [result, setResult] = useState<DataResetResult | null>(null);
@@ -292,10 +303,20 @@ const DataResetSection = () => {
 
       setResult(data);
       setIsModalOpen(false);
-      message.success("Data reset completed successfully!");
+      openNotification?.({
+        type: "success",
+        message: "Data reset completed successfully",
+      });
     } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to reset data";
       setIsModalOpen(false);
-      setError(err instanceof Error ? err.message : "Failed to reset data");
+      setError(message);
+      openNotification?.({
+        type: "error",
+        message: "Failed to reset data",
+        description: message,
+      });
     } finally {
       setIsDeleting(false);
     }

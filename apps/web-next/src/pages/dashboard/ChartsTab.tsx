@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Col, Row, Select, Typography } from "antd";
+import { Alert, Card, Col, Row, Select, Typography } from "antd";
 import dayjs from "dayjs";
 import { useCurrency } from "../../contexts/currency";
 import {
@@ -37,7 +37,7 @@ export const ChartsTab = () => {
     .add(1, "month")
     .format("YYYY-MM-DD");
 
-  const { trend, tags, categorySpendByMonth, tagSpendByMonth, loading } =
+  const { trend, tags, categorySpendByMonth, tagSpendByMonth, loading, error } =
     useChartsData(startDate, endDate);
 
   const tagData = (type: TransactionType) =>
@@ -81,6 +81,14 @@ export const ChartsTab = () => {
           style={{ width: 130 }}
         />
       </div>
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          message="Failed to load chart data"
+          description={error}
+        />
+      )}
 
       {/* Trend chart */}
       {loading ? (

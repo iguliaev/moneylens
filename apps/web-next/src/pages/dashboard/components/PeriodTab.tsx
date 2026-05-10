@@ -1,4 +1,4 @@
-import { Select, Typography } from "antd";
+import { Alert, Select, Typography } from "antd";
 import { type FC } from "react";
 import dayjs from "dayjs";
 import { yearOptions, monthOptions } from "../../../constants/dateOptions";
@@ -83,6 +83,14 @@ export const PeriodTab: FC<PeriodTabProps> = ({
         previousData={stats.previousTypeSummary}
         loading={stats.loading}
       />
+      {stats.error && (
+        <Alert
+          type="error"
+          showIcon
+          message="Failed to load summary data"
+          description={stats.error}
+        />
+      )}
       <CategoryBreakdownSection
         data={stats.categorySummary}
         loading={stats.loading}

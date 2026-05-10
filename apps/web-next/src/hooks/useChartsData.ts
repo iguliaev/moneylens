@@ -52,6 +52,20 @@ type MonthlyTaggedTypeTotalsRow = Pick<
 const isTransactionType = (v: string | null): v is TransactionType =>
   v !== null && Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
 
+const getErrorMessage = (error: unknown): string | null => {
+  if (!error) return null;
+  if (error instanceof Error) return error.message;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string"
+  ) {
+    return (error as { message: string }).message;
+  }
+  return "Failed to load chart data.";
+};
+
 export function useChartsData(startDate: string, endDate: string) {
   const filters = [
     { field: "month", operator: "gte" as const, value: startDate },
@@ -79,6 +93,10 @@ export function useChartsData(startDate: string, endDate: string) {
 
   const loading =
     trendQuery.isLoading || catQuery.isLoading || tagQuery.isLoading;
+  const error =
+    getErrorMessage(trendQuery.error) ??
+    getErrorMessage(catQuery.error) ??
+    getErrorMessage(tagQuery.error);
 
   const trendMonthKeys = useMemo(
     () => getMonthKeysInRange(startDate, endDate),
@@ -140,5 +158,5 @@ export function useChartsData(startDate: string, endDate: string) {
     return { tags: Object.values(tagMap).sort((a, b) => b.total - a.total), tagSpendByMonth };
   }, [tagQuery.data]);
 
-  return { trend, tags, categorySpendByMonth, tagSpendByMonth, loading };
+  return { trend, tags, categorySpendByMonth, tagSpendByMonth, loading, error };
 }

@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { Create, useForm } from "@refinedev/antd";
-import { useList } from "@refinedev/core";
-import { Form, Input, InputNumber, Select, DatePicker, message } from "antd";
+import { useList, useNotification } from "@refinedev/core";
+import { Form, Input, InputNumber, Select, DatePicker } from "antd";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { supabaseClient } from "../../utility";
 
 export const BudgetCreate = () => {
   const { formProps, saveButtonProps } = useForm();
+  const { open: openNotification } = useNotification();
 
   const selectedType = Form.useWatch("type", formProps.form);
 
@@ -49,7 +50,17 @@ export const BudgetCreate = () => {
     const budgetId = (result as unknown as { data?: { id?: string } })?.data
       ?.id;
 
-    if (!budgetId) return;
+    if (!budgetId) {
+      const error = new Error(
+        "Budget created but no budget ID was returned from the server."
+      );
+      openNotification?.({
+        type: "error",
+        message: "Failed to link budget categories and tags",
+        description: error.message,
+      });
+      throw error;
+    }
 
     const errors: string[] = [];
 
@@ -73,7 +84,11 @@ export const BudgetCreate = () => {
     }
 
     if (errors.length > 0) {
-      message.error(`Budget created but failed to link: ${errors.join(", ")}`);
+      openNotification?.({
+        type: "error",
+        message: "Failed to link budget categories and tags",
+        description: `Budget created but failed to link: ${errors.join(", ")}`,
+      });
     }
   };
 

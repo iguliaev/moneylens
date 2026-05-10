@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Edit, useForm } from "@refinedev/antd";
-import { useList } from "@refinedev/core";
-import { Form, Input, InputNumber, Select, DatePicker, message } from "antd";
+import { useList, useNotification } from "@refinedev/core";
+import { Form, Input, InputNumber, Select, DatePicker } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { supabaseClient } from "../../utility";
@@ -12,6 +12,7 @@ export const BudgetEdit = () => {
       select: "*, budget_categories(category_id), budget_tags(tag_id)",
     },
   });
+  const { open: openNotification } = useNotification();
 
   const budgetData = query?.data?.data;
 
@@ -77,7 +78,17 @@ export const BudgetEdit = () => {
 
     await formProps.onFinish?.(budgetValues);
 
-    if (!id) return;
+    if (!id) {
+      const error = new Error(
+        "Budget ID is missing. Unable to update linked categories and tags."
+      );
+      openNotification?.({
+        type: "error",
+        message: "Failed to update budget categories and tags",
+        description: error.message,
+      });
+      throw error;
+    }
 
     const errors: string[] = [];
 
@@ -113,7 +124,11 @@ export const BudgetEdit = () => {
     }
 
     if (errors.length > 0) {
-      message.error(`Budget saved but failed to update: ${errors.join(", ")}`);
+      openNotification?.({
+        type: "error",
+        message: "Failed to update budget categories and tags",
+        description: `Budget saved but failed to update: ${errors.join(", ")}`,
+      });
     }
   };
 

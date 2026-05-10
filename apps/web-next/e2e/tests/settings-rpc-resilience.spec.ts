@@ -52,7 +52,9 @@ test.describe("Settings RPC resilience", () => {
     await expect(page.getByText(/simulated bulk upload rpc failure/i)).toBeVisible();
   });
 
-  test("data reset closes modal and shows RPC failure", async ({ page }) => {
+  test("data reset closes modal and shows standardized reset error notification", async ({
+    page,
+  }) => {
     await page.route("**/rest/v1/rpc/reset_user_data", async (route) => {
       await route.fulfill({
         status: 500,
@@ -74,7 +76,7 @@ test.describe("Settings RPC resilience", () => {
       .click();
 
     await expect(page.getByRole("dialog", { name: /reset all data/i })).not.toBeVisible();
-    await expect(page.getByRole("alert").filter({ hasText: /error/i })).toBeVisible();
+    await expect(page.getByText(/failed to reset data/i)).toBeVisible();
     await expect(page.getByText(/simulated reset rpc failure/i)).toBeVisible();
   });
 });
