@@ -1,3 +1,6 @@
+WARN: environment variable is unset: SITE_URL
+WARN: environment variable is unset: SITE_URL
+Connecting to db 5432
 export type Json =
   | string
   | number
@@ -763,6 +766,31 @@ export type Database = {
         Returns: Json
       }
       bulk_upload_data: { Args: { p_payload: Json }; Returns: Json }
+      create_transaction_with_tags: {
+        Args: { p_tag_ids: string[]; p_transaction: Json }
+        Returns: {
+          amount: number
+          bank_account: string | null
+          bank_account_id: string | null
+          category: string | null
+          category_id: string | null
+          created_at: string
+          date: string
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          tags: string[] | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_bank_account_safe: {
         Args: { p_bank_account_id: string }
         Returns: {
@@ -831,6 +859,35 @@ export type Database = {
           p_type?: Database["public"]["Enums"]["transaction_type"]
         }
         Returns: number
+      }
+      update_transaction_with_tags: {
+        Args: {
+          p_tag_ids: string[]
+          p_transaction: Json
+          p_transaction_id: string
+        }
+        Returns: {
+          amount: number
+          bank_account: string | null
+          bank_account_id: string | null
+          category: string | null
+          category_id: string | null
+          created_at: string
+          date: string
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          tags: string[] | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
@@ -970,3 +1027,5 @@ export const Constants = {
   },
 } as const
 
+A new version of Supabase CLI is available: v2.98.2 (currently installed v2.90.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
