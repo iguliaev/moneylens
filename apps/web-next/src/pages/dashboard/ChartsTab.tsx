@@ -8,7 +8,7 @@ import {
   type TransactionType,
 } from "../../constants/transactionTypes";
 import { useChartsData } from "../../hooks";
-import { currentYear, yearOptions, monthOptions } from "../../constants/dateOptions";
+import { yearOptions, monthOptions } from "../../constants/dateOptions";
 import { TrendChart } from "./components/TrendChart";
 import { SpendingTrendlineChart } from "./components/SpendingTrendlineChart";
 import { TagBar } from "./components/TagBar";
