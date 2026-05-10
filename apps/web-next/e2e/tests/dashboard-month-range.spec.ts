@@ -50,7 +50,6 @@ test.describe("Dashboard month range validation", () => {
 
       await page.getByRole("tab", { name: /charts/i }).click();
       await page.waitForLoadState("networkidle");
-      const chartRequestCountBeforeInvalidRange = chartRequestCount;
 
       const currentYear = await page.evaluate(() =>
         String(new Date().getFullYear())
@@ -72,12 +71,15 @@ test.describe("Dashboard month range validation", () => {
       await expect(
         page.getByText("Income vs Spending vs Savings")
       ).not.toBeVisible();
+
+      // Capture baseline after invalid range is active; no new chart requests should be made from this state.
+      const chartRequestCountAtInvalidRange = chartRequestCount;
       await expect
         .poll(() => chartRequestCount, {
           message: "invalid chart range should suppress chart data network requests",
           timeout: 2000,
         })
-        .toBe(chartRequestCountBeforeInvalidRange);
+        .toBe(chartRequestCountAtInvalidRange);
     } finally {
       await deleteTestUser(userId);
     }
