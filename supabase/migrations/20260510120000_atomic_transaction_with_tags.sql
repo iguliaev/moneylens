@@ -91,7 +91,7 @@ DECLARE
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.transactions
-    WHERE id = p_transaction_id AND user_id = auth.uid()
+    WHERE id = p_transaction_id AND user_id = auth.uid() AND deleted_at IS NULL
   ) THEN
     RAISE EXCEPTION 'Transaction not found or access denied' USING ERRCODE = '42501';
   END IF;
