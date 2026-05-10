@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18  
 **Scope:** `apps/web-next/` — Vite + React 19 + Refine + Ant Design 5  
-**Status:** Planning
+**Status:** In progress — H2 complete ✅ | H1, H3, M1–M4, L1–L3 pending
 
 ---
 
@@ -68,7 +68,10 @@ The MoneyLens frontend has solid bones (Refine framework, typed Supabase client,
 
 ---
 
-### H2 — Make transaction tag association atomic (create & edit)
+### H2 — Make transaction tag association atomic (create & edit) ✅ COMPLETE
+
+> **Status:** Implemented 2026-05-10 · PR [#175](https://github.com/iguliaev/moneylens/pull/175) · branch `feat/h2-atomic-transaction-tags`  
+> 188 pgTAP tests pass · 17 E2E transaction tests pass
 
 **What**  
 In `transactions/create.tsx` and `transactions/edit.tsx`, tags are saved by calling `supabaseClient.rpc("set_transaction_tags", ...)` *after* `formProps.onFinish()` succeeds. If the RPC fails (network hiccup, auth expiry, DB error), the transaction exists without its tags and the user sees a toast error but no rollback path. Additionally, on create the transaction ID is obtained by casting the opaque return value of `onFinish` — a brittle type assertion `(result as unknown as { data?: { id?: string } })`.
@@ -90,11 +93,14 @@ Regardless of chosen option:
 - Remove the `(result as unknown as ...)` cast. Refine's `useForm` `onFinish` return type should be typed or the mutation should be obtained directly via `useCreate` so the returned `data.id` is strongly typed.
 - The `handleFinish` pattern is duplicated verbatim in `create.tsx` and `edit.tsx`. Extract it to `src/hooks/useTransactionForm.ts` so both pages share one implementation.
 
-**Files to change**
-- `src/pages/transactions/create.tsx`
-- `src/pages/transactions/edit.tsx`
-- New: `src/hooks/useTransactionForm.ts`
-- New migration: `supabase/migrations/YYYYMMDDHHMMSS_create_transaction_with_tags.sql` (Option A)
+**Files changed**
+- `supabase/migrations/20260510120000_atomic_transaction_with_tags.sql` — `create_transaction_with_tags` and `update_transaction_with_tags` SECURITY DEFINER RPCs; both validate ownership of category, bank account, and tags against `auth.uid()` before any write
+- `supabase/tests/atomic_transaction_with_tags_test.sql` — 21 pgTAP tests (function existence, create/update/replace tags, atomicity, 6 cross-user security tests)
+- `apps/web-next/src/hooks/useTransactionForm.ts` — shared hook; serialises dayjs dates; calls appropriate RPC; uses `useNotification` for errors; `useInvalidate` + `navigate` on success
+- `apps/web-next/src/hooks/index.ts` — added export
+- `apps/web-next/src/pages/transactions/create.tsx` — uses hook; `warnWhenUnsavedChanges: false`
+- `apps/web-next/src/pages/transactions/edit.tsx` — uses hook; `warnWhenUnsavedChanges: false`
+- `apps/web-next/e2e/tests/transactions.spec.ts` — two new tag persistence E2E tests
 
 **Risk / complexity:** Medium. Option A requires a DB migration and collaboration with the backend layer; Option B can be done purely in the frontend. Option A is strongly recommended to ensure correctness.
 
@@ -397,13 +403,15 @@ These should be catalogued and distinguished from the accidental bypasses covere
 ## Implementation Order Recommendation
 
 ```
+~~Week 3:  H2 (atomic tag association)~~ ✅ DONE (PR #175, 2026-05-10)
+~~Week 4:  L2 (strengthen TS typing for onFinish)~~ ✅ resolved by H2 (no cast needed)
+
 Week 1:  H3 (decompose dashboard) — no logic change, high clarity gain
 Week 1:  M2 (deduplicate constants) — safe, tiny, should go first to unblock H3
 Week 2:  H1 (replace Supabase calls with Refine hooks) — depends on H3 for clean targets
 Week 2:  M1 (useSelect for tags) — small, can be parallelised
-Week 3:  H2 (atomic tag association) — DB migration needs coordination
-Week 3:  M3 (standardise error handling) — clean up as H1/H2 land
-Week 4:  M4, L1, L2, L3 — polish and structural hygiene
+Week 3:  M3 (standardise error handling) — clean up as H1 lands
+Week 4:  M4, L1, L3 — polish and structural hygiene
 ```
 
 Each item is independently releasable. Items within the same week can be parallelised across developers.
@@ -417,8 +425,8 @@ Each item is independently releasable. Items within the same week can be paralle
 | `pages/dashboard/index.tsx` | 579 | H1, H3, M2, M3 |
 | `pages/dashboard/ChartsTab.tsx` | 587 | H1, H3, M2, M3 |
 | `pages/dashboard/useBudgets.ts` | 46 | H1, M3 |
-| `pages/transactions/create.tsx` | 168 | H2, M1, L2 |
-| `pages/transactions/edit.tsx` | 214 | H2, M1 |
+| `pages/transactions/create.tsx` | 168 | ~~H2~~ ✅, M1, ~~L2~~ ✅ |
+| `pages/transactions/edit.tsx` | 214 | ~~H2~~ ✅, M1 |
 | `pages/budgets/create.tsx` | — | M3 (direct Supabase) |
 | `pages/budgets/edit.tsx` | — | M3 (direct Supabase) |
 | `pages/settings/index.tsx` | — | L3 (legitimate RPC) |
