@@ -26,13 +26,13 @@ export const ChartsTab = () => {
   const [endMonth, setEndMonth] = useState(defaultEnd.month());
   const startMonthValue = dayjs().year(startYear).month(startMonth).startOf("month");
   const endMonthValue = dayjs().year(endYear).month(endMonth).startOf("month");
-  const hasInvalidRange = !endMonthValue.isAfter(startMonthValue);
+  const hasInvalidRange = endMonthValue.isBefore(startMonthValue);
 
   const startDate = startMonthValue.format("YYYY-MM-DD");
   const endDate = endMonthValue.add(1, "month").format("YYYY-MM-DD");
 
   const { trend, tags, categorySpendByMonth, tagSpendByMonth, loading, error } =
-    useChartsData(startDate, endDate);
+    useChartsData(startDate, endDate, !hasInvalidRange);
 
   const tagData = (type: TransactionType) =>
     tags.filter((t) => t.type === type).slice(0, 10);
@@ -56,7 +56,7 @@ export const ChartsTab = () => {
         <Alert
           type="warning"
           showIcon
-          message="End month must be after start month"
+          message="End month must not be before start month"
         />
       )}
       {!hasInvalidRange && error && (

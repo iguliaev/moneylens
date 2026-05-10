@@ -66,7 +66,7 @@ const toError = (error: unknown, fallbackMessage: string): Error | null => {
   return new Error(fallbackMessage);
 };
 
-export function useChartsData(startDate: string, endDate: string) {
+export function useChartsData(startDate: string, endDate: string, enabled = true) {
   const filters = [
     { field: "month", operator: "gte" as const, value: startDate },
     { field: "month", operator: "lt" as const, value: endDate },
@@ -77,18 +77,21 @@ export function useChartsData(startDate: string, endDate: string) {
     filters,
     sorters: [{ field: "month", order: "asc" }],
     pagination: { mode: "off" },
+    queryOptions: { enabled },
   });
 
   const { query: catQuery } = useList<MonthlyCategoryTotalsRow>({
     resource: "view_monthly_category_totals",
     filters,
     pagination: { mode: "off" },
+    queryOptions: { enabled },
   });
 
   const { query: tagQuery } = useList<MonthlyTaggedTypeTotalsRow>({
     resource: "view_monthly_tagged_type_totals",
     filters,
     pagination: { mode: "off" },
+    queryOptions: { enabled },
   });
 
   const loading =
