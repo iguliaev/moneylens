@@ -1,5 +1,5 @@
 import type { PostgrestSingleResponse } from "@supabase/supabase-js";
-import type { Database, Json } from "../types/database.types";
+import type { Database, Json, Tables } from "../types/database.types";
 import { supabaseClient } from "./supabaseClient";
 
 interface CategoryInput {
@@ -20,7 +20,7 @@ interface TagInput {
 
 interface BulkTransactionInput {
   date: string;
-  type: string;
+  type: Database["public"]["Enums"]["transaction_type"];
   amount: number;
   category?: string | null;
   bank_account?: string | null;
@@ -64,6 +64,7 @@ export interface TransactionWithTagsInput {
 
 type RpcResponse<T> = Promise<PostgrestSingleResponse<T>>;
 type JsonObject = { [key: string]: Json | undefined };
+type TransactionRow = Tables<"transactions">;
 
 // INTENTIONAL_DIRECT_SUPABASE: RPC must run via Supabase client, wrapped here for typed call sites.
 export const bulkUploadData = async (
@@ -81,7 +82,7 @@ export const resetUserData = async (): RpcResponse<DataResetResult> =>
 export const createTransactionWithTags = async (
   transaction: TransactionWithTagsInput,
   tagIds: string[]
-): RpcResponse<Json> => {
+): RpcResponse<TransactionRow> => {
   const transactionPayload: JsonObject = { ...transaction };
   return await supabaseClient.rpc("create_transaction_with_tags", {
     p_transaction: transactionPayload,
@@ -94,7 +95,7 @@ export const updateTransactionWithTags = async (
   transactionId: string,
   transaction: TransactionWithTagsInput,
   tagIds: string[]
-): RpcResponse<Json> => {
+): RpcResponse<TransactionRow> => {
   const transactionPayload: JsonObject = { ...transaction };
   return await supabaseClient.rpc("update_transaction_with_tags", {
     p_transaction_id: transactionId,
