@@ -1,103 +1,19 @@
 import { useState } from "react";
 import { Card, Col, Row, Select, Typography } from "antd";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import dayjs from "dayjs";
 import { useCurrency } from "../../contexts/currency";
 import {
   TRANSACTION_TYPES,
   TYPE_VALUE_COLORS,
-  TransactionType,
+  type TransactionType,
 } from "../../constants/transactionTypes";
 import { useChartsData } from "../../hooks";
-import type { TrendPoint } from "../../hooks";
+import { currentYear, yearOptions, monthOptions } from "../../constants/dateOptions";
 import { TrendChart } from "./components/TrendChart";
 import { SpendingTrendlineChart } from "./components/SpendingTrendlineChart";
+import { TagBar } from "./components/TagBar";
 
 const { Text, Title } = Typography;
-
-const currentYear = dayjs().year();
-const yearOptions = Array.from({ length: 6 }, (_, i) => ({
-  label: String(currentYear - i),
-  value: currentYear - i,
-}));
-const monthOptions = Array.from({ length: 12 }, (_, i) => ({
-  label: dayjs().month(i).format("MMM"),
-  value: i,
-}));
-
-// === Sub-components ===
-
-const CurrencyTooltipFormatter =
-  (currency: string) =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (value: any): string => {
-    const n = typeof value === "number" ? value : 0;
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-    }).format(n);
-  };
-
-const TagBar = ({
-  title,
-  data,
-  color,
-  currency,
-}: {
-  title: string;
-  data: { tag: string; total: number }[];
-  color: string;
-  currency: string;
-}) => {
-  const fmt = CurrencyTooltipFormatter(currency);
-  return (
-    <Card title={title}>
-      {data.length === 0 ? (
-        <Text type="secondary">No tagged transactions in this period</Text>
-      ) : (
-        <ResponsiveContainer
-          width="100%"
-          height={Math.max(160, data.length * 34)}
-        >
-          <BarChart
-            layout="vertical"
-            data={data}
-            margin={{ top: 4, right: 32, left: 16, bottom: 4 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#f0f0f0"
-              horizontal={false}
-            />
-            <XAxis
-              type="number"
-              tickFormatter={(v) => fmt(v)}
-              tick={{ fontSize: 11 }}
-            />
-            <YAxis
-              type="category"
-              dataKey="tag"
-              tick={{ fontSize: 12 }}
-              width={96}
-            />
-            <Tooltip formatter={fmt} />
-            <Bar dataKey="total" fill={color} radius={[0, 3, 3, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </Card>
-  );
-};
-
-// === Main Component ===
 export const ChartsTab = () => {
   const { currency } = useCurrency();
 
