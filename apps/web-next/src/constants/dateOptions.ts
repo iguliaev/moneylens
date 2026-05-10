@@ -8,6 +8,6 @@ export const yearOptions = Array.from({ length: 6 }, (_, i) => ({
 }));
 
 export const monthOptions = Array.from({ length: 12 }, (_, i) => ({
-  label: dayjs().month(i).format("MMMM"),
+  label: dayjs().startOf("year").month(i).format("MMMM"),
   value: i,
 }));

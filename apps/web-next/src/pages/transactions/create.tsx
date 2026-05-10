@@ -1,5 +1,5 @@
 import { Create, useForm, useSelect as useAntSelect } from "@refinedev/antd";
-import { useSelect } from "@refinedev/core";
+import { useSelect as useCoreSelect } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
@@ -29,7 +29,7 @@ export const TransactionCreate = () => {
       : undefined,
   });
 
-  const { options: tagOptions, query: tagsQuery } = useSelect({
+  const { options: tagOptions, query: tagsQuery } = useCoreSelect({
     resource: "tags",
     optionLabel: "name",
     optionValue: "id",

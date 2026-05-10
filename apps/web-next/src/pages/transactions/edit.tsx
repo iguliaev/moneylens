@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Edit, useForm, useSelect as useAntSelect } from "@refinedev/antd";
-import { useSelect } from "@refinedev/core";
+import { useSelect as useCoreSelect } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import {
@@ -65,7 +65,7 @@ export const TransactionEdit = () => {
   });
 
   // Fetch all available tags
-  const { options: tagOptions, query: tagsQuery } = useSelect({
+  const { options: tagOptions, query: tagsQuery } = useCoreSelect({
     resource: "tags",
     optionLabel: "name",
     optionValue: "id",
