@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18  
 **Scope:** `apps/web-next/` — Vite + React 19 + Refine + Ant Design 5  
-**Status:** In progress — H2 ✅ H1 ✅ L1 ✅ L2 ✅ | H3, M1–M4, L3 pending
+**Status:** In progress — H2 ✅ H1 ✅ L1 ✅ L2 ✅ H3 ✅ M1 ✅ M2 ✅ | M3, M4, L3 pending
 
 ---
 
@@ -62,7 +62,10 @@ Regardless of chosen option:
 
 ---
 
-### H3 — Decompose `dashboard/index.tsx` into focused files
+### H3 — Decompose `dashboard/index.tsx` into focused files ✅ COMPLETE
+
+> **Status:** Implemented — PR [#176](https://github.com/iguliaev/moneylens/pull/176) · branch `feat/h3-dashboard-decomposition` · 2026-05-10  
+> `dashboard/index.tsx` reduced from 383 → 54 lines; `ChartsTab.tsx` from 436 → ~140 lines. All sub-components extracted into `src/pages/dashboard/components/`.
 
 **What**  
 `dashboard/index.tsx` currently contains, in one 579-line file: four TypeScript type declarations, four DB-view type aliases, three constants blocks, four standalone async functions, one compound data hook (`usePeriodStats`), two presentation components (`TrendBadge`, `TypeSummaryCards`), two table components (`CategoryBreakdownTable`, `CategoryBreakdownSection`), and the page component (`DashboardPage`).
@@ -128,7 +131,10 @@ Each extraction step is safe to do independently. Start with the leaf components
 
 ## Priority: Medium
 
-### M1 — Replace `useList` with `useSelect` for tag options
+### M1 — Replace `useList` with `useSelect` for tag options ✅ COMPLETE
+
+> **Status:** Implemented — PR [#176](https://github.com/iguliaev/moneylens/pull/176) · 2026-05-10  
+> Both `transactions/create.tsx` and `transactions/edit.tsx` now use `useSelect` from `@refinedev/core` with `optionLabel: "name"`, `optionValue: "id"`. The `useList + useMemo` pattern has been removed.
 
 **What**  
 `transactions/create.tsx` and `transactions/edit.tsx` both fetch tags with `useList` and then manually map `data.data` to `{ label, value }` inside a `useMemo`. Refine's `useSelect` already does exactly this mapping, participates in Refine's cache, and provides standard `selectProps` to spread onto `<Select>`.
@@ -165,7 +171,10 @@ Then spread `{...tagSelectProps}` onto the `<Select mode="multiple">` in the Tag
 
 ---
 
-### M2 — Eliminate duplicated constants and utilities
+### M2 — Eliminate duplicated constants and utilities ✅ COMPLETE
+
+> **Status:** Implemented — PR [#176](https://github.com/iguliaev/moneylens/pull/176) · 2026-05-10  
+> `src/constants/dateOptions.ts` created; `currentYear`, `yearOptions`, `monthOptions` centralised. `formatCurrencyLocal` replaced with `formatCurrency` from `src/utility/currency.ts`. `isTransactionType` guard deduplication deferred (not blocking).
 
 **What**  
 The following are defined more than once across the codebase:
@@ -364,9 +373,9 @@ These should be catalogued and distinguished from the accidental bypasses covere
 ~~Week 2:  H1 (replace Supabase calls with Refine hooks)~~ ✅ DONE (hooks in src/hooks/ use useList)
 ~~Week 4:  L1 (shared src/hooks/ directory)~~ ✅ DONE
 
-Week 1:  M2 (deduplicate constants) — prerequisite for H3
-Week 1:  H3 (decompose dashboard) — no logic change, high clarity gain
-Week 2:  M1 (useSelect for tags) — small, can be parallelised
+~~Week 1:  M2 (deduplicate constants) — prerequisite for H3~~ ✅ DONE (PR #176, 2026-05-10)
+~~Week 1:  H3 (decompose dashboard) — no logic change, high clarity gain~~ ✅ DONE (PR #176, 2026-05-10)
+~~Week 2:  M1 (useSelect for tags) — small, can be parallelised~~ ✅ DONE (PR #176, 2026-05-10)
 Week 3:  M3 (standardise error handling)
 Week 4:  M4, L3 — polish and structural hygiene
 ```
@@ -379,11 +388,11 @@ Each item is independently releasable. Items within the same week can be paralle
 
 | File | Lines | Issues |
 |---|---|---|
-| `pages/dashboard/index.tsx` | 579 | H1, H3, M2, M3 |
-| `pages/dashboard/ChartsTab.tsx` | 587 | H1, H3, M2, M3 |
-| `pages/dashboard/useBudgets.ts` | 46 | H1, M3 |
-| `pages/transactions/create.tsx` | 168 | ~~H2~~ ✅, M1, ~~L2~~ ✅ |
-| `pages/transactions/edit.tsx` | 214 | ~~H2~~ ✅, M1 |
+| `pages/dashboard/index.tsx` | ~~579~~ → 54 | ~~H1~~ ✅ ~~H3~~ ✅ ~~M2~~ ✅ M3 |
+| `pages/dashboard/ChartsTab.tsx` | ~~587~~ → ~140 | ~~H1~~ ✅ ~~H3~~ ✅ ~~M2~~ ✅ M3 |
+| `pages/dashboard/useBudgets.ts` | 46 | ~~H1~~ ✅ M3 |
+| `pages/transactions/create.tsx` | 168 | ~~H2~~ ✅ ~~M1~~ ✅ ~~L2~~ ✅ |
+| `pages/transactions/edit.tsx` | 214 | ~~H2~~ ✅ ~~M1~~ ✅ |
 | `pages/budgets/create.tsx` | — | M3 (direct Supabase) |
 | `pages/budgets/edit.tsx` | — | M3 (direct Supabase) |
 | `pages/settings/index.tsx` | — | L3 (legitimate RPC) |

@@ -1,6 +1,7 @@
 # Dashboard Decomposition Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Status: ✅ COMPLETE — PR [#176](https://github.com/iguliaev/moneylens/pull/176) · branch `feat/h3-dashboard-decomposition` · 2026-05-10**  
+> All 11 tasks implemented, type-checked, and reviewed. H3 + M1 + M2 complete.
 
 **Goal:** Break the dashboard monolith into focused single-responsibility files, deduplicate shared constants, and replace a manual tag `useList` pattern with Refine's `useSelect`.
 
@@ -50,7 +51,7 @@ The existing `formatCurrency` in `src/utility/currency.ts` hard-codes `"en-US"`,
 **Files:**
 - Modify: `src/utility/currency.ts`
 
-- [ ] **Step 1: Update `formatCurrency` to use browser locale and add `makeCurrencyFormatter`**
+- [x] **Step 1: Update `formatCurrency` to use browser locale and add `makeCurrencyFormatter`**
 
 Replace the contents of `src/utility/currency.ts` with:
 
@@ -78,7 +79,7 @@ export const makeCurrencyFormatter =
     formatCurrency(typeof value === "number" ? value : 0, currency);
 ```
 
-- [ ] **Step 2: Verify type check passes**
+- [x] **Step 2: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
@@ -86,7 +87,7 @@ cd apps/web-next && npm run check-types 2>&1 | tail -5
 
 Expected: no errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web-next/src/utility/currency.ts
@@ -102,7 +103,7 @@ Both `dashboard/index.tsx` and `ChartsTab.tsx` define identical `currentYear`, `
 **Files:**
 - Create: `src/constants/dateOptions.ts`
 
-- [ ] **Step 1: Create the file**
+- [x] **Step 1: Create the file**
 
 Create `src/constants/dateOptions.ts`:
 
@@ -124,7 +125,7 @@ export const monthOptions = Array.from({ length: 12 }, (_, i) => ({
 
 Note: `ChartsTab.tsx` uses `"MMM"` (abbreviated) for month labels but `index.tsx` uses `"MMMM"` (full). The full name is better UX; update both consumers to use full names in this step.
 
-- [ ] **Step 2: Verify type check passes**
+- [x] **Step 2: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
@@ -132,7 +133,7 @@ cd apps/web-next && npm run check-types 2>&1 | tail -5
 
 Expected: no errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web-next/src/constants/dateOptions.ts
@@ -147,7 +148,7 @@ git commit -m "refactor: add shared dateOptions constants (yearOptions, monthOpt
 - Create: `src/pages/dashboard/components/TrendBadge.tsx`
 - Modify: `src/pages/dashboard/index.tsx`
 
-- [ ] **Step 1: Create `TrendBadge.tsx`**
+- [x] **Step 1: Create `TrendBadge.tsx`**
 
 Create `src/pages/dashboard/components/TrendBadge.tsx`:
 
@@ -205,19 +206,19 @@ export const TrendBadge = ({
 };
 ```
 
-- [ ] **Step 2: Replace `TrendBadge` in `dashboard/index.tsx`**
+- [x] **Step 2: Replace `TrendBadge` in `dashboard/index.tsx`**
 
 In `src/pages/dashboard/index.tsx`:
 1. Remove the `TrendBadge` function definition (lines ~56–102)
 2. Add import at the top: `import { TrendBadge } from "./components/TrendBadge";`
 
-- [ ] **Step 3: Verify type check passes**
+- [x] **Step 3: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web-next/src/pages/dashboard/components/TrendBadge.tsx \
@@ -233,7 +234,7 @@ git commit -m "refactor: extract TrendBadge to its own component file"
 - Create: `src/pages/dashboard/components/TypeSummaryCards.tsx`
 - Modify: `src/pages/dashboard/index.tsx`
 
-- [ ] **Step 1: Create `TypeSummaryCards.tsx`**
+- [x] **Step 1: Create `TypeSummaryCards.tsx`**
 
 Create `src/pages/dashboard/components/TypeSummaryCards.tsx`:
 
@@ -328,7 +329,7 @@ export const TypeSummaryCards = ({
 };
 ```
 
-- [ ] **Step 2: Update `dashboard/index.tsx`**
+- [x] **Step 2: Update `dashboard/index.tsx`**
 
 In `src/pages/dashboard/index.tsx`:
 1. Remove the `TypeSummaryCards` function definition (lines ~104–181)
@@ -336,13 +337,13 @@ In `src/pages/dashboard/index.tsx`:
 3. Add import: `import { TypeSummaryCards } from "./components/TypeSummaryCards";`
 4. The `TypeSummary` type is still imported from `../../hooks` for use in `usePeriodStats` return — keep that import as-is; both types are structurally identical so TypeScript will accept them.
 
-- [ ] **Step 3: Verify type check passes**
+- [x] **Step 3: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web-next/src/pages/dashboard/components/TypeSummaryCards.tsx \
@@ -358,7 +359,7 @@ git commit -m "refactor: extract TypeSummaryCards to its own component file"
 - Create: `src/pages/dashboard/components/CategoryBreakdownSection.tsx`
 - Modify: `src/pages/dashboard/index.tsx`
 
-- [ ] **Step 1: Create `CategoryBreakdownSection.tsx`**
+- [x] **Step 1: Create `CategoryBreakdownSection.tsx`**
 
 Create `src/pages/dashboard/components/CategoryBreakdownSection.tsx`:
 
@@ -459,7 +460,7 @@ export const CategoryBreakdownSection = ({
 );
 ```
 
-- [ ] **Step 2: Update `dashboard/index.tsx`**
+- [x] **Step 2: Update `dashboard/index.tsx`**
 
 In `src/pages/dashboard/index.tsx`:
 1. Remove `CategoryBreakdownTable` and `CategoryBreakdownSection` definitions (lines ~183–264)
@@ -467,13 +468,13 @@ In `src/pages/dashboard/index.tsx`:
 3. Add import: `import { CategoryBreakdownSection } from "./components/CategoryBreakdownSection";`
 4. Remove `import { ..., type CategorySummary, type TypeSummary } from "../../hooks"` — these types are now in the component files. Keep the `usePeriodStats` import.
 
-- [ ] **Step 3: Verify type check passes**
+- [x] **Step 3: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web-next/src/pages/dashboard/components/CategoryBreakdownSection.tsx \
@@ -491,7 +492,7 @@ The yearly and monthly tab children in `index.tsx` are structurally identical (s
 - Create: `src/pages/dashboard/components/PeriodTab.tsx`
 - Modify: `src/pages/dashboard/index.tsx`
 
-- [ ] **Step 1: Create `PeriodTab.tsx`**
+- [x] **Step 1: Create `PeriodTab.tsx`**
 
 Create `src/pages/dashboard/components/PeriodTab.tsx`:
 
@@ -559,7 +560,7 @@ export const PeriodTab = ({
 );
 ```
 
-- [ ] **Step 2: Rewrite `dashboard/index.tsx`**
+- [x] **Step 2: Rewrite `dashboard/index.tsx`**
 
 Replace `src/pages/dashboard/index.tsx` with:
 
@@ -646,13 +647,13 @@ export const DashboardPage: FC = () => {
 
 Note: The `Card` import was in the old file but all cards are now inside sub-components. Remove it if unused.
 
-- [ ] **Step 3: Verify type check passes**
+- [x] **Step 3: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 4: Run E2E tests**
+- [x] **Step 4: Run E2E tests**
 
 Ensure the dev server is running (`npm run dev` in `apps/web-next`), then:
 
@@ -662,7 +663,7 @@ cd apps/web-next && npm run test:e2e:ci
 
 Expected: all tests pass (17+ transaction tests + any dashboard tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web-next/src/pages/dashboard/components/PeriodTab.tsx \
@@ -679,7 +680,7 @@ git commit -m "refactor: extract PeriodTab, reduce dashboard/index.tsx to shell 
 - Create: `src/pages/dashboard/components/TrendChart.tsx`
 - Modify: `src/pages/dashboard/ChartsTab.tsx`
 
-- [ ] **Step 1: Create `TrendChart.tsx`**
+- [x] **Step 1: Create `TrendChart.tsx`**
 
 Create `src/pages/dashboard/components/TrendChart.tsx`:
 
@@ -738,20 +739,20 @@ export const TrendChart = ({
 };
 ```
 
-- [ ] **Step 2: Remove `TrendChart` from `ChartsTab.tsx`**
+- [x] **Step 2: Remove `TrendChart` from `ChartsTab.tsx`**
 
 In `src/pages/dashboard/ChartsTab.tsx`:
 1. Remove the `TrendChart` function definition (~lines 71–117)
 2. Remove the `CurrencyTooltipFormatter` function if it's only used by `TrendChart` (it's also used by `SpendingTrendlineChart` and `TagBar` — leave it until those are extracted in Tasks 8 and 9)
 3. Add import: `import { TrendChart } from "./components/TrendChart";`
 
-- [ ] **Step 3: Verify type check passes**
+- [x] **Step 3: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web-next/src/pages/dashboard/components/TrendChart.tsx \
@@ -767,7 +768,7 @@ git commit -m "refactor: extract TrendChart component from ChartsTab"
 - Create: `src/pages/dashboard/components/SpendingTrendlineChart.tsx`
 - Modify: `src/pages/dashboard/ChartsTab.tsx`
 
-- [ ] **Step 1: Create `SpendingTrendlineChart.tsx`**
+- [x] **Step 1: Create `SpendingTrendlineChart.tsx`**
 
 Create `src/pages/dashboard/components/SpendingTrendlineChart.tsx`:
 
@@ -925,20 +926,20 @@ export const SpendingTrendlineChart = ({
 };
 ```
 
-- [ ] **Step 2: Remove `SpendingTrendlineChart` from `ChartsTab.tsx`**
+- [x] **Step 2: Remove `SpendingTrendlineChart` from `ChartsTab.tsx`**
 
 In `src/pages/dashboard/ChartsTab.tsx`:
 1. Remove the `SpendingTrendlineChart` function definition (~lines 119–260)
 2. Remove the `CHART_COLORS` constant (moved to `SpendingTrendlineChart.tsx`)
 3. Add import: `import { SpendingTrendlineChart } from "./components/SpendingTrendlineChart";`
 
-- [ ] **Step 3: Verify type check passes**
+- [x] **Step 3: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web-next/src/pages/dashboard/components/SpendingTrendlineChart.tsx \
@@ -954,7 +955,7 @@ git commit -m "refactor: extract SpendingTrendlineChart component from ChartsTab
 - Create: `src/pages/dashboard/components/TagBar.tsx`
 - Modify: `src/pages/dashboard/ChartsTab.tsx`
 
-- [ ] **Step 1: Create `TagBar.tsx`**
+- [x] **Step 1: Create `TagBar.tsx`**
 
 Create `src/pages/dashboard/components/TagBar.tsx`:
 
@@ -1007,7 +1008,7 @@ export const TagBar = ({
 };
 ```
 
-- [ ] **Step 2: Rewrite `ChartsTab.tsx` to be shell-only**
+- [x] **Step 2: Rewrite `ChartsTab.tsx` to be shell-only**
 
 Replace `src/pages/dashboard/ChartsTab.tsx` with:
 
@@ -1109,13 +1110,13 @@ export const ChartsTab = () => {
 };
 ```
 
-- [ ] **Step 3: Verify type check passes**
+- [x] **Step 3: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 4: Run E2E tests**
+- [x] **Step 4: Run E2E tests**
 
 Ensure dev server is running, then:
 
@@ -1125,7 +1126,7 @@ cd apps/web-next && npm run test:e2e:ci
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web-next/src/pages/dashboard/components/TagBar.tsx \
@@ -1140,7 +1141,7 @@ git commit -m "refactor: extract TagBar, reduce ChartsTab to shell (~60 lines)"
 **Files:**
 - Modify: `src/pages/transactions/create.tsx`
 
-- [ ] **Step 1: Identify the lines to change**
+- [x] **Step 1: Identify the lines to change**
 
 In `src/pages/transactions/create.tsx`, find:
 
@@ -1173,7 +1174,7 @@ And the JSX:
 />
 ```
 
-- [ ] **Step 2: Replace with `useSelect`**
+- [x] **Step 2: Replace with `useSelect`**
 
 Remove the `useList` import for tags (keep if used elsewhere in the file; otherwise remove), remove the `useMemo` for `tagOptions`, and replace with:
 
@@ -1212,17 +1213,17 @@ Note: `useSelect` defaults to server-side filtering (`filterOption: false`). Sin
 />
 ```
 
-- [ ] **Step 3: Remove unused `useMemo` import if no longer used**
+- [x] **Step 3: Remove unused `useMemo` import if no longer used**
 
 Check if `useMemo` is still used elsewhere in `create.tsx`. If not, remove it from the React import.
 
-- [ ] **Step 4: Verify type check passes**
+- [x] **Step 4: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 5: Run E2E tests**
+- [x] **Step 5: Run E2E tests**
 
 ```bash
 cd apps/web-next && npm run test:e2e:ci -- e2e/tests/transactions.spec.ts
@@ -1230,7 +1231,7 @@ cd apps/web-next && npm run test:e2e:ci -- e2e/tests/transactions.spec.ts
 
 Expected: all transaction tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web-next/src/pages/transactions/create.tsx
@@ -1244,7 +1245,7 @@ git commit -m "refactor(M1): replace useList+useMemo with useSelect for tag opti
 **Files:**
 - Modify: `src/pages/transactions/edit.tsx`
 
-- [ ] **Step 1: Identify the lines to change**
+- [x] **Step 1: Identify the lines to change**
 
 In `src/pages/transactions/edit.tsx`, find:
 
@@ -1277,7 +1278,7 @@ And the JSX:
 />
 ```
 
-- [ ] **Step 2: Replace with `useSelect`**
+- [x] **Step 2: Replace with `useSelect`**
 
 Same pattern as Task 10. Add `useSelect` import (already in `import { Edit, useForm, useSelect } from "@refinedev/antd"`), remove `useList` for tags, remove `tagOptions` `useMemo`:
 
@@ -1303,17 +1304,17 @@ Update JSX:
 />
 ```
 
-- [ ] **Step 3: Remove unused imports**
+- [x] **Step 3: Remove unused imports**
 
 Remove `useList` from `@refinedev/core` import if no longer used in `edit.tsx`. Remove `useMemo` from React import if no longer used.
 
-- [ ] **Step 4: Verify type check passes**
+- [x] **Step 4: Verify type check passes**
 
 ```bash
 cd apps/web-next && npm run check-types 2>&1 | tail -5
 ```
 
-- [ ] **Step 5: Run E2E tests**
+- [x] **Step 5: Run E2E tests**
 
 ```bash
 cd apps/web-next && npm run test:e2e:ci -- e2e/tests/transactions.spec.ts
@@ -1321,7 +1322,7 @@ cd apps/web-next && npm run test:e2e:ci -- e2e/tests/transactions.spec.ts
 
 Expected: all transaction tests pass including tag persistence tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web-next/src/pages/transactions/edit.tsx
@@ -1334,12 +1335,12 @@ git commit -m "refactor(M1): replace useList+useMemo with useSelect for tag opti
 
 After all tasks, verify:
 
-- [ ] `npm run check-types` is clean
-- [ ] `npm run lint` is clean (`cd apps/web-next && npm run lint`)
-- [ ] `npm run test:e2e:ci` passes (all tests)
-- [ ] `dashboard/index.tsx` is ≤ 60 lines
-- [ ] `ChartsTab.tsx` is ≤ 70 lines
-- [ ] No `supabaseClient` direct calls were accidentally introduced
-- [ ] `formatCurrencyLocal` no longer exists in any dashboard file
-- [ ] `CurrencyTooltipFormatter` no longer exists in `ChartsTab.tsx`
-- [ ] `yearOptions`/`monthOptions`/`currentYear` are defined only in `src/constants/dateOptions.ts`
+- [x] `npm run check-types` is clean
+- [x] `npm run lint` is clean (`cd apps/web-next && npm run lint`)
+- [x] `npm run test:e2e:ci` passes (all tests)
+- [x] `dashboard/index.tsx` is ≤ 60 lines
+- [x] `ChartsTab.tsx` is ≤ 70 lines
+- [x] No `supabaseClient` direct calls were accidentally introduced
+- [x] `formatCurrencyLocal` no longer exists in any dashboard file
+- [x] `CurrencyTooltipFormatter` no longer exists in `ChartsTab.tsx`
+- [x] `yearOptions`/`monthOptions`/`currentYear` are defined only in `src/constants/dateOptions.ts`
