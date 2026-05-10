@@ -1,8 +1,22 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createTestUser, deleteTestUser, loginUser } from "../utils/test-helpers";
 
 const chartDataEndpointPattern =
   /\/rest\/v1\/(view_monthly_totals|view_monthly_category_totals|view_monthly_tagged_type_totals)\b/i;
+
+const openMonthRangeSelect = async (label: string, page: Page) => {
+  await page.getByRole("combobox", { name: label }).click({ force: true });
+};
+
+const selectMonthRangeByKey = async (
+  label: string,
+  key: "Home" | "End",
+  page: Page
+) => {
+  await openMonthRangeSelect(label, page);
+  await page.keyboard.press(key);
+  await page.keyboard.press("Enter");
+};
 
 test.describe("Dashboard month range validation", () => {
   test("charts tab allows single-month range", async ({ page }) => {
@@ -12,19 +26,8 @@ test.describe("Dashboard month range validation", () => {
       await loginUser(page, email, password);
       await page.getByRole("tab", { name: /charts/i }).click();
 
-      const currentYear = await page.evaluate(() =>
-        String(new Date().getFullYear())
-      );
-
-      await page.getByRole("combobox", { name: "From year" }).click();
-      await page.getByTitle(currentYear).click();
-      await page.getByRole("combobox", { name: "To year" }).click();
-      await page.getByTitle(currentYear).click();
-
-      await page.getByRole("combobox", { name: "From month" }).click();
-      await page.getByTitle("January").click();
-      await page.getByRole("combobox", { name: "To month" }).click();
-      await page.getByTitle("January").click();
+      await selectMonthRangeByKey("From month", "Home", page);
+      await selectMonthRangeByKey("To month", "Home", page);
 
       await expect(
         page.getByText("End month must not be before start month")
@@ -51,19 +54,9 @@ test.describe("Dashboard month range validation", () => {
       await page.getByRole("tab", { name: /charts/i }).click();
       await page.waitForLoadState("networkidle");
 
-      const currentYear = await page.evaluate(() =>
-        String(new Date().getFullYear())
-      );
-
-      await page.getByRole("combobox", { name: "From year" }).click();
-      await page.getByTitle(currentYear).click();
-      await page.getByRole("combobox", { name: "To year" }).click();
-      await page.getByTitle(currentYear).click();
-
-      await page.getByRole("combobox", { name: "From month" }).click();
-      await page.getByTitle("December").click();
-      await page.getByRole("combobox", { name: "To month" }).click();
-      await page.getByTitle("January").click();
+      await openMonthRangeSelect("To year", page);
+      await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("Enter");
 
       await expect(
         page.getByText("End month must not be before start month")
