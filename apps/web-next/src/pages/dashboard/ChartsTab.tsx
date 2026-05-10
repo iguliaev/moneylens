@@ -65,7 +65,7 @@ export const ChartsTab = () => {
           value={startMonth}
           onChange={setStartMonth}
           options={monthOptions}
-          style={{ width: 90 }}
+          style={{ width: 130 }}
         />
         <Text strong>To:</Text>
         <Select
@@ -78,7 +78,7 @@ export const ChartsTab = () => {
           value={endMonth}
           onChange={setEndMonth}
           options={monthOptions}
-          style={{ width: 90 }}
+          style={{ width: 130 }}
         />
       </div>
 
