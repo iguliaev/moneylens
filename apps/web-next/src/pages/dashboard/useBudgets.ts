@@ -15,36 +15,29 @@ export interface BudgetProgress {
   updated_at: string;
 }
 
-type BudgetsWithLinkedRow = Omit<
-  Pick<
-    Tables<"budgets_with_linked">,
-    | "id"
-    | "name"
-    | "description"
-    | "type"
-    | "target_amount"
-    | "current_amount"
-    | "start_date"
-    | "end_date"
-    | "created_at"
-    | "updated_at"
-  >,
-  "id"
-> & { id?: string };
+// The full generated view row type — all columns are nullable because
+// Supabase views cannot declare NOT NULL constraints.
+type BudgetViewRow = Tables<"budgets_with_linked">;
 
 export const useBudgets = () => {
-  const { query } = useList<BudgetsWithLinkedRow>({
+  const { query } = useList({
     resource: "budgets_with_linked",
     sorters: [{ field: "created_at", order: "desc" }],
     pagination: { mode: "off" },
   });
 
-  const budgets: BudgetProgress[] = (query.data?.data ?? []).flatMap((b) => {
+  // Assert to the real view row shape so all nullable columns are explicit
+  // and type-checked in the mapper. (useList's default BaseRecord generic
+  // cannot accept id: string | null, which is why we cast here rather than
+  // use a generic that rewrites the generated id type.)
+  const rows = (query.data?.data ?? []) as BudgetViewRow[];
+
+  const budgets: BudgetProgress[] = rows.flatMap((b) => {
     if (!b.id || !b.name || !b.type || b.created_at == null || b.updated_at == null)
       return [];
     return [
       {
-        id: String(b.id),
+        id: b.id,
         name: b.name,
         description: b.description,
         type: b.type,
