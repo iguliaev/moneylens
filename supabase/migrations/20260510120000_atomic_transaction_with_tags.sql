@@ -16,28 +16,28 @@ AS $$
 DECLARE
   v_transaction public.transactions;
 BEGIN
-  -- Validate category ownership
+  -- Validate category ownership (must be non-deleted)
   IF NOT EXISTS (
     SELECT 1 FROM public.categories
-    WHERE id = (p_transaction->>'category_id')::uuid AND user_id = auth.uid()
+    WHERE id = (p_transaction->>'category_id')::uuid AND user_id = auth.uid() AND deleted_at IS NULL
   ) THEN
     RAISE EXCEPTION 'Category not found or access denied' USING ERRCODE = '42501';
   END IF;
 
-  -- Validate bank account ownership
+  -- Validate bank account ownership (must be non-deleted)
   IF NOT EXISTS (
     SELECT 1 FROM public.bank_accounts
-    WHERE id = (p_transaction->>'bank_account_id')::uuid AND user_id = auth.uid()
+    WHERE id = (p_transaction->>'bank_account_id')::uuid AND user_id = auth.uid() AND deleted_at IS NULL
   ) THEN
     RAISE EXCEPTION 'Bank account not found or access denied' USING ERRCODE = '42501';
   END IF;
 
-  -- Validate all tags belong to current user
+  -- Validate all tags belong to current user (must be non-deleted)
   IF p_tag_ids IS NOT NULL AND array_length(p_tag_ids, 1) > 0 THEN
     IF EXISTS (
       SELECT 1 FROM unnest(p_tag_ids) AS tid
       WHERE NOT EXISTS (
-        SELECT 1 FROM public.tags WHERE id = tid AND user_id = auth.uid()
+        SELECT 1 FROM public.tags WHERE id = tid AND user_id = auth.uid() AND deleted_at IS NULL
       )
     ) THEN
       RAISE EXCEPTION 'One or more tags not found or access denied' USING ERRCODE = '42501';
@@ -96,28 +96,28 @@ BEGIN
     RAISE EXCEPTION 'Transaction not found or access denied' USING ERRCODE = '42501';
   END IF;
 
-  -- Validate category ownership
+  -- Validate category ownership (must be non-deleted)
   IF NOT EXISTS (
     SELECT 1 FROM public.categories
-    WHERE id = (p_transaction->>'category_id')::uuid AND user_id = auth.uid()
+    WHERE id = (p_transaction->>'category_id')::uuid AND user_id = auth.uid() AND deleted_at IS NULL
   ) THEN
     RAISE EXCEPTION 'Category not found or access denied' USING ERRCODE = '42501';
   END IF;
 
-  -- Validate bank account ownership
+  -- Validate bank account ownership (must be non-deleted)
   IF NOT EXISTS (
     SELECT 1 FROM public.bank_accounts
-    WHERE id = (p_transaction->>'bank_account_id')::uuid AND user_id = auth.uid()
+    WHERE id = (p_transaction->>'bank_account_id')::uuid AND user_id = auth.uid() AND deleted_at IS NULL
   ) THEN
     RAISE EXCEPTION 'Bank account not found or access denied' USING ERRCODE = '42501';
   END IF;
 
-  -- Validate all tags belong to current user
+  -- Validate all tags belong to current user (must be non-deleted)
   IF p_tag_ids IS NOT NULL AND array_length(p_tag_ids, 1) > 0 THEN
     IF EXISTS (
       SELECT 1 FROM unnest(p_tag_ids) AS tid
       WHERE NOT EXISTS (
-        SELECT 1 FROM public.tags WHERE id = tid AND user_id = auth.uid()
+        SELECT 1 FROM public.tags WHERE id = tid AND user_id = auth.uid() AND deleted_at IS NULL
       )
     ) THEN
       RAISE EXCEPTION 'One or more tags not found or access denied' USING ERRCODE = '42501';

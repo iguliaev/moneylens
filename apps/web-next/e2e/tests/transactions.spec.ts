@@ -404,7 +404,7 @@ test.describe("Transactions", () => {
       bankAccount: "Main Account",
     });
     await expect(row).toBeVisible({ timeout: 10000 });
-    
+
     // Verify the tag is visible in the row
     await expect(row.getByText("essentials")).toBeVisible();
   });

@@ -80,9 +80,9 @@ export const TransactionEdit = () => {
     );
   }, [tagsQuery.data]);
 
-  // Set initial tag values when transaction data is loaded
+  // Set initial tag values when transaction data is loaded (including clearing for untagged transactions)
   useEffect(() => {
-    if (currentTagIds.length > 0 && formProps.form) {
+    if (formProps.form) {
       formProps.form.setFieldValue("tag_ids", currentTagIds);
     }
   }, [currentTagIds, formProps.form]);
