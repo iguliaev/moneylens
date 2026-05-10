@@ -5,28 +5,25 @@ import {
   type TableColumnsType,
   Typography,
   Select,
-  Statistic,
   Table,
   Tabs,
 } from "antd";
 import { Show } from "@refinedev/antd";
 import { BudgetsSection } from "./BudgetsSection";
 import { ChartsTab } from "./ChartsTab";
-import { TrendBadge } from "./components/TrendBadge";
+import { TypeSummaryCards } from "./components/TypeSummaryCards";
 
 import { useState, type FC } from "react";
-import { useCurrency } from "../../contexts/currency";
 import dayjs from "dayjs";
+import { useCurrency } from "../../contexts/currency";
 import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
   TransactionType,
-  TYPE_VALUE_COLORS,
 } from "../../constants/transactionTypes";
 import {
   usePeriodStats,
   type CategorySummary,
-  type TypeSummary,
 } from "../../hooks";
 
 const { Text, Title } = Typography;
@@ -44,8 +41,6 @@ const monthOptions = Array.from({ length: 12 }, (_, i) => ({
   value: i,
 }));
 
-const TYPE_COLORS = TYPE_VALUE_COLORS;
-
 // === Utilities ===
 const formatCurrencyLocal = (amount: number, currency: string) =>
   new Intl.NumberFormat(undefined, {
@@ -54,85 +49,6 @@ const formatCurrencyLocal = (amount: number, currency: string) =>
   }).format(amount);
 
 // === Components ===
-const TypeSummaryCards = ({
-  data,
-  previousData,
-  loading,
-}: {
-  data: TypeSummary[];
-  previousData: TypeSummary[] | null;
-  loading: boolean;
-}) => {
-  const { currency } = useCurrency();
-  const getAmount = (type: TransactionType, source: TypeSummary[] = data) =>
-    source.find((d) => d.type === type)?.total ?? 0;
-
-  const earnings = getAmount(TRANSACTION_TYPES.EARN);
-  const spending = getAmount(TRANSACTION_TYPES.SPEND);
-  const netIncome = earnings - spending;
-  const prevEarnings = getAmount(TRANSACTION_TYPES.EARN, previousData ?? []);
-  const prevSpending = getAmount(TRANSACTION_TYPES.SPEND, previousData ?? []);
-  const prevNetIncome = prevEarnings - prevSpending;
-
-  return (
-    <Row gutter={[16, 16]}>
-      {Object.values(TRANSACTION_TYPES).map((type) => {
-        const current = getAmount(type);
-        const previous = getAmount(type, previousData ?? []);
-        return (
-          <Col xs={24} sm={12} lg={6} key={type}>
-            <Card>
-              <Statistic
-                title={TRANSACTION_TYPE_LABELS[type]}
-                value={current}
-                precision={2}
-                formatter={(value) =>
-                  formatCurrencyLocal(
-                    typeof value === "number" ? value : 0,
-                    currency
-                  )
-                }
-                loading={loading}
-                valueStyle={{ color: TYPE_COLORS[type] }}
-              />
-              {!loading && previousData !== null && (
-                <TrendBadge current={current} previous={previous} />
-              )}
-            </Card>
-          </Col>
-        );
-      })}
-      <Col xs={24} sm={12} lg={6}>
-        <Card>
-          <Statistic
-            title="Net Income"
-            value={netIncome}
-            precision={2}
-            formatter={(value) =>
-              formatCurrencyLocal(
-                typeof value === "number" ? value : 0,
-                currency
-              )
-            }
-            loading={loading}
-            valueStyle={{
-              color:
-                netIncome > 0
-                  ? "#52c41a"
-                  : netIncome < 0
-                    ? "#ff4d4f"
-                    : undefined,
-            }}
-          />
-          {!loading && previousData !== null && (
-            <TrendBadge current={netIncome} previous={prevNetIncome} />
-          )}
-        </Card>
-      </Col>
-    </Row>
-  );
-};
-
 const CategoryBreakdownTable = ({
   data,
   loading,
