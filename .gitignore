@@ -1,4 +1,6 @@
 .vscode
 .env*
 venv/
-supabase/.temp/apps/fiery-trams-battle/
+supabase/.temp/
+apps/fiery-trams-battle/
+.playwright-cli/
