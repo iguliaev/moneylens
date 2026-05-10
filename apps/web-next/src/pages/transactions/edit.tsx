@@ -92,7 +92,7 @@ export const TransactionEdit = () => {
       <Form
         {...formProps}
         layout="vertical"
-        onFinish={handleFinish as (values: unknown) => void}
+        onFinish={handleFinish}
         data-testid="transaction-edit-form"
         aria-busy={formLoading}
       >

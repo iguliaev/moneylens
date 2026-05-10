@@ -111,7 +111,7 @@ SELECT throws_ok(
 
 SELECT ok(
   (SELECT COUNT(*) FROM public.transactions WHERE user_id = auth.uid() AND notes = 'orphan-should-not-exist') = 0,
-  'No orphan transaction left after tag FK violation'
+  'No orphan transaction left after tag ownership check'
 );
 
 -- 6) update_transaction_with_tags function exists

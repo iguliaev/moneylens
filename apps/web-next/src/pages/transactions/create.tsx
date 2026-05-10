@@ -58,7 +58,7 @@ export const TransactionCreate = () => {
       <Form
         {...formProps}
         layout="vertical"
-        onFinish={handleFinish as (values: unknown) => void}
+        onFinish={handleFinish}
       >
         <Form.Item
           label="Date"

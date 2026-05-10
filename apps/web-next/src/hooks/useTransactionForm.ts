@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useInvalidate, useNotification } from "@refinedev/core";
+import type { Dayjs } from "dayjs";
 import { supabaseClient } from "../utility";
 
 type Mode = "create" | "edit";
@@ -10,8 +11,8 @@ interface UseTransactionFormOptions {
   id?: string | undefined;
 }
 
-interface TransactionFormValues {
-  date: string;
+export interface TransactionFormValues {
+  date: string | Dayjs;
   type: string;
   amount: number;
   category_id: string;
@@ -26,22 +27,19 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleFinish(values: TransactionFormValues) {
+  async function handleFinish(values: unknown) {
+    const formValues = values as TransactionFormValues;
     setIsLoading(true);
     try {
-      const { tag_ids, ...rawFields } = values;
+      const { tag_ids, ...rawFields } = formValues;
       const tagIds: string[] = tag_ids ?? [];
 
       // DatePicker returns a dayjs object — serialize to YYYY-MM-DD for the RPC
       const transactionFields = {
         ...rawFields,
         date:
-          rawFields.date &&
-          typeof (rawFields.date as unknown as { format?: unknown }).format ===
-            "function"
-            ? (rawFields.date as unknown as { format: (f: string) => string }).format(
-                "YYYY-MM-DD"
-              )
+          rawFields.date && typeof (rawFields.date as Dayjs).format === "function"
+            ? (rawFields.date as Dayjs).format("YYYY-MM-DD")
             : rawFields.date,
       };
 
@@ -73,7 +71,14 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
         return;
       }
 
-      await invalidate({ resource: "transactions", invalidates: ["list"] });
+      await invalidate({
+        resource: "transactions",
+        invalidates: ["list"],
+      });
+      await invalidate({
+        resource: "transactions_with_details",
+        invalidates: ["list"],
+      });
       setIsLoading(false);
       navigate("/transactions");
     } catch (err) {
