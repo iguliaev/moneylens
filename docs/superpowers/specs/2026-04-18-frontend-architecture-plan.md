@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18  
 **Scope:** `apps/web-next/` — Vite + React 19 + Refine + Ant Design 5  
-**Status:** In progress — H2 complete ✅ | H1, H3, M1–M4, L1–L3 pending
+**Status:** In progress — H2 ✅ H1 ✅ L1 ✅ L2 ✅ | H3, M1–M4, L3 pending
 
 ---
 
@@ -14,57 +14,13 @@ The MoneyLens frontend has solid bones (Refine framework, typed Supabase client,
 
 ## Priority: High
 
-### H1 — Replace direct Supabase calls in dashboard with Refine `useCustom`
+### H1 — Replace direct Supabase calls in dashboard with Refine `useCustom` ✅ COMPLETE
 
-**What**  
-`dashboard/index.tsx` contains four plain-async functions (`fetchYearStats`, `fetchMonthStats`, `fetchPrevTypeSummary`) and `ChartsTab.tsx` contains `useChartsData`, all of which call `supabaseClient.from(...)` directly inside `useEffect`. This bypasses every Refine subsystem: caching, background refetch, global loading/error state, and cache invalidation triggered by mutations elsewhere in the app.
+> **Status:** Implemented (prior to 2026-05-10) — hooks already live in `src/hooks/` and use Refine `useList`.  
+> `usePeriodStats.ts`, `useChartsData.ts`, `useBudgets.ts`, `utility/dateRanges.ts` all exist and use `useList` / `useList`-based patterns. No direct `supabaseClient.from(...)` calls remain in any dashboard data hook.
 
-`useBudgets.ts` has the same problem for the `get_budget_progress` RPC call.
-
-**Why it matters**  
-- Stale dashboard data after a transaction is created/edited — Refine will never know to re-fetch because the query is invisible to it.
-- No deduplication: switching tabs triggers independent network requests for the same date range.
-- Manual `cancelled` flags and `useState<loading>` boilerplate can be replaced by Refine's proven lifecycle.
-
-**How to do it**
-
-1. For database view queries (`view_monthly_totals`, `view_yearly_totals`, etc.), use Refine's `useList` with `resource` set to the view name and pass filters via the `filters` array:
-
-   ```ts
-   useList({
-     resource: "view_monthly_totals",
-     filters: [
-       { field: "month", operator: "gte", value: startDate },
-       { field: "month", operator: "lt",  value: endDate },
-     ],
-     pagination: { mode: "off" },
-   })
-   ```
-
-   Refine will generate a stable cache key from resource + filters + sorters, so switching between tabs will hit the cache rather than the network.
-
-2. For the `get_budget_progress` RPC in `useBudgets.ts`, use Refine's `useCustom`:
-
-   ```ts
-   useCustom<BudgetProgress[]>({
-     url: `${SUPABASE_URL}/rest/v1/rpc/get_budget_progress`,
-     method: "get",
-   })
-   ```
-
-   Or use a thin wrapper that delegates to `supabaseClient.rpc` inside a React Query `useQuery` with a stable key — this at least gives cache deduplication and avoids the manual `setLoading` dance.
-
-3. Replace the four `fetchXxxStats` standalone async functions with two hooks — `useYearStats(year: number)` and `useMonthStats(year: number, month: number)` — each internally composing two `useList` calls and returning the combined, mapped result. These hooks live in a new `src/hooks/` directory.
-
-4. The previous-period comparison currently calls a third fetch in `usePeriodStats`. Move this into each new hook as a second `useList` with `enabled: true` and shift the date arithmetic into a pure helper `getPreviousPeriodRange(period, date)` in `src/utility/dateRanges.ts`.
-
-**Files to change**
-- `src/pages/dashboard/index.tsx` — remove all direct Supabase calls and the `usePeriodStats` hook body
-- `src/pages/dashboard/ChartsTab.tsx` — remove `useChartsData` body
-- `src/pages/dashboard/useBudgets.ts` — replace `supabaseClient.rpc` with `useCustom` or `useQuery`
-- New: `src/hooks/usePeriodStats.ts`, `src/hooks/useChartsData.ts`, `src/utility/dateRanges.ts`
-
-**Risk / complexity:** Medium-High. The hook logic is straightforward but the Refine `useList` filter syntax for DB views needs testing. Each hook should be extracted and unit-tested in isolation before removing the old code.
+~~**What**  
+`dashboard/index.tsx` contains four plain-async functions...~~
 
 ---
 
@@ -405,13 +361,14 @@ These should be catalogued and distinguished from the accidental bypasses covere
 ```
 ~~Week 3:  H2 (atomic tag association)~~ ✅ DONE (PR #175, 2026-05-10)
 ~~Week 4:  L2 (strengthen TS typing for onFinish)~~ ✅ resolved by H2 (no cast needed)
+~~Week 2:  H1 (replace Supabase calls with Refine hooks)~~ ✅ DONE (hooks in src/hooks/ use useList)
+~~Week 4:  L1 (shared src/hooks/ directory)~~ ✅ DONE
 
+Week 1:  M2 (deduplicate constants) — prerequisite for H3
 Week 1:  H3 (decompose dashboard) — no logic change, high clarity gain
-Week 1:  M2 (deduplicate constants) — safe, tiny, should go first to unblock H3
-Week 2:  H1 (replace Supabase calls with Refine hooks) — depends on H3 for clean targets
 Week 2:  M1 (useSelect for tags) — small, can be parallelised
-Week 3:  M3 (standardise error handling) — clean up as H1 lands
-Week 4:  M4, L1, L3 — polish and structural hygiene
+Week 3:  M3 (standardise error handling)
+Week 4:  M4, L3 — polish and structural hygiene
 ```
 
 Each item is independently releasable. Items within the same week can be parallelised across developers.
