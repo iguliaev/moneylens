@@ -51,5 +51,14 @@ export const useBudgets = () => {
     ];
   });
 
-  return { budgets, loading: query.isFetching, refresh: query.refetch };
+  // isLoading: true only on the first fetch (no cached data) — safe to drive
+  // a full <Skeleton /> without flickering on background refetches.
+  // isFetching: true on any active fetch — callers can use this for subtle
+  // refresh indicators without hiding already-loaded data.
+  return {
+    budgets,
+    loading: query.isLoading,
+    isFetching: query.isFetching,
+    refresh: query.refetch,
+  };
 };

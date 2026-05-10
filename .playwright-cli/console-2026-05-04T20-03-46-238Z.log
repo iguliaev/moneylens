@@ -1,0 +1,94 @@
+[     164ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[     497ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "username"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/login:0
+[    6140ms] [ERROR] Warning: [antd: compatible] antd v5 support React is 16 ~ 18. see https://u.ant.design/v5-for-19 for compatible. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[    6304ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[  306792ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[  306919ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[  306978ms] [WARNING] [useBreadcrumb]: Breadcrumb missing translate key for the "create" action. Please add "actions.create" key to your translation file.
+For more information, see https://refine.dev/docs/api-reference/core/hooks/useBreadcrumb/#i18n-support @ http://localhost:5173/node_modules/.vite/deps/chunk-EIL5HWXH.js?v=3c979ab4:2805
+[  575316ms] [ERROR] The final argument passed to %s changed size between renders. The order and size of this array must remain constant.
+
+Previous: %s
+Incoming: %s useEffect [] [, GBP] @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5627
+[  575317ms] [ERROR] The final argument passed to %s changed size between renders. The order and size of this array must remain constant.
+
+Previous: %s
+Incoming: %s useEffect [] [, GBP] @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5627
+[  589236ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[  589323ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[ 1274294ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[ 1274622ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[ 1274697ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[ 3425041ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[ 3425513ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[ 3425712ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[ 4083490ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[ 4084156ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[ 4084291ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[174871191ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[174872268ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[174872633ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[346090631ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[346091695ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[346091920ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[394386978ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[394387665ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[394387830ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[394512970ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[394513512ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[394513630ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[399963683ms] [ERROR] React has detected a change in the order of Hooks called by %s. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://react.dev/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+%s   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ BudgetsSection 1. useState                   useContext
+ @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5593
+[399963702ms] [ERROR] %o
+
+%s
+
+%s
+ Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5892:17)
+    at updateReducer (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5887:16)
+    at Object.useState (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:18996:20)
+    at exports.useState (http://localhost:5173/node_modules/.vite/deps/chunk-FC4XHZFC.js?v=3c979ab4:959:36)
+    at useResourceParams (http://localhost:5173/node_modules/.vite/deps/chunk-EIL5HWXH.js?v=3c979ab4:13620:46)
+    at useList (http://localhost:5173/node_modules/.vite/deps/chunk-EIL5HWXH.js?v=3c979ab4:10252:47)
+    at useBudgets (http://localhost:5173/src/pages/dashboard/useBudgets.ts?t=1778324989869:3:21)
+    at BudgetsSection (http://localhost:5173/src/pages/dashboard/BudgetsSection.tsx?t=1778324989869:47:32)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:18509:20)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5654:24) The above error occurred in the <BudgetsSection> component. React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:7000
+[399963704ms] [ERROR] ErrorBoundary caught: Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5892:17)
+    at updateReducer (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5887:16)
+    at Object.useState (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:18996:20)
+    at exports.useState (http://localhost:5173/node_modules/.vite/deps/chunk-FC4XHZFC.js?v=3c979ab4:959:36)
+    at useResourceParams (http://localhost:5173/node_modules/.vite/deps/chunk-EIL5HWXH.js?v=3c979ab4:13620:46)
+    at useList (http://localhost:5173/node_modules/.vite/deps/chunk-EIL5HWXH.js?v=3c979ab4:10252:47)
+    at useBudgets (http://localhost:5173/src/pages/dashboard/useBudgets.ts?t=1778324989869:3:21)
+    at BudgetsSection (http://localhost:5173/src/pages/dashboard/BudgetsSection.tsx?t=1778324989869:47:32)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:18509:20)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:5654:24) {componentStack: 
+    at BudgetsSection (http://localhost:5173/src/…7.js?v=3c979ab4:10188:3)
+    at App (<anonymous>)} @ http://localhost:5173/src/components/error-boundary/index.tsx:14
+[399976273ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/src/pages/dashboard/index.tsx?t=1778325002437:0
+[399976274ms] [ERROR] [vite] Failed to reload /src/pages/dashboard/index.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5173/@vite/client:881
+[399990303ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/src/pages/dashboard/index.tsx?t=1778325016475:0
+[399990304ms] [ERROR] [vite] Failed to reload /src/pages/dashboard/index.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5173/@vite/client:881
+[399990404ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/src/pages/dashboard/index.tsx?t=1778325016597:0
+[399990405ms] [ERROR] [vite] Failed to reload /src/pages/dashboard/index.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5173/@vite/client:881
+[400019727ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/src/pages/dashboard/ChartsTab.tsx?t=1778325045945:0
+[400019727ms] [ERROR] [vite] Failed to reload /src/pages/dashboard/ChartsTab.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5173/@vite/client:881
+[400334097ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[400334954ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[400335096ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[401684441ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/src/pages/dashboard/ChartsTab.tsx?t=1778326710644:0
+[401684444ms] [ERROR] [vite] Failed to reload /src/pages/dashboard/ChartsTab.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5173/@vite/client:881
+[402395387ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[402398809ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[402400007ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
+[426610588ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:963
+[426611566ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=3c979ab4:20102
+[426611672ms] [ERROR] Warning: [antd: Menu] `children` is deprecated. Please use `items` instead. @ http://localhost:5173/node_modules/.vite/deps/chunk-NMOVXHDP.js?v=3c979ab4:1172
