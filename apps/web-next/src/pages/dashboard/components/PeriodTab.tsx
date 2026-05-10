@@ -1,10 +1,11 @@
 import { Alert, Select, Typography } from "antd";
 import { type FC } from "react";
 import dayjs from "dayjs";
-import { yearOptions, monthOptions } from "../../../constants/dateOptions";
+import { yearOptions } from "../../../constants/dateOptions";
 import { usePeriodStats } from "../../../hooks";
 import { TypeSummaryCards } from "./TypeSummaryCards";
 import { CategoryBreakdownSection } from "./CategoryBreakdownSection";
+import { MonthRangePicker } from "../../../components/MonthRangePicker";
 
 const { Text } = Typography;
 
@@ -59,23 +60,28 @@ export const PeriodTab: FC<PeriodTabProps> = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <Text strong>Year:</Text>
-        <Select
-          value={selectedYear}
-          onChange={setSelectedYear}
-          options={yearOptions}
-          style={{ width: 120 }}
-        />
-        {period === "month" && setSelectedMonth && (
+        {period === "year" || !setSelectedMonth ? (
           <>
-            <Text strong>Month:</Text>
+            <Text strong>Year:</Text>
             <Select
-              value={selectedMonth}
-              onChange={setSelectedMonth}
-              options={monthOptions}
-              style={{ width: 150 }}
+              value={selectedYear}
+              onChange={setSelectedYear}
+              options={yearOptions}
+              style={{ width: 120 }}
             />
           </>
+        ) : (
+          <MonthRangePicker
+            startYear={selectedYear}
+            startMonth={selectedMonth}
+            endYear={selectedYear}
+            endMonth={selectedMonth}
+            singleMonth
+            onChange={(next) => {
+              setSelectedYear(next.startYear);
+              setSelectedMonth?.(next.startMonth);
+            }}
+          />
         )}
       </div>
       <TypeSummaryCards
