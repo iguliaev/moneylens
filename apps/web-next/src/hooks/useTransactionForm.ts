@@ -74,6 +74,7 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
       }
 
       await invalidate({ resource: "transactions", invalidates: ["list"] });
+      setIsLoading(false);
       navigate("/transactions");
     } catch (err) {
       openNotification?.({

@@ -16,6 +16,34 @@ AS $$
 DECLARE
   v_transaction public.transactions;
 BEGIN
+  -- Validate category ownership
+  IF NOT EXISTS (
+    SELECT 1 FROM public.categories
+    WHERE id = (p_transaction->>'category_id')::uuid AND user_id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Category not found or access denied' USING ERRCODE = '42501';
+  END IF;
+
+  -- Validate bank account ownership
+  IF NOT EXISTS (
+    SELECT 1 FROM public.bank_accounts
+    WHERE id = (p_transaction->>'bank_account_id')::uuid AND user_id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Bank account not found or access denied' USING ERRCODE = '42501';
+  END IF;
+
+  -- Validate all tags belong to current user
+  IF p_tag_ids IS NOT NULL AND array_length(p_tag_ids, 1) > 0 THEN
+    IF EXISTS (
+      SELECT 1 FROM unnest(p_tag_ids) AS tid
+      WHERE NOT EXISTS (
+        SELECT 1 FROM public.tags WHERE id = tid AND user_id = auth.uid()
+      )
+    ) THEN
+      RAISE EXCEPTION 'One or more tags not found or access denied' USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
   -- tg_set_user_id trigger will set user_id = auth.uid() on INSERT
   INSERT INTO public.transactions (
     date, type, amount, category_id, bank_account_id, notes
@@ -66,6 +94,34 @@ BEGIN
     WHERE id = p_transaction_id AND user_id = auth.uid()
   ) THEN
     RAISE EXCEPTION 'Transaction not found or access denied' USING ERRCODE = '42501';
+  END IF;
+
+  -- Validate category ownership
+  IF NOT EXISTS (
+    SELECT 1 FROM public.categories
+    WHERE id = (p_transaction->>'category_id')::uuid AND user_id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Category not found or access denied' USING ERRCODE = '42501';
+  END IF;
+
+  -- Validate bank account ownership
+  IF NOT EXISTS (
+    SELECT 1 FROM public.bank_accounts
+    WHERE id = (p_transaction->>'bank_account_id')::uuid AND user_id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Bank account not found or access denied' USING ERRCODE = '42501';
+  END IF;
+
+  -- Validate all tags belong to current user
+  IF p_tag_ids IS NOT NULL AND array_length(p_tag_ids, 1) > 0 THEN
+    IF EXISTS (
+      SELECT 1 FROM unnest(p_tag_ids) AS tid
+      WHERE NOT EXISTS (
+        SELECT 1 FROM public.tags WHERE id = tid AND user_id = auth.uid()
+      )
+    ) THEN
+      RAISE EXCEPTION 'One or more tags not found or access denied' USING ERRCODE = '42501';
+    END IF;
   END IF;
 
   UPDATE public.transactions SET

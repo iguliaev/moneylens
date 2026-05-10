@@ -3,11 +3,26 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(21);
 
 -- Setup two test users
 select tests.create_supabase_user('atomic_user1@test.com');
 select tests.create_supabase_user('atomic_user2@test.com');
+
+-- Seed reference data for user2 (for cross-user security tests)
+select tests.authenticate_as('atomic_user2@test.com');
+
+INSERT INTO public.categories (user_id, type, name)
+VALUES (auth.uid(), 'spend'::public.transaction_type, 'User2Cat')
+ON CONFLICT (user_id, type, name) DO NOTHING;
+
+INSERT INTO public.bank_accounts (user_id, name)
+VALUES (auth.uid(), 'User2Account')
+ON CONFLICT (user_id, name) DO NOTHING;
+
+INSERT INTO public.tags (user_id, name)
+VALUES (auth.uid(), 'User2Tag')
+ON CONFLICT (user_id, name) DO NOTHING;
 
 select tests.authenticate_as('atomic_user1@test.com');
 
@@ -76,7 +91,7 @@ SELECT ok(
   'Tag association created atomically with transaction'
 );
 
--- 5) Atomicity: invalid tag FK causes rollback — no orphan transaction
+-- 5) Atomicity: tag ownership check raises 42501 — no orphan transaction
 SELECT throws_ok(
   $$
     SELECT public.create_transaction_with_tags(
@@ -91,7 +106,7 @@ SELECT throws_ok(
       ARRAY['00000000-0000-0000-0000-000000000000'::uuid]
     )
   $$,
-  '23503'
+  '42501'
 );
 
 SELECT ok(
@@ -203,6 +218,108 @@ SELECT throws_like(
   $$,
   '%access denied%',
   'User2 cannot update User1 transaction'
+);
+
+-- 13-18) Cross-user ownership validation: user1 cannot use user2's categories/accounts/tags
+select tests.authenticate_as('atomic_user1@test.com');
+
+-- 13) create with other user's category raises access denied
+SELECT throws_like(
+  $$
+    SELECT public.create_transaction_with_tags(
+      jsonb_build_object(
+        'date', '2026-01-20', 'type', 'spend', 'amount', 1,
+        'category_id', (SELECT id FROM public.categories WHERE name = 'User2Cat'),
+        'bank_account_id', (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'AtomicAccount')
+      ),
+      ARRAY[]::uuid[]
+    )
+  $$,
+  '%access denied%',
+  'Cannot create transaction with another user''s category'
+);
+
+-- 14) create with other user's bank account raises access denied
+SELECT throws_like(
+  $$
+    SELECT public.create_transaction_with_tags(
+      jsonb_build_object(
+        'date', '2026-01-20', 'type', 'spend', 'amount', 1,
+        'category_id', (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'AtomicCat'),
+        'bank_account_id', (SELECT id FROM public.bank_accounts WHERE name = 'User2Account')
+      ),
+      ARRAY[]::uuid[]
+    )
+  $$,
+  '%access denied%',
+  'Cannot create transaction with another user''s bank account'
+);
+
+-- 15) create with other user's tag raises access denied
+SELECT throws_like(
+  $$
+    SELECT public.create_transaction_with_tags(
+      jsonb_build_object(
+        'date', '2026-01-20', 'type', 'spend', 'amount', 1,
+        'category_id', (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'AtomicCat'),
+        'bank_account_id', (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'AtomicAccount')
+      ),
+      ARRAY[(SELECT id FROM public.tags WHERE name = 'User2Tag')]
+    )
+  $$,
+  '%access denied%',
+  'Cannot create transaction with another user''s tag'
+);
+
+-- 16) update with other user's category raises access denied
+SELECT throws_like(
+  $$
+    SELECT public.update_transaction_with_tags(
+      (SELECT id FROM public.transactions WHERE user_id = auth.uid() AND notes = 'updated-notes'),
+      jsonb_build_object(
+        'date', '2026-01-20', 'type', 'spend', 'amount', 1,
+        'category_id', (SELECT id FROM public.categories WHERE name = 'User2Cat'),
+        'bank_account_id', (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'AtomicAccount')
+      ),
+      ARRAY[]::uuid[]
+    )
+  $$,
+  '%access denied%',
+  'Cannot update transaction with another user''s category'
+);
+
+-- 17) update with other user's bank account raises access denied
+SELECT throws_like(
+  $$
+    SELECT public.update_transaction_with_tags(
+      (SELECT id FROM public.transactions WHERE user_id = auth.uid() AND notes = 'updated-notes'),
+      jsonb_build_object(
+        'date', '2026-01-20', 'type', 'spend', 'amount', 1,
+        'category_id', (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'AtomicCat'),
+        'bank_account_id', (SELECT id FROM public.bank_accounts WHERE name = 'User2Account')
+      ),
+      ARRAY[]::uuid[]
+    )
+  $$,
+  '%access denied%',
+  'Cannot update transaction with another user''s bank account'
+);
+
+-- 18) update with other user's tag raises access denied
+SELECT throws_like(
+  $$
+    SELECT public.update_transaction_with_tags(
+      (SELECT id FROM public.transactions WHERE user_id = auth.uid() AND notes = 'updated-notes'),
+      jsonb_build_object(
+        'date', '2026-01-20', 'type', 'spend', 'amount', 1,
+        'category_id', (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'AtomicCat'),
+        'bank_account_id', (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'AtomicAccount')
+      ),
+      ARRAY[(SELECT id FROM public.tags WHERE name = 'User2Tag')]
+    )
+  $$,
+  '%access denied%',
+  'Cannot update transaction with another user''s tag'
 );
 
 select * from finish();
