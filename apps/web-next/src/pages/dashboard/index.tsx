@@ -8,61 +8,27 @@ import {
   Statistic,
   Table,
   Tabs,
-  message,
 } from "antd";
 import { Show } from "@refinedev/antd";
 import { BudgetsSection } from "./BudgetsSection";
 import { ChartsTab } from "./ChartsTab";
 
-import { useEffect, useState, type FC } from "react";
+import { useState, type FC } from "react";
 import { useCurrency } from "../../contexts/currency";
 import dayjs from "dayjs";
-import { supabaseClient } from "../../utility";
-import type { Tables } from "../../types/database.types";
 import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
   TransactionType,
   TYPE_VALUE_COLORS,
 } from "../../constants/transactionTypes";
+import {
+  usePeriodStats,
+  type CategorySummary,
+  type TypeSummary,
+} from "../../hooks";
 
 const { Text, Title } = Typography;
-
-// === Types ===
-interface CategorySummary {
-  category_name: string;
-  type: TransactionType;
-  total: number;
-}
-
-interface TypeSummary {
-  type: TransactionType;
-  total: number;
-}
-
-interface PeriodStats {
-  typeSummary: TypeSummary[];
-  categorySummary: CategorySummary[];
-}
-
-type Period = "month" | "year";
-
-type MonthlyTotalsRow = Pick<
-  Tables<"view_monthly_totals">,
-  "month" | "total" | "type"
->;
-type YearlyTotalsRow = Pick<
-  Tables<"view_yearly_totals">,
-  "year" | "total" | "type"
->;
-type MonthlyCategoryTotalsRow = Pick<
-  Tables<"view_monthly_category_totals">,
-  "category" | "month" | "total" | "type"
->;
-type YearlyCategoryTotalsRow = Pick<
-  Tables<"view_yearly_category_totals">,
-  "category" | "year" | "total" | "type"
->;
 
 // === Constants ===
 const currentYear = dayjs().year();
@@ -85,183 +51,6 @@ const formatCurrencyLocal = (amount: number, currency: string) =>
     style: "currency",
     currency,
   }).format(amount);
-
-const isTransactionType = (value: string | null): value is TransactionType =>
-  value !== null &&
-  Object.values(TRANSACTION_TYPES).includes(value as TransactionType);
-
-const mapTypeSummary = (
-  rows: (MonthlyTotalsRow | YearlyTotalsRow)[]
-): TypeSummary[] =>
-  rows.flatMap((row) =>
-    isTransactionType(row.type)
-      ? [
-          {
-            type: row.type,
-            total: Number(row.total) || 0,
-          },
-        ]
-      : []
-  );
-
-const mapCategorySummary = (
-  rows: (MonthlyCategoryTotalsRow | YearlyCategoryTotalsRow)[]
-): CategorySummary[] =>
-  rows.flatMap((row) =>
-    isTransactionType(row.type)
-      ? [
-          {
-            category_name: row.category || "Unknown",
-            type: row.type,
-            total: Number(row.total) || 0,
-          },
-        ]
-      : []
-  );
-
-const fetchYearStats = async (
-  startDate: string,
-  endDate: string
-): Promise<PeriodStats> => {
-  const [typeResponse, categoryResponse] = await Promise.all([
-    supabaseClient
-      .from("view_yearly_totals")
-      .select("type, total, year")
-      .gte("year", startDate)
-      .lt("year", endDate),
-    supabaseClient
-      .from("view_yearly_category_totals")
-      .select("category, type, total, year")
-      .gte("year", startDate)
-      .lt("year", endDate),
-  ]);
-
-  if (typeResponse.error) throw typeResponse.error;
-  if (categoryResponse.error) throw categoryResponse.error;
-
-  return {
-    typeSummary: mapTypeSummary(typeResponse.data || []),
-    categorySummary: mapCategorySummary(categoryResponse.data || []),
-  };
-};
-
-const fetchMonthStats = async (
-  startDate: string,
-  endDate: string
-): Promise<PeriodStats> => {
-  const [typeResponse, categoryResponse] = await Promise.all([
-    supabaseClient
-      .from("view_monthly_totals")
-      .select("type, total, month")
-      .gte("month", startDate)
-      .lt("month", endDate),
-    supabaseClient
-      .from("view_monthly_category_totals")
-      .select("category, type, total, month")
-      .gte("month", startDate)
-      .lt("month", endDate),
-  ]);
-
-  if (typeResponse.error) throw typeResponse.error;
-  if (categoryResponse.error) throw categoryResponse.error;
-
-  return {
-    typeSummary: mapTypeSummary(typeResponse.data || []),
-    categorySummary: mapCategorySummary(categoryResponse.data || []),
-  };
-};
-
-// === Data Fetching Hook ===
-const fetchPrevTypeSummary = async (
-  period: Period,
-  prevStart: string,
-  prevEnd: string
-): Promise<TypeSummary[]> => {
-  if (period === "year") {
-    const { data, error } = await supabaseClient
-      .from("view_yearly_totals")
-      .select("type, total, year")
-      .gte("year", prevStart)
-      .lt("year", prevEnd);
-    if (error) throw error;
-    return mapTypeSummary(data || []);
-  }
-  const { data, error } = await supabaseClient
-    .from("view_monthly_totals")
-    .select("type, total, month")
-    .gte("month", prevStart)
-    .lt("month", prevEnd);
-  if (error) throw error;
-  return mapTypeSummary(data || []);
-};
-
-const usePeriodStats = ({
-  period,
-  startDate,
-  endDate,
-}: {
-  period: Period;
-  startDate: string;
-  endDate: string;
-}) => {
-  const [stats, setStats] = useState<PeriodStats>({
-    typeSummary: [],
-    categorySummary: [],
-  });
-  const [previousTypeSummary, setPreviousTypeSummary] = useState<
-    TypeSummary[] | null
-  >(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const prevStart = dayjs(startDate)
-      .subtract(1, period === "year" ? "year" : "month")
-      .format("YYYY-MM-DD");
-    const prevEnd = dayjs(endDate)
-      .subtract(1, period === "year" ? "year" : "month")
-      .format("YYYY-MM-DD");
-
-    const fetchData = async () => {
-      setLoading(true);
-
-      try {
-        const [nextStats, prevSummary] = await Promise.all([
-          period === "year"
-            ? fetchYearStats(startDate, endDate)
-            : fetchMonthStats(startDate, endDate),
-          fetchPrevTypeSummary(period, prevStart, prevEnd).catch((err) => {
-            console.error("Error fetching previous period summary:", err);
-            return null as TypeSummary[] | null;
-          }),
-        ]);
-
-        if (!cancelled) {
-          setStats(nextStats);
-          setPreviousTypeSummary(prevSummary);
-        }
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-        if (!cancelled) {
-          message.error("Failed to load statistics");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [endDate, period, startDate]);
-
-  return { ...stats, previousTypeSummary, loading };
-};
 
 // === Components ===
 const TrendBadge = ({
