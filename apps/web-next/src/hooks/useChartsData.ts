@@ -10,6 +10,7 @@ import {
   getMonthKeysInRange,
   formatMonthLabel,
 } from "../utility/monthHelpers";
+import { toError } from "../utility/errors";
 
 export interface TrendPoint {
   month: string;
@@ -51,20 +52,6 @@ type MonthlyTaggedTypeTotalsRow = Pick<
 
 const isTransactionType = (v: string | null): v is TransactionType =>
   v !== null && Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
-
-const toError = (error: unknown, fallbackMessage: string): Error | null => {
-  if (!error) return null;
-  if (error instanceof Error) return error;
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  ) {
-    return new Error((error as { message: string }).message);
-  }
-  return new Error(fallbackMessage);
-};
 
 export function useChartsData(startDate: string, endDate: string, enabled = true) {
   const filters = [

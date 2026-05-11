@@ -14,6 +14,9 @@ import { SpendingTrendlineChart } from "./components/SpendingTrendlineChart";
 import { TagBar } from "./components/TagBar";
 
 const { Title } = Typography;
+const monthDate = (year: number, month: number) =>
+  dayjs(`${year}-${String(month + 1).padStart(2, "0")}-01`);
+
 export const ChartsTab = () => {
   const { currency } = useCurrency();
 
@@ -24,8 +27,8 @@ export const ChartsTab = () => {
   const [startMonth, setStartMonth] = useState(defaultStart.month());
   const [endYear, setEndYear] = useState(defaultEnd.year());
   const [endMonth, setEndMonth] = useState(defaultEnd.month());
-  const startMonthValue = dayjs().year(startYear).month(startMonth).startOf("month");
-  const endMonthValue = dayjs().year(endYear).month(endMonth).startOf("month");
+  const startMonthValue = monthDate(startYear, startMonth);
+  const endMonthValue = monthDate(endYear, endMonth);
   const hasInvalidRange = endMonthValue.isBefore(startMonthValue);
 
   const startDate = startMonthValue.format("YYYY-MM-DD");

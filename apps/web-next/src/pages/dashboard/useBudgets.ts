@@ -1,6 +1,7 @@
 import { useList } from "@refinedev/core";
 import type { Tables } from "../../types/database.types";
 import { type TransactionType } from "../../constants/transactionTypes";
+import { toError } from "../../utility/errors";
 
 export interface BudgetProgress {
   id: string;
@@ -18,20 +19,6 @@ export interface BudgetProgress {
 // The full generated view row type — all columns are nullable because
 // Supabase views cannot declare NOT NULL constraints.
 type BudgetViewRow = Tables<"budgets_with_linked">;
-
-const toError = (error: unknown, fallbackMessage: string): Error | null => {
-  if (!error) return null;
-  if (error instanceof Error) return error;
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  ) {
-    return new Error((error as { message: string }).message);
-  }
-  return new Error(fallbackMessage);
-};
 
 export const useBudgets = () => {
   const { query } = useList({

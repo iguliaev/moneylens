@@ -3,7 +3,7 @@ import type { Database, Json, Tables } from "../types/database.types";
 import { supabaseClient } from "./supabaseClient";
 
 interface CategoryInput {
-  type: string;
+  type: Database["public"]["Enums"]["transaction_type"];
   name: string;
   description?: string | null;
 }
