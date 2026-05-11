@@ -10,6 +10,7 @@ import {
   getMonthKeysInRange,
   formatMonthLabel,
 } from "../utility/monthHelpers";
+import { toError } from "../utility/errors";
 
 export interface TrendPoint {
   month: string;
@@ -52,7 +53,7 @@ type MonthlyTaggedTypeTotalsRow = Pick<
 const isTransactionType = (v: string | null): v is TransactionType =>
   v !== null && Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
 
-export function useChartsData(startDate: string, endDate: string) {
+export function useChartsData(startDate: string, endDate: string, enabled = true) {
   const filters = [
     { field: "month", operator: "gte" as const, value: startDate },
     { field: "month", operator: "lt" as const, value: endDate },
@@ -63,22 +64,29 @@ export function useChartsData(startDate: string, endDate: string) {
     filters,
     sorters: [{ field: "month", order: "asc" }],
     pagination: { mode: "off" },
+    queryOptions: { enabled },
   });
 
   const { query: catQuery } = useList<MonthlyCategoryTotalsRow>({
     resource: "view_monthly_category_totals",
     filters,
     pagination: { mode: "off" },
+    queryOptions: { enabled },
   });
 
   const { query: tagQuery } = useList<MonthlyTaggedTypeTotalsRow>({
     resource: "view_monthly_tagged_type_totals",
     filters,
     pagination: { mode: "off" },
+    queryOptions: { enabled },
   });
 
   const loading =
     trendQuery.isLoading || catQuery.isLoading || tagQuery.isLoading;
+  const error =
+    toError(trendQuery.error, "Failed to load chart data.") ??
+    toError(catQuery.error, "Failed to load chart data.") ??
+    toError(tagQuery.error, "Failed to load chart data.");
 
   const trendMonthKeys = useMemo(
     () => getMonthKeysInRange(startDate, endDate),
@@ -140,5 +148,5 @@ export function useChartsData(startDate: string, endDate: string) {
     return { tags: Object.values(tagMap).sort((a, b) => b.total - a.total), tagSpendByMonth };
   }, [tagQuery.data]);
 
-  return { trend, tags, categorySpendByMonth, tagSpendByMonth, loading };
+  return { trend, tags, categorySpendByMonth, tagSpendByMonth, loading, error };
 }

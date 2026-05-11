@@ -2,7 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useInvalidate, useNotification } from "@refinedev/core";
 import type { Dayjs } from "dayjs";
-import { supabaseClient } from "../utility";
+import type { Database } from "../types/database.types";
+import {
+  createTransactionWithTags,
+  updateTransactionWithTags,
+  type TransactionWithTagsInput,
+} from "../utility";
 
 type Mode = "create" | "edit";
 
@@ -13,7 +18,7 @@ interface UseTransactionFormOptions {
 
 export interface TransactionFormValues {
   date: string | Dayjs;
-  type: string;
+  type: Database["public"]["Enums"]["transaction_type"];
   amount: number;
   category_id: string;
   bank_account_id: string;
@@ -40,24 +45,21 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
         date:
           rawFields.date && typeof (rawFields.date as Dayjs).format === "function"
             ? (rawFields.date as Dayjs).format("YYYY-MM-DD")
-            : rawFields.date,
-      };
+            : String(rawFields.date),
+      } satisfies TransactionWithTagsInput;
 
       let error: { message: string } | null = null;
 
       if (mode === "create") {
-        const result = await supabaseClient.rpc("create_transaction_with_tags", {
-          p_transaction: transactionFields,
-          p_tag_ids: tagIds,
-        });
+        const result = await createTransactionWithTags(transactionFields, tagIds);
         error = result.error;
       } else {
         if (!id) throw new Error("id is required for edit mode");
-        const result = await supabaseClient.rpc("update_transaction_with_tags", {
-          p_transaction_id: id,
-          p_transaction: transactionFields,
-          p_tag_ids: tagIds,
-        });
+        const result = await updateTransactionWithTags(
+          id,
+          transactionFields,
+          tagIds
+        );
         error = result.error;
       }
 

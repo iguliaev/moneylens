@@ -5,6 +5,7 @@ import {
   type TransactionType,
 } from "../constants/transactionTypes";
 import { getPreviousPeriodRange } from "../utility/dateRanges";
+import { toError } from "../utility/errors";
 
 export interface CategorySummary {
   category_name: string;
@@ -126,6 +127,10 @@ export function usePeriodStats({
 
   const loading =
     typeQuery.isLoading || categoryQuery.isLoading || prevTypeQuery.isLoading;
+  const error =
+    toError(typeQuery.error, "Failed to load period stats.") ??
+    toError(categoryQuery.error, "Failed to load period stats.") ??
+    toError(prevTypeQuery.error, "Failed to load period stats.");
 
-  return { typeSummary, categorySummary, previousTypeSummary, loading };
+  return { typeSummary, categorySummary, previousTypeSummary, loading, error };
 }

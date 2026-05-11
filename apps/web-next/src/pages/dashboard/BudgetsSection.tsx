@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Card,
   Col,
@@ -28,7 +29,7 @@ import {
 const { Text, Title } = Typography;
 
 export const BudgetsSection = () => {
-  const { budgets, loading } = useBudgets();
+  const { budgets, loading, error } = useBudgets();
   const { list } = useNavigation();
   const { currency } = useCurrency();
   const [animated, setAnimated] = useState(false);
@@ -58,6 +59,15 @@ export const BudgetsSection = () => {
         </Button>
       }
     >
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          message="Failed to load budgets"
+          description={error.message}
+          style={{ marginBottom: 16 }}
+        />
+      )}
       {loading ? (
         <Skeleton active paragraph={{ rows: 3 }} />
       ) : budgets.length === 0 ? (

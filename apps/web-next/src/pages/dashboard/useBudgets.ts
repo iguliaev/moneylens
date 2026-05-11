@@ -1,6 +1,7 @@
 import { useList } from "@refinedev/core";
 import type { Tables } from "../../types/database.types";
 import { type TransactionType } from "../../constants/transactionTypes";
+import { toError } from "../../utility/errors";
 
 export interface BudgetProgress {
   id: string;
@@ -59,6 +60,7 @@ export const useBudgets = () => {
     budgets,
     loading: query.isLoading,
     isFetching: query.isFetching,
+    error: toError(query.error, "Failed to load budgets."),
     refresh: query.refetch,
   };
 };
