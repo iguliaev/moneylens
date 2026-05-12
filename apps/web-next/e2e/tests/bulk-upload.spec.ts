@@ -41,7 +41,11 @@ test.describe("Bulk Upload", () => {
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
-    await expect(page.getByText(/data reset complete/i)).toBeVisible();
+    const successAlert = page
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /data reset complete/i });
+    await expect(successAlert).toBeVisible();
 
     // Go back to settings and switch to Import & Export tab to upload
     await page.goto("/settings");
@@ -125,7 +129,11 @@ test.describe("Bulk Upload", () => {
     await page
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
-    await expect(page.getByText(/data reset complete/i)).toBeVisible();
+    const successAlert = page
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /data reset complete/i });
+    await expect(successAlert).toBeVisible();
 
     // Go to Import & Export tab
     await page.goto("/settings");

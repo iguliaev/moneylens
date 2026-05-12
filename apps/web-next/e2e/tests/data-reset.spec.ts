@@ -47,14 +47,18 @@ test.describe("Data Reset", () => {
       .click();
 
     // Verify success message
-    await expect(page.getByText(/data reset complete/i)).toBeVisible();
+    const successAlert = page
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /data reset complete/i });
+    await expect(successAlert).toBeVisible();
 
     // Verify counts are shown
-    await expect(page.getByText(/•\s*\d+\s+budgets deleted/i)).toBeVisible();
-    await expect(page.getByText(/transactions deleted/i)).toBeVisible();
-    await expect(page.getByText(/categories deleted/i)).toBeVisible();
-    await expect(page.getByText(/tags deleted/i)).toBeVisible();
-    await expect(page.getByText(/bank accounts deleted/i)).toBeVisible();
+    await expect(successAlert).toContainText(/•\s*\d+\s+budgets deleted/i);
+    await expect(successAlert).toContainText(/transactions deleted/i);
+    await expect(successAlert).toContainText(/categories deleted/i);
+    await expect(successAlert).toContainText(/tags deleted/i);
+    await expect(successAlert).toContainText(/bank accounts deleted/i);
   });
 
   test("user can cancel data reset", async ({ page }) => {
@@ -113,7 +117,11 @@ test.describe("Data Reset", () => {
       .click();
 
     // Wait for success message
-    await expect(page.getByText(/data reset complete/i)).toBeVisible();
+    const successAlert = page
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /data reset complete/i });
+    await expect(successAlert).toBeVisible();
 
     // Verify no transactions exist in database
     const { data: transactions } = await supabaseAdmin
@@ -148,7 +156,11 @@ test.describe("Data Reset", () => {
       .click();
 
     // Wait for success message
-    await expect(page.getByText(/data reset complete/i)).toBeVisible();
+    const successAlert = page
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /data reset complete/i });
+    await expect(successAlert).toBeVisible();
 
     // Verify no categories exist in database
     const { data: categories } = await supabaseAdmin
@@ -180,8 +192,12 @@ test.describe("Data Reset", () => {
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
 
-    await expect(page.getByText(/data reset complete/i)).toBeVisible();
-    await expect(page.getByText(/•\s*1\s+budgets deleted/i)).toBeVisible();
+    const successAlert = page
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /data reset complete/i });
+    await expect(successAlert).toBeVisible();
+    await expect(successAlert).toContainText(/•\s*1\s+budgets deleted/i);
 
     const { data: budgets } = await supabaseAdmin
       .from("budgets")
