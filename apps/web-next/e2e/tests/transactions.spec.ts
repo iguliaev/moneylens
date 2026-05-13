@@ -205,7 +205,8 @@ test.describe("Transactions", () => {
           .click();
 
         // Verify the edited transaction row.
-        // Extended timeout guards against slow CI re-renders after networkidle.
+        // Extended timeout guards against slow CI re-renders while the updated
+        // transaction list settles after the edit/tab-change flow.
         const editedRow = getTransactionRow(page, {
           note: newNote,
           date: newDate,
