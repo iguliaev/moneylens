@@ -107,7 +107,11 @@ test.describe("Data Reset Isolation", () => {
       .click();
 
     // Verify success with semantic locator
-    await expect(pageA.getByText(/data reset complete/i)).toBeVisible();
+    const successAlert = pageA
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /data reset complete/i });
+    await expect(successAlert).toBeVisible();
 
     // Clean up User A's context
     await contextA.close();

@@ -48,8 +48,12 @@ test.describe("Settings RPC resilience", () => {
     await page.locator("input[type='file']").setInputFiles(fixturePath);
     await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
 
-    await expect(page.getByRole("alert").filter({ hasText: /error/i })).toBeVisible();
-    await expect(page.getByText(/simulated bulk upload rpc failure/i)).toBeVisible();
+    const errorAlert = page
+      .getByRole("tabpanel", { name: /import.*export/i })
+      .getByRole("alert")
+      .filter({ hasText: /error/i });
+    await expect(errorAlert).toBeVisible();
+    await expect(errorAlert).toContainText(/simulated bulk upload rpc failure/i);
   });
 
   test("data reset closes modal and shows standardized reset error notification", async ({
@@ -76,7 +80,18 @@ test.describe("Settings RPC resilience", () => {
       .click();
 
     await expect(page.getByRole("dialog", { name: /reset all data/i })).not.toBeVisible();
-    await expect(page.getByText(/failed to reset data/i)).toBeVisible();
-    await expect(page.getByText(/simulated reset rpc failure/i)).toBeVisible();
+
+    const errorAlert = page
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /error/i });
+    await expect(errorAlert).toBeVisible();
+    await expect(errorAlert).toContainText(/simulated reset rpc failure/i);
+
+    const notification = page
+      .locator(".ant-notification-notice")
+      .filter({ hasText: /failed to reset data/i });
+    await expect(notification).toBeVisible();
+    await expect(notification).toContainText(/simulated reset rpc failure/i);
   });
 });
