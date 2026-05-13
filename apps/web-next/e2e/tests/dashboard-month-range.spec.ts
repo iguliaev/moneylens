@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createTestUser, deleteTestUser, loginUser } from "../utils/test-helpers";
+import {
+  createTestUser,
+  deleteTestUser,
+  loginUser,
+  waitForChartsTabReady,
+} from "../utils/test-helpers";
 
 const chartDataEndpointPattern =
   /\/rest\/v1\/(view_monthly_totals|view_monthly_category_totals|view_monthly_tagged_type_totals)\b/i;
@@ -52,7 +57,7 @@ test.describe("Dashboard month range validation", () => {
       });
 
       await page.getByRole("tab", { name: /charts/i }).click();
-      await page.waitForLoadState("networkidle");
+      await waitForChartsTabReady(page);
 
       await openMonthRangeSelect("To year", page);
       await page.keyboard.press("ArrowDown");

@@ -37,19 +37,37 @@ export async function createTestUser(seed?: string) {
     ? `test-${seed}-${Date.now()}@example.com`
     : `test-${Date.now()}@example.com`;
   const password = "TestPassword123!";
+  const maxAttempts = 3;
+  const backoffMs = [200, 500, 1000];
 
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
 
-  if (error) {
-    console.error("Failed to create test user:", error.message, error);
-    throw error;
+    if (!error) {
+      const userId = (data as { user?: { id?: string } } | null)?.user?.id;
+      if (!userId) {
+        throw new Error("Supabase createUser succeeded without returning user id");
+      }
+      return { email, password, userId };
+    }
+
+    const status = (error as { status?: number }).status;
+    const code = (error as { code?: string }).code;
+    const isRetryable = status === 500 || code === "unexpected_failure";
+
+    if (!isRetryable || attempt === maxAttempts) {
+      console.error("Failed to create test user:", error.message, error);
+      throw error;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, backoffMs[attempt - 1]));
   }
-  // `data.user` structure comes from supabase-js response shape
-  return { email, password, userId: (data as any).user.id };
+
+  throw new Error("Failed to create test user after retries");
 }
 
 export async function deleteTestUser(userId: string) {
@@ -120,6 +138,30 @@ export async function waitForFormReady(page: Page, testId: string) {
   const form = page.getByTestId(testId);
   // Wait for form to exist and not be in loading state
   await expect(form).toHaveAttribute("aria-busy", "false");
+}
+
+export async function waitForTransactionEditReady(page: Page) {
+  await waitForFormReady(page, "transaction-edit-form");
+  await expect(page.getByRole("heading", { name: "Edit Transaction" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "* Type" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "* Category" })).toBeVisible();
+}
+
+export async function waitForChartsTabReady(page: Page) {
+  await expect(page.getByText("Income vs Spending vs Savings")).toBeVisible();
+}
+
+export async function selectFromVisibleAntdDropdown(
+  page: Page,
+  comboboxName: string,
+  optionTitle: string
+) {
+  await page.getByRole("combobox", { name: comboboxName }).click({ force: true });
+  const option = page
+    .locator(".ant-select-dropdown:visible")
+    .getByTitle(new RegExp(`^${optionTitle}$`, "i"));
+  await option.waitFor({ state: "visible" });
+  await option.click();
 }
 
 // Seed minimal reference data (categories, bank accounts, tags) for a given user

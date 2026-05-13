@@ -11,7 +11,7 @@ import {
 } from "../utils/test-helpers";
 
 test.describe("Budgets", () => {
-  let testUser: { email: string; password: string; userId: string };
+  let testUser: { email: string; password: string; userId: string } | undefined;
 
   test.beforeAll(async () => {
     testUser = await createTestUser();
@@ -19,12 +19,14 @@ test.describe("Budgets", () => {
   });
 
   test.afterAll(async () => {
+    if (!testUser) return;
     await supabaseAdmin.from("budgets").delete().eq("user_id", testUser.userId);
     await cleanupReferenceDataForUser(testUser.userId);
     await deleteTestUser(testUser.userId);
   });
 
   test.beforeEach(async ({ page }) => {
+    if (!testUser) throw new Error("Budgets test user was not initialized");
     await loginUser(page, testUser.email, testUser.password);
   });
 
@@ -197,7 +199,7 @@ test.describe("Budgets", () => {
 });
 
 test.describe("Budget alert states", () => {
-  let testUser: { email: string; password: string; userId: string };
+  let testUser: { email: string; password: string; userId: string } | undefined;
 
   test.beforeAll(async () => {
     testUser = await createTestUser();
@@ -205,6 +207,7 @@ test.describe("Budget alert states", () => {
   });
 
   test.afterAll(async () => {
+    if (!testUser) return;
     await supabaseAdmin
       .from("transactions")
       .delete()
@@ -215,6 +218,7 @@ test.describe("Budget alert states", () => {
   });
 
   test.beforeEach(async ({ page }) => {
+    if (!testUser) throw new Error("Budget alert test user was not initialized");
     await loginUser(page, testUser.email, testUser.password);
   });
 
@@ -272,6 +276,7 @@ test.describe("Budget alert states", () => {
   }
 
   test("spend budget at 85% shows Near limit tag in list", async ({ page }) => {
+    if (!testUser) throw new Error("Budget alert test user was not initialized");
     const budgetName = await seedBudgetAtPercent(testUser.userId, 85);
 
     await page.goto("/budgets");
@@ -283,6 +288,7 @@ test.describe("Budget alert states", () => {
   });
 
   test("spend budget at 100% shows Over budget tag in list", async ({ page }) => {
+    if (!testUser) throw new Error("Budget alert test user was not initialized");
     const budgetName = await seedBudgetAtPercent(testUser.userId, 100);
 
     await page.goto("/budgets");
@@ -296,6 +302,7 @@ test.describe("Budget alert states", () => {
   test("spend budget at 100% shows Over budget tag on dashboard", async ({
     page,
   }) => {
+    if (!testUser) throw new Error("Budget alert test user was not initialized");
     const budgetName = await seedBudgetAtPercent(testUser.userId, 100);
 
     await page.goto("/");
