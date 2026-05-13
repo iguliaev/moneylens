@@ -156,10 +156,11 @@ export async function selectFromVisibleAntdDropdown(
   comboboxName: string,
   optionTitle: string
 ) {
+  const escapedTitle = optionTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await page.getByRole("combobox", { name: comboboxName }).click({ force: true });
   const option = page
     .locator(".ant-select-dropdown:visible")
-    .getByTitle(new RegExp(`^${optionTitle}$`, "i"));
+    .getByTitle(new RegExp(`^${escapedTitle}$`, "i"));
   await option.waitFor({ state: "visible" });
   await option.click();
 }
