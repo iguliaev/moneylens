@@ -1,5 +1,7 @@
 # E2E Failure Stabilization Plan (dashboard-month-range + transactions)
 
+**Status:** Done
+
 ## Problem statement
 `npm run test:e2e:ci` currently fails with 5 timeouts. All failures are blocked on `page.waitForLoadState("networkidle")` (30s timeout), primarily in `e2e/tests/transactions.spec.ts` plus one in `e2e/tests/dashboard-month-range.spec.ts`.
 
@@ -49,3 +51,7 @@ Replace brittle global-idle waits with deterministic, user-visible readiness che
 - Prefer semantic Playwright locators (`getByRole`, `expect(...).toBeVisible`) and app-state assertions over timing/network heuristics.
 - Scope is **test-only fixes first** (no production code changes unless explicitly re-approved later).
 - Keep this effort scoped to the reported 5 failures; only broaden if reruns reveal tightly coupled flakes.
+
+## Follow-up hardening completed
+- Added transient Supabase Auth retry/backoff in `apps/web-next/e2e/utils/test-helpers.ts` so `createTestUser()` can recover from occasional 500/unexpected_failure responses.
+- Guarded `apps/web-next/e2e/tests/budgets.spec.ts` teardown/setup so `afterAll` does not cascade when `beforeAll` fails to initialize the suite user.
