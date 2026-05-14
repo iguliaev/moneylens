@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18  
 **Scope:** `apps/web-next/` — Vite + React 19 + Refine + Ant Design 5  
-**Status:** In progress — H2 ✅ H1 ✅ L1 ✅ L2 ✅ H3 ✅ M1 ✅ M2 ✅ | M3, M4, L3 pending
+**Status:** Complete — H2 ✅ H1 ✅ L1 ✅ L2 ✅ H3 ✅ M1 ✅ M2 ✅ M3 ✅ M4 ✅ L3 ✅
 
 ---
 
@@ -205,7 +205,9 @@ Any change to the options range (e.g., extending to 10 years) or the currency fo
 
 ---
 
-### M3 — Standardise error handling across data-fetching hooks
+### M3 — Standardise error handling across data-fetching hooks ✅ COMPLETE
+
+> **Status:** Implemented — PR [#177](https://github.com/iguliaev/moneylens/pull/177) · 2026-05-10
 
 **What**  
 Current error handling is inconsistent:
@@ -253,7 +255,9 @@ There is no centralised error reporting. `message.error` from Ant Design is used
 
 ---
 
-### M4 — Extract a shared `DateRangePicker` component
+### M4 — Extract a shared `DateRangePicker` component ✅ COMPLETE
+
+> **Status:** Implemented — PR [#177](https://github.com/iguliaev/moneylens/pull/177) · 2026-05-10
 
 **What**  
 Both `dashboard/index.tsx` (year/month selectors) and `ChartsTab.tsx` (start/end year/month selectors) implement bespoke date-range pickers using four `<Select>` components. The options lists, layout, and label styling are duplicated.
@@ -331,7 +335,9 @@ After H2 (Option A), this problem disappears because tag association moves to th
 
 ---
 
-### L3 — Audit and document the pattern for Supabase RPC calls that must stay in the frontend
+### L3 — Audit and document the pattern for Supabase RPC calls that must stay in the frontend ✅ COMPLETE
+
+> **Status:** Implemented — PR [#177](https://github.com/iguliaev/moneylens/pull/177) · 2026-05-10
 
 **What**  
 Several features legitimately require direct `supabaseClient` calls that cannot (or should not) go through Refine's generic data provider:
@@ -376,8 +382,8 @@ These should be catalogued and distinguished from the accidental bypasses covere
 ~~Week 1:  M2 (deduplicate constants) — prerequisite for H3~~ ✅ DONE (PR #176, 2026-05-10)
 ~~Week 1:  H3 (decompose dashboard) — no logic change, high clarity gain~~ ✅ DONE (PR #176, 2026-05-10)
 ~~Week 2:  M1 (useSelect for tags) — small, can be parallelised~~ ✅ DONE (PR #176, 2026-05-10)
-Week 3:  M3 (standardise error handling)
-Week 4:  M4, L3 — polish and structural hygiene
+~~Week 3:  M3 (standardise error handling)~~ ✅ DONE (PR #177, 2026-05-10)
+~~Week 4:  M4, L3 — polish and structural hygiene~~ ✅ DONE (PR #177, 2026-05-10)
 ```
 
 Each item is independently releasable. Items within the same week can be parallelised across developers.
@@ -388,11 +394,11 @@ Each item is independently releasable. Items within the same week can be paralle
 
 | File | Lines | Issues |
 |---|---|---|
-| `pages/dashboard/index.tsx` | ~~579~~ → 54 | ~~H1~~ ✅ ~~H3~~ ✅ ~~M2~~ ✅ M3 |
-| `pages/dashboard/ChartsTab.tsx` | ~~587~~ → ~140 | ~~H1~~ ✅ ~~H3~~ ✅ ~~M2~~ ✅ M3 |
-| `pages/dashboard/useBudgets.ts` | 46 | ~~H1~~ ✅ M3 |
+| `pages/dashboard/index.tsx` | ~~579~~ → 54 | ~~H1~~ ✅ ~~H3~~ ✅ ~~M2~~ ✅ ~~M3~~ ✅ |
+| `pages/dashboard/ChartsTab.tsx` | ~~587~~ → ~140 | ~~H1~~ ✅ ~~H3~~ ✅ ~~M2~~ ✅ ~~M3~~ ✅ ~~M4~~ ✅ |
+| `pages/dashboard/useBudgets.ts` | 46 | ~~H1~~ ✅ ~~M3~~ ✅ ~~L3~~ ✅ |
 | `pages/transactions/create.tsx` | 168 | ~~H2~~ ✅ ~~M1~~ ✅ ~~L2~~ ✅ |
 | `pages/transactions/edit.tsx` | 214 | ~~H2~~ ✅ ~~M1~~ ✅ |
-| `pages/budgets/create.tsx` | — | M3 (direct Supabase) |
-| `pages/budgets/edit.tsx` | — | M3 (direct Supabase) |
-| `pages/settings/index.tsx` | — | L3 (legitimate RPC) |
+| `pages/budgets/create.tsx` | — | ~~M3~~ ✅ (direct Supabase surfaced via notifications) |
+| `pages/budgets/edit.tsx` | — | ~~M3~~ ✅ (direct Supabase surfaced via notifications) |
+| `pages/settings/index.tsx` | — | ~~M3~~ ✅ ~~L3~~ ✅ (legitimate RPC wrappers) |
