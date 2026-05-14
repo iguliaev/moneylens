@@ -1,5 +1,7 @@
 # Frontend Architecture Remaining Items (M3, M4, L3) Implementation Plan
 
+**Status:** Done
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Complete the remaining frontend architecture work by standardizing error handling, extracting a shared month-range picker, and documenting/typing intentional direct Supabase RPC usage.
