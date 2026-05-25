@@ -1,4 +1,5 @@
 import { ResourceList } from "../../components/resource-list";
+import { getBankAccountEmptyState } from "../../components";
 
 export const BankAccountList = () => {
   return (
@@ -10,6 +11,7 @@ export const BankAccountList = () => {
         { dataIndex: "description", title: "Description" },
         { dataIndex: "in_use_count", title: "Usage Count" },
       ]}
+      emptyStateBuilder={getBankAccountEmptyState}
     />
   );
 };

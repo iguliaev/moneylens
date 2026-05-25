@@ -1,13 +1,13 @@
 # Testing Coverage Improvement Plan
 
 **Date:** 2026-04-18  
-**Status:** Draft
+**Status:** In Progress — core budget pgTAP coverage shipped; unit/component layers still pending
 
 ---
 
 ## Overview
 
-MoneyLens has solid E2E coverage for CRUD operations and strong pgTAP coverage for RLS and aggregation views, but has critical gaps in four areas: zero unit tests (no Vitest), no component tests, a near-empty dashboard E2E, and no pgTAP coverage for the budget feature. This plan prioritises each gap by risk and implementation cost.
+MoneyLens has solid E2E coverage for CRUD operations and stronger pgTAP coverage than at the time of drafting (including `get_budget_progress()`), but still has critical gaps in three areas: zero unit tests (no Vitest), no component tests, and incomplete E2E/pgTAP expansion for budget and soft-delete edge cases. This plan prioritises each gap by risk and implementation cost.
 
 ---
 
@@ -260,15 +260,16 @@ Use `vi.fn()` to assert call args and return values. No network needed.
 
 **What to add:**
 
-| Test case | Scenario |
-|-----------|----------|
-| Budget shows 0 progress | Create budget with no matching transactions → progress = 0% / $0 |
-| Budget reflects transactions | Create spend budget for "Groceries"; add a $100 spend transaction in Groceries → budget shows $100 progress |
-| Budget with category link | Budget linked to category "Salary"; earn $500 → progress updates |
-| Budget with tag link | Budget linked to tag "essentials"; add tagged spend → progress updates |
-| No double-counting | Transaction matches both category and tag link → counted once, not twice |
-| Over-budget display | Spend $600 against a $500 budget → UI shows correct amount and "over budget" state |
-| Date-bounded budget | Budget with `start_date`/`end_date`; transactions outside range not counted |
+| Test case | Scenario | Status |
+|-----------|----------|--------|
+| Budget shows 0 progress | Create budget with no matching transactions → progress = 0% / $0 | ⬜ Pending |
+| Budget reflects transactions | Create spend budget for "Groceries"; add a $100 spend transaction in Groceries → budget shows $100 progress | ⬜ Pending |
+| Budget with category link | Budget linked to category "Salary"; earn $500 → progress updates | ⬜ Pending |
+| Budget with tag link | Budget linked to tag "essentials"; add tagged spend → progress updates | ⬜ Pending |
+| No double-counting | Transaction matches both category and tag link → counted once, not twice | ⬜ Pending |
+| Near-limit display (warn) | Spend 85% of budget → list and dashboard show ⚠ Near limit tag | ✅ Done (PR #156) |
+| Over-budget display | Spend 100% of budget → list and dashboard show Over budget tag | ✅ Done (PR #156) |
+| Date-bounded budget | Budget with `start_date`/`end_date`; transactions outside range not counted | ⬜ Pending |
 
 **Why:** `get_budget_progress()` has UNION deduplication logic that is complex and untested end-to-end. The "counted once" invariant must be verified through the UI to confirm the RPC, view, and display all work together.
 
@@ -302,7 +303,9 @@ Use `vi.fn()` to assert call args and return values. No network needed.
 
 ## 4. pgTAP Tests (Supabase)
 
-### 4.1 `get_budget_progress()` — Core Logic
+### 4.1 `get_budget_progress()` — Core Logic ✅ Done
+
+> **Implemented:** `supabase/tests/budget_progress_test.sql` — PR [#150](https://github.com/iguliaev/moneylens/pull/150)
 
 **File:** `supabase/tests/budget_progress_test.sql` (new file)
 
@@ -327,7 +330,7 @@ Use `vi.fn()` to assert call args and return values. No network needed.
 | Multiple budgets | Two budgets for same user → each returns its own independent total |
 | COALESCE zero | Budget with transactions returns `current_amount > 0`; budget without returns exactly `0`, not `NULL` |
 
-**Why:** `get_budget_progress()` is the most algorithmically complex SQL in the codebase. Its UNION deduplication logic exists precisely to prevent double-counting — a subtle bug that would make budgets appear "used up" faster than they should be. No test currently exercises this logic.
+**Why:** `get_budget_progress()` is the most algorithmically complex SQL in the codebase. Its UNION deduplication logic exists precisely to prevent double-counting — a subtle bug that would make budgets appear "used up" faster than they should be.
 
 **How:** Follow the pattern in `aggregation_logic_test.sql`. Use `tests.create_supabase_user`, `tests.authenticate_as`, `tests.get_supabase_uid`. Wrap in `BEGIN`/`ROLLBACK`. Use `results_eq` and `is` assertions. Seed categories, tags, budgets, `budget_categories`, `budget_tags`, and transactions explicitly for each scenario.
 

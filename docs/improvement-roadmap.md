@@ -70,7 +70,7 @@
 - [ ] Page transitions and micro-interactions
 - [ ] Custom empty states with illustrations
 - [ ] Register quick-add transaction action in RefineKbar
-- [ ] Budget threshold alerts (80% / 100% reached notifications)
+- [x] Budget threshold alerts (80% warn / 100% over — inline progress tags on list and dashboard)
 - [ ] Improve Settings bulk upload: add CSV support and downloadable JSON template
 
 ---

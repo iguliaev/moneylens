@@ -9,7 +9,8 @@ import {
   e2eCurrentMonthDate,
   createTransactionWithoutTags,
   getTransactionRow,
-  waitForFormReady,
+  waitForTransactionEditReady,
+  selectFromVisibleAntdDropdown,
 } from "../utils/test-helpers";
 
 test.describe("Transactions", () => {
@@ -136,8 +137,7 @@ test.describe("Transactions", () => {
         // (e.g. categories for the current type) to settle before touching dropdowns.
         // Without this, the in-flight categories fetch can cause a React re-render
         // that detaches Type dropdown options mid-click.
-        await waitForFormReady(page, "transaction-edit-form");
-        await page.waitForLoadState("networkidle");
+        await waitForTransactionEditReady(page);
 
         // Change date: fill() focuses + clears the input; Enter confirms the date
         // and closes the calendar popup cleanly before we touch the next field.
@@ -147,21 +147,19 @@ test.describe("Transactions", () => {
         await page.keyboard.press("Enter");
 
         // Change type
-        await page
-          .getByRole("combobox", { name: "* Type" })
-          .click({ force: true });
-        await page.getByTitle(new RegExp(`^${toType}$`, "i")).click();
+        await selectFromVisibleAntdDropdown(page, "* Type", toType);
         await expect(
-          page.locator("#root").getByTitle(new RegExp(`^${toType}$`, "i"))
+          page
+            .locator(".ant-select-selection-item")
+            .filter({ hasText: new RegExp(`^${toType}$`, "i") })
         ).toBeVisible();
 
         // Change category (should show only categories for new type)
-        await page
-          .getByRole("combobox", { name: "* Category" })
-          .click({ force: true });
-        await page.getByTitle(new RegExp(`^${toCategory}$`, "i")).click();
+        await selectFromVisibleAntdDropdown(page, "* Category", toCategory);
         await expect(
-          page.locator("#root").getByTitle(new RegExp(`^${toCategory}$`, "i"))
+          page
+            .locator(".ant-select-selection-item")
+            .filter({ hasText: new RegExp(`^${toCategory}$`, "i") })
         ).toBeVisible();
 
         // Change amount
@@ -169,14 +167,15 @@ test.describe("Transactions", () => {
         await page.getByLabel("Amount").fill(toAmount);
 
         // Change bank account
-        await page
-          .getByRole("combobox", { name: "* Bank Account" })
-          .click({ force: true });
-        await page.getByTitle(new RegExp("^Secondary Account$", "i")).click();
+        await selectFromVisibleAntdDropdown(
+          page,
+          "* Bank Account",
+          "Secondary Account"
+        );
         await expect(
-          page
-            .locator("#root")
-            .getByTitle(new RegExp("^Secondary Account$", "i"))
+          page.locator(".ant-select-selection-item").filter({
+            hasText: /^Secondary Account$/i,
+          })
         ).toBeVisible();
 
         // Change notes
@@ -204,10 +203,10 @@ test.describe("Transactions", () => {
           .getByRole("radiogroup", { name: "segmented control" })
           .getByText(new RegExp(toType, "i"))
           .click();
-        await page.waitForLoadState("networkidle");
 
         // Verify the edited transaction row.
-        // Extended timeout guards against slow CI re-renders after networkidle.
+        // Extended timeout guards against slow CI re-renders while the updated
+        // transaction list settles after the edit/tab-change flow.
         const editedRow = getTransactionRow(page, {
           note: newNote,
           date: newDate,
@@ -333,31 +332,154 @@ test.describe("Transactions", () => {
     });
   });
 
-  test.skip("user can add tags to a transaction", async ({ page }) => {
+  test("user can create a transaction with a tag", async ({ page }) => {
+    const date = e2eCurrentMonthDate();
+    const note = `txn-with-tag-${Date.now()}-${Math.random()
+      .toString(16)
+      .slice(2, 8)}`;
+
     await page.goto("/transactions/create");
 
-    // Create transaction with tags
-    await page.getByLabel("Type").selectOption("spend");
-    await page.getByLabel("Date").fill(e2eCurrentMonthDate());
-    await page.getByLabel("Category").selectOption("Groceries");
-    await page.getByLabel("Amount").fill("50.00");
-    await page.getByLabel("Bank Account").selectOption("Main Account");
+    // Fill date
+    await page.getByLabel("Date").fill(date);
 
-    // Open tags dropdown (multiple select)
-    await page.getByLabel("Tags").click();
+    // Select transaction type
+    await page.getByRole("combobox", { name: "* Type" }).click();
+    await page.getByTitle(new RegExp("^spend$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^spend$", "i"))
+    ).toBeVisible();
 
-    // Select first tag
-    await page.getByRole("option", { name: "essentials" }).click();
+    // Select category
+    await page.getByRole("combobox", { name: "* Category" }).click();
+    await page.getByTitle(new RegExp("^Groceries$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^Groceries$", "i"))
+    ).toBeVisible();
 
-    // Close dropdown (click elsewhere or press escape)
+    // Fill amount
+    await page.getByLabel("Amount").fill("75.00");
+
+    // Select bank account
+    await page.getByRole("combobox", { name: "* Bank Account" }).click();
+    await page.getByTitle(new RegExp("^Main Account$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^Main Account$", "i"))
+    ).toBeVisible();
+
+    // Select tag (multi-select dropdown)
+    await page.getByRole("combobox", { name: "Tags" }).click();
+    await page.getByTitle(new RegExp("^essentials$", "i")).click();
+    await expect(
+      page.locator("#root").getByTitle(new RegExp("^essentials$", "i"))
+    ).toBeVisible();
     await page.keyboard.press("Escape");
 
-    // Submit
-    await page.getByRole("button", { name: /save|create/i }).click();
+    // Fill notes
+    await page.getByLabel("Notes").fill(note);
 
-    // Verify transaction appears with tags
+    // Submit form
+    await page.getByRole("button", { name: /save/i }).click();
+
+    // Should redirect to transactions list
     await expect(page).toHaveURL(/\/transactions/);
-    await expect(page.getByText("essentials")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Transactions" })
+    ).toBeVisible();
+
+    // Should be on spend tab by default
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(new RegExp("spend", "i"))
+      .click();
+
+    // Verify the transaction appears in the list with the tag
+    const row = getTransactionRow(page, {
+      note,
+      date,
+      category: "Groceries",
+      amount: "75.00",
+      bankAccount: "Main Account",
+    });
+    await expect(row).toBeVisible({ timeout: 10000 });
+
+    // Verify the tag is visible in the row
+    await expect(row.getByText("essentials")).toBeVisible();
+  });
+
+  test("user can update tags on a transaction", async ({ page }) => {
+    const originalDate = e2eCurrentMonthDate(15);
+    const originalNote = `txn-tag-update-${Date.now()}-${Math.random()
+      .toString(16)
+      .slice(2, 8)}`;
+
+    // Create a transaction without tags first
+    const row = await createTransactionWithoutTags(
+      page,
+      originalDate,
+      "spend",
+      "Groceries",
+      "100.00",
+      "Main Account",
+      originalNote
+    );
+
+    // Click edit on the created row
+    await row.getByRole("button", { name: "edit" }).click();
+    await expect(page).toHaveURL(/\/transactions\/edit\//);
+    await expect(
+      page.getByRole("heading", { name: "Edit Transaction" })
+    ).toBeVisible();
+
+    // Wait for form to finish loading
+    await waitForTransactionEditReady(page);
+
+    // Add tags to the transaction
+    await page.getByRole("combobox", { name: "Tags" }).click({ force: true });
+    await page
+      .locator(".ant-select-dropdown:visible")
+      .getByTitle(/^essentials$/i)
+      .click();
+    await expect(
+      page.locator(".ant-select-selection-item").filter({ hasText: /^essentials$/i })
+    ).toBeVisible();
+    await page
+      .locator(".ant-select-dropdown:visible")
+      .getByTitle(/^monthly$/i)
+      .click();
+    await expect(
+      page.locator(".ant-select-selection-item").filter({ hasText: /^monthly$/i })
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // Save the form
+    await page.getByRole("button", { name: /save/i }).click();
+
+    // Should redirect to transactions list
+    await expect(page).toHaveURL(/\/transactions/);
+    await expect(
+      page.getByRole("heading", { name: "Transactions" })
+    ).toBeVisible();
+
+    // Ensure we're on the spend tab
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(new RegExp("spend", "i"))
+      .click();
+
+    // Verify the transaction row still exists
+    const updatedRow = getTransactionRow(page, {
+      note: originalNote,
+      date: originalDate,
+      category: "Groceries",
+      amount: "100.00",
+      bankAccount: "Main Account",
+    });
+    await expect(updatedRow).toBeVisible({ timeout: 15000 });
+
+    // Verify both tags are visible in the row
+    await expect(updatedRow.getByText("essentials")).toBeVisible();
+    await expect(updatedRow.getByText("monthly")).toBeVisible();
   });
 
   test("category options change based on transaction type on edit page", async ({
@@ -389,12 +511,10 @@ test.describe("Transactions", () => {
     // Wait for the form and all background queries (initial categories fetch) to
     // settle before touching any dropdown — otherwise the in-flight categories
     // query causes a React re-render that detaches Type dropdown options mid-click.
-    await waitForFormReady(page, "transaction-edit-form");
-    await page.waitForLoadState("networkidle");
+    await waitForTransactionEditReady(page);
 
     // Change to earn type
-    await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
-    await page.getByTitle(new RegExp("^earn$", "i")).click();
+    await selectFromVisibleAntdDropdown(page, "* Type", "earn");
     await expect(
       page.locator(".ant-select-selection-item").filter({ hasText: /^earn$/i })
     ).toBeVisible();
@@ -405,14 +525,15 @@ test.describe("Transactions", () => {
       .click({ force: true });
 
     // Should show earn categories (Salary)
-    await page.getByText("Salary");
+    await expect(
+      page.locator(".ant-select-dropdown:visible").getByText("Salary", { exact: true })
+    ).toBeVisible();
 
     // Close dropdown
     await page.keyboard.press("Escape");
 
     // Change to save type
-    await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
-    await page.getByTitle(new RegExp("^save$", "i")).click();
+    await selectFromVisibleAntdDropdown(page, "* Type", "save");
     await expect(
       page.locator(".ant-select-selection-item").filter({ hasText: /^save$/i })
     ).toBeVisible();
@@ -423,7 +544,9 @@ test.describe("Transactions", () => {
       .click({ force: true });
 
     // Should show save categories (Savings)
-    await page.getByText("Savings");
+    await expect(
+      page.locator(".ant-select-dropdown:visible").getByText("Savings", { exact: true })
+    ).toBeVisible();
   });
 
   test("transaction amount field rejects zero but allows negative values", async ({
@@ -443,5 +566,23 @@ test.describe("Transactions", () => {
     await page.getByLabel("Amount").fill("-50");
     await page.getByLabel("Amount").blur();
     await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
+  });
+  test("amount range filter shows only transactions within range", async ({ page }) => {
+    const date = e2eCurrentMonthDate();
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "30.00", "Main Account", "low-amount");
+    await createTransactionWithoutTags(page, date, "spend", "Groceries", "200.00", "Main Account", "high-amount");
+
+    // Navigate directly with amount between filter applied via URL params (syncWithLocation: true)
+    await page.goto(
+      "/transactions?" +
+        "sorters[0][field]=date&sorters[0][order]=desc" +
+        "&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend" +
+        "&filters[1][field]=amount&filters[1][operator]=between&filters[1][value][0]=100&filters[1][value][1]=999999"
+    );
+    await page.waitForLoadState("networkidle");
+
+    // Only the high-amount row should be visible
+    await expect(page.getByText("high-amount")).toBeVisible();
+    await expect(page.getByText("low-amount")).not.toBeVisible();
   });
 });

@@ -1,7 +1,7 @@
 # MoneyLens — Feature Completeness Plan
 
 **Date**: 2026-04-18  
-**Status**: Draft  
+**Status**: In Progress — items 1 and 2 shipped  
 **Scope**: Phase 4 / 4b / 5 feature gaps from `docs/improvement-roadmap.md`
 
 ---
@@ -12,20 +12,20 @@ This document provides an actionable implementation plan for all open feature-co
 
 ### Priority Matrix
 
-| # | Feature | User Value | Complexity | Depends On |
-|---|---------|-----------|-----------|------------|
-| 1 | [Currency persistence (`user_settings`)](#1-currency-persistence--user_settings-table) | 🔴 High | 🟡 Medium | — |
-| 2 | [Quick-add transaction in KBar](#2-quick-add-transaction-in-kbar) | 🟠 Medium-High | 🟢 Low | — |
-| 3 | [CSV export](#3-csv-export) | 🔴 High | 🟢 Low | — |
-| 4 | [Bulk-upload JSON template download](#4-bulk-upload-downloadable-json-template) | 🟡 Medium | 🟢 Low | — |
-| 5 | [User profile page](#5-user-profile-page) | 🟠 Medium-High | 🟡 Medium | #1 |
-| 6 | [Bank account running balance](#6-bank-account-running-balance) | 🔴 High | 🟡 Medium | — |
-| 7 | [Budget trajectory projection](#7-budget-trajectory-projection) | 🟠 Medium-High | 🟡 Medium | — |
-| 8 | [Recurring transactions](#8-recurring-transaction-support) | 🔴 High | 🔴 High | — |
+| # | Feature | User Value | Complexity | Depends On | Status |
+|---|---------|-----------|-----------|------------|--------|
+| 1 | [Currency persistence (`user_settings`)](#1-currency-persistence--user_settings-table) | 🔴 High | 🟡 Medium | — | ✅ [PR #149](https://github.com/iguliaev/moneylens/pull/149) |
+| 2 | [Quick-add transaction in KBar](#2-quick-add-transaction-in-kbar) | 🟠 Medium-High | 🟢 Low | — | ✅ [PR #157](https://github.com/iguliaev/moneylens/pull/157) |
+| 3 | [CSV export](#3-csv-export) | 🔴 High | 🟢 Low | — | |
+| 4 | [Bulk-upload JSON template download](#4-bulk-upload-downloadable-json-template) | 🟡 Medium | 🟢 Low | — | |
+| 5 | [User profile page](#5-user-profile-page) | 🟠 Medium-High | 🟡 Medium | #1 | |
+| 6 | [Bank account running balance](#6-bank-account-running-balance) | 🔴 High | 🟡 Medium | — | |
+| 7 | [Budget trajectory projection](#7-budget-trajectory-projection) | 🟠 Medium-High | 🟡 Medium | — | |
+| 8 | [Recurring transactions](#8-recurring-transaction-support) | 🔴 High | 🔴 High | — | |
 
 ---
 
-## 1. Currency Persistence — `user_settings` Table
+## 1. Currency Persistence — `user_settings` Table ✅ Done — [PR #149](https://github.com/iguliaev/moneylens/pull/149)
 
 ### What
 Persist the user's currency preference (and future preferences such as `date_format`) in a Supabase table so the choice roams with the account across devices and browsers.
@@ -91,7 +91,7 @@ Persist the user's currency preference (and future preferences such as `date_for
 
 ---
 
-## 2. Quick-Add Transaction in KBar
+## 2. Quick-Add Transaction in KBar ✅ Done — [PR #157](https://github.com/iguliaev/moneylens/pull/157)
 
 ### What
 Register a `"Add Transaction"` action in RefineKbar so users can open the transaction creation form via the command palette (`Cmd+K` / `Ctrl+K`).

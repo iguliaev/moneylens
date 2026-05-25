@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18  
 **Scope:** `apps/web-next/` — Vite + React 19 + Refine + Ant Design 5  
-**Status:** Planning
+**Status:** Complete — H2 ✅ H1 ✅ L1 ✅ L2 ✅ H3 ✅ M1 ✅ M2 ✅ M3 ✅ M4 ✅ L3 ✅
 
 ---
 
@@ -14,61 +14,20 @@ The MoneyLens frontend has solid bones (Refine framework, typed Supabase client,
 
 ## Priority: High
 
-### H1 — Replace direct Supabase calls in dashboard with Refine `useCustom`
+### H1 — Replace direct Supabase calls in dashboard with Refine `useCustom` ✅ COMPLETE
 
-**What**  
-`dashboard/index.tsx` contains four plain-async functions (`fetchYearStats`, `fetchMonthStats`, `fetchPrevTypeSummary`) and `ChartsTab.tsx` contains `useChartsData`, all of which call `supabaseClient.from(...)` directly inside `useEffect`. This bypasses every Refine subsystem: caching, background refetch, global loading/error state, and cache invalidation triggered by mutations elsewhere in the app.
+> **Status:** Implemented (prior to 2026-05-10) — hooks already live in `src/hooks/` and use Refine `useList`.  
+> `usePeriodStats.ts`, `useChartsData.ts`, `useBudgets.ts`, `utility/dateRanges.ts` all exist and use `useList` / `useList`-based patterns. No direct `supabaseClient.from(...)` calls remain in any dashboard data hook.
 
-`useBudgets.ts` has the same problem for the `get_budget_progress` RPC call.
-
-**Why it matters**  
-- Stale dashboard data after a transaction is created/edited — Refine will never know to re-fetch because the query is invisible to it.
-- No deduplication: switching tabs triggers independent network requests for the same date range.
-- Manual `cancelled` flags and `useState<loading>` boilerplate can be replaced by Refine's proven lifecycle.
-
-**How to do it**
-
-1. For database view queries (`view_monthly_totals`, `view_yearly_totals`, etc.), use Refine's `useList` with `resource` set to the view name and pass filters via the `filters` array:
-
-   ```ts
-   useList({
-     resource: "view_monthly_totals",
-     filters: [
-       { field: "month", operator: "gte", value: startDate },
-       { field: "month", operator: "lt",  value: endDate },
-     ],
-     pagination: { mode: "off" },
-   })
-   ```
-
-   Refine will generate a stable cache key from resource + filters + sorters, so switching between tabs will hit the cache rather than the network.
-
-2. For the `get_budget_progress` RPC in `useBudgets.ts`, use Refine's `useCustom`:
-
-   ```ts
-   useCustom<BudgetProgress[]>({
-     url: `${SUPABASE_URL}/rest/v1/rpc/get_budget_progress`,
-     method: "get",
-   })
-   ```
-
-   Or use a thin wrapper that delegates to `supabaseClient.rpc` inside a React Query `useQuery` with a stable key — this at least gives cache deduplication and avoids the manual `setLoading` dance.
-
-3. Replace the four `fetchXxxStats` standalone async functions with two hooks — `useYearStats(year: number)` and `useMonthStats(year: number, month: number)` — each internally composing two `useList` calls and returning the combined, mapped result. These hooks live in a new `src/hooks/` directory.
-
-4. The previous-period comparison currently calls a third fetch in `usePeriodStats`. Move this into each new hook as a second `useList` with `enabled: true` and shift the date arithmetic into a pure helper `getPreviousPeriodRange(period, date)` in `src/utility/dateRanges.ts`.
-
-**Files to change**
-- `src/pages/dashboard/index.tsx` — remove all direct Supabase calls and the `usePeriodStats` hook body
-- `src/pages/dashboard/ChartsTab.tsx` — remove `useChartsData` body
-- `src/pages/dashboard/useBudgets.ts` — replace `supabaseClient.rpc` with `useCustom` or `useQuery`
-- New: `src/hooks/usePeriodStats.ts`, `src/hooks/useChartsData.ts`, `src/utility/dateRanges.ts`
-
-**Risk / complexity:** Medium-High. The hook logic is straightforward but the Refine `useList` filter syntax for DB views needs testing. Each hook should be extracted and unit-tested in isolation before removing the old code.
+~~**What**  
+`dashboard/index.tsx` contains four plain-async functions...~~
 
 ---
 
-### H2 — Make transaction tag association atomic (create & edit)
+### H2 — Make transaction tag association atomic (create & edit) ✅ COMPLETE
+
+> **Status:** Implemented 2026-05-10 · PR [#175](https://github.com/iguliaev/moneylens/pull/175) · branch `feat/h2-atomic-transaction-tags`  
+> 188 pgTAP tests pass · 17 E2E transaction tests pass
 
 **What**  
 In `transactions/create.tsx` and `transactions/edit.tsx`, tags are saved by calling `supabaseClient.rpc("set_transaction_tags", ...)` *after* `formProps.onFinish()` succeeds. If the RPC fails (network hiccup, auth expiry, DB error), the transaction exists without its tags and the user sees a toast error but no rollback path. Additionally, on create the transaction ID is obtained by casting the opaque return value of `onFinish` — a brittle type assertion `(result as unknown as { data?: { id?: string } })`.
@@ -90,17 +49,23 @@ Regardless of chosen option:
 - Remove the `(result as unknown as ...)` cast. Refine's `useForm` `onFinish` return type should be typed or the mutation should be obtained directly via `useCreate` so the returned `data.id` is strongly typed.
 - The `handleFinish` pattern is duplicated verbatim in `create.tsx` and `edit.tsx`. Extract it to `src/hooks/useTransactionForm.ts` so both pages share one implementation.
 
-**Files to change**
-- `src/pages/transactions/create.tsx`
-- `src/pages/transactions/edit.tsx`
-- New: `src/hooks/useTransactionForm.ts`
-- New migration: `supabase/migrations/YYYYMMDDHHMMSS_create_transaction_with_tags.sql` (Option A)
+**Files changed**
+- `supabase/migrations/20260510120000_atomic_transaction_with_tags.sql` — `create_transaction_with_tags` and `update_transaction_with_tags` SECURITY DEFINER RPCs; both validate ownership of category, bank account, and tags against `auth.uid()` before any write
+- `supabase/tests/atomic_transaction_with_tags_test.sql` — 21 pgTAP tests (function existence, create/update/replace tags, atomicity, 6 cross-user security tests)
+- `apps/web-next/src/hooks/useTransactionForm.ts` — shared hook; serialises dayjs dates; calls appropriate RPC; uses `useNotification` for errors; `useInvalidate` + `navigate` on success
+- `apps/web-next/src/hooks/index.ts` — added export
+- `apps/web-next/src/pages/transactions/create.tsx` — uses hook; `warnWhenUnsavedChanges: false`
+- `apps/web-next/src/pages/transactions/edit.tsx` — uses hook; `warnWhenUnsavedChanges: false`
+- `apps/web-next/e2e/tests/transactions.spec.ts` — two new tag persistence E2E tests
 
 **Risk / complexity:** Medium. Option A requires a DB migration and collaboration with the backend layer; Option B can be done purely in the frontend. Option A is strongly recommended to ensure correctness.
 
 ---
 
-### H3 — Decompose `dashboard/index.tsx` into focused files
+### H3 — Decompose `dashboard/index.tsx` into focused files ✅ COMPLETE
+
+> **Status:** Implemented — PR [#176](https://github.com/iguliaev/moneylens/pull/176) · branch `feat/h3-dashboard-decomposition` · 2026-05-10  
+> `dashboard/index.tsx` reduced from 383 → 54 lines; `ChartsTab.tsx` from 436 → ~140 lines. All sub-components extracted into `src/pages/dashboard/components/`.
 
 **What**  
 `dashboard/index.tsx` currently contains, in one 579-line file: four TypeScript type declarations, four DB-view type aliases, three constants blocks, four standalone async functions, one compound data hook (`usePeriodStats`), two presentation components (`TrendBadge`, `TypeSummaryCards`), two table components (`CategoryBreakdownTable`, `CategoryBreakdownSection`), and the page component (`DashboardPage`).
@@ -166,7 +131,10 @@ Each extraction step is safe to do independently. Start with the leaf components
 
 ## Priority: Medium
 
-### M1 — Replace `useList` with `useSelect` for tag options
+### M1 — Replace `useList` with `useSelect` for tag options ✅ COMPLETE
+
+> **Status:** Implemented — PR [#176](https://github.com/iguliaev/moneylens/pull/176) · 2026-05-10  
+> Both `transactions/create.tsx` and `transactions/edit.tsx` now use `useSelect` from `@refinedev/core` with `optionLabel: "name"`, `optionValue: "id"`. The `useList + useMemo` pattern has been removed.
 
 **What**  
 `transactions/create.tsx` and `transactions/edit.tsx` both fetch tags with `useList` and then manually map `data.data` to `{ label, value }` inside a `useMemo`. Refine's `useSelect` already does exactly this mapping, participates in Refine's cache, and provides standard `selectProps` to spread onto `<Select>`.
@@ -203,7 +171,10 @@ Then spread `{...tagSelectProps}` onto the `<Select mode="multiple">` in the Tag
 
 ---
 
-### M2 — Eliminate duplicated constants and utilities
+### M2 — Eliminate duplicated constants and utilities ✅ COMPLETE
+
+> **Status:** Implemented — PR [#176](https://github.com/iguliaev/moneylens/pull/176) · 2026-05-10  
+> `src/constants/dateOptions.ts` created; `currentYear`, `yearOptions`, `monthOptions` centralised. `formatCurrencyLocal` replaced with `formatCurrency` from `src/utility/currency.ts`. `isTransactionType` guard deduplication deferred (not blocking).
 
 **What**  
 The following are defined more than once across the codebase:
@@ -234,7 +205,9 @@ Any change to the options range (e.g., extending to 10 years) or the currency fo
 
 ---
 
-### M3 — Standardise error handling across data-fetching hooks
+### M3 — Standardise error handling across data-fetching hooks ✅ COMPLETE
+
+> **Status:** Implemented — PR [#177](https://github.com/iguliaev/moneylens/pull/177) · 2026-05-10
 
 **What**  
 Current error handling is inconsistent:
@@ -282,7 +255,9 @@ There is no centralised error reporting. `message.error` from Ant Design is used
 
 ---
 
-### M4 — Extract a shared `DateRangePicker` component
+### M4 — Extract a shared `DateRangePicker` component ✅ COMPLETE
+
+> **Status:** Implemented — PR [#177](https://github.com/iguliaev/moneylens/pull/177) · 2026-05-10
 
 **What**  
 Both `dashboard/index.tsx` (year/month selectors) and `ChartsTab.tsx` (start/end year/month selectors) implement bespoke date-range pickers using four `<Select>` components. The options lists, layout, and label styling are duplicated.
@@ -360,7 +335,9 @@ After H2 (Option A), this problem disappears because tag association moves to th
 
 ---
 
-### L3 — Audit and document the pattern for Supabase RPC calls that must stay in the frontend
+### L3 — Audit and document the pattern for Supabase RPC calls that must stay in the frontend ✅ COMPLETE
+
+> **Status:** Implemented — PR [#177](https://github.com/iguliaev/moneylens/pull/177) · 2026-05-10
 
 **What**  
 Several features legitimately require direct `supabaseClient` calls that cannot (or should not) go through Refine's generic data provider:
@@ -397,13 +374,16 @@ These should be catalogued and distinguished from the accidental bypasses covere
 ## Implementation Order Recommendation
 
 ```
-Week 1:  H3 (decompose dashboard) — no logic change, high clarity gain
-Week 1:  M2 (deduplicate constants) — safe, tiny, should go first to unblock H3
-Week 2:  H1 (replace Supabase calls with Refine hooks) — depends on H3 for clean targets
-Week 2:  M1 (useSelect for tags) — small, can be parallelised
-Week 3:  H2 (atomic tag association) — DB migration needs coordination
-Week 3:  M3 (standardise error handling) — clean up as H1/H2 land
-Week 4:  M4, L1, L2, L3 — polish and structural hygiene
+~~Week 3:  H2 (atomic tag association)~~ ✅ DONE (PR #175, 2026-05-10)
+~~Week 4:  L2 (strengthen TS typing for onFinish)~~ ✅ resolved by H2 (no cast needed)
+~~Week 2:  H1 (replace Supabase calls with Refine hooks)~~ ✅ DONE (hooks in src/hooks/ use useList)
+~~Week 4:  L1 (shared src/hooks/ directory)~~ ✅ DONE
+
+~~Week 1:  M2 (deduplicate constants) — prerequisite for H3~~ ✅ DONE (PR #176, 2026-05-10)
+~~Week 1:  H3 (decompose dashboard) — no logic change, high clarity gain~~ ✅ DONE (PR #176, 2026-05-10)
+~~Week 2:  M1 (useSelect for tags) — small, can be parallelised~~ ✅ DONE (PR #176, 2026-05-10)
+~~Week 3:  M3 (standardise error handling)~~ ✅ DONE (PR #177, 2026-05-10)
+~~Week 4:  M4, L3 — polish and structural hygiene~~ ✅ DONE (PR #177, 2026-05-10)
 ```
 
 Each item is independently releasable. Items within the same week can be parallelised across developers.
@@ -414,11 +394,11 @@ Each item is independently releasable. Items within the same week can be paralle
 
 | File | Lines | Issues |
 |---|---|---|
-| `pages/dashboard/index.tsx` | 579 | H1, H3, M2, M3 |
-| `pages/dashboard/ChartsTab.tsx` | 587 | H1, H3, M2, M3 |
-| `pages/dashboard/useBudgets.ts` | 46 | H1, M3 |
-| `pages/transactions/create.tsx` | 168 | H2, M1, L2 |
-| `pages/transactions/edit.tsx` | 214 | H2, M1 |
-| `pages/budgets/create.tsx` | — | M3 (direct Supabase) |
-| `pages/budgets/edit.tsx` | — | M3 (direct Supabase) |
-| `pages/settings/index.tsx` | — | L3 (legitimate RPC) |
+| `pages/dashboard/index.tsx` | ~~579~~ → 54 | ~~H1~~ ✅ ~~H3~~ ✅ ~~M2~~ ✅ ~~M3~~ ✅ |
+| `pages/dashboard/ChartsTab.tsx` | ~~587~~ → ~140 | ~~H1~~ ✅ ~~H3~~ ✅ ~~M2~~ ✅ ~~M3~~ ✅ ~~M4~~ ✅ |
+| `pages/dashboard/useBudgets.ts` | 46 | ~~H1~~ ✅ ~~M3~~ ✅ ~~L3~~ ✅ |
+| `pages/transactions/create.tsx` | 168 | ~~H2~~ ✅ ~~M1~~ ✅ ~~L2~~ ✅ |
+| `pages/transactions/edit.tsx` | 214 | ~~H2~~ ✅ ~~M1~~ ✅ |
+| `pages/budgets/create.tsx` | — | ~~M3~~ ✅ (direct Supabase surfaced via notifications) |
+| `pages/budgets/edit.tsx` | — | ~~M3~~ ✅ (direct Supabase surfaced via notifications) |
+| `pages/settings/index.tsx` | — | ~~M3~~ ✅ ~~L3~~ ✅ (legitimate RPC wrappers) |

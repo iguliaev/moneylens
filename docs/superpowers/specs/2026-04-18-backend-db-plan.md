@@ -13,7 +13,9 @@ MoneyLens persists financial data in PostgreSQL 17 via Supabase. The schema is w
 
 ## 1. Performance
 
-### 1.1 Missing Date Index on `transactions`
+### 1.1 Missing Date Index on `transactions` ✅ Done
+
+> **Implemented:** `supabase/migrations/20260425000000_add_transaction_date_indexes.sql` — PR [#146](https://github.com/iguliaev/moneylens/pull/146)
 
 **What**  
 The baseline migration (`20260201164000`) creates no index on `transactions.date` or the composite `(user_id, date)`. The soft-delete migration adds `idx_transactions_user_deleted (user_id, deleted_at)` but still omits `date`. Every analytics view (`view_monthly_totals`, `view_monthly_category_totals`, `view_monthly_tagged_type_totals`, etc.) performs `DATE_TRUNC('month', date)` range scans scoped to a user and a time window. As transaction count grows these become sequential scans.
@@ -44,7 +46,7 @@ Both are partial indexes (`WHERE deleted_at IS NULL`) so they are small, always 
 
 ---
 
-### 1.2 Correlated Subqueries in `budgets_with_linked`
+### 1.2 Correlated Subqueries in `budgets_with_linked` ✅ Done
 
 **What**  
 `budgets_with_linked` uses two correlated scalar subqueries per row (one for `category_count`, one for `tag_count`). With many budgets this means N×2 sub-selects.
@@ -84,7 +86,9 @@ WHERE b.deleted_at IS NULL;
 
 ## 2. Correctness & Testing
 
-### 2.1 No pgTAP Tests for `get_budget_progress()`
+### 2.1 No pgTAP Tests for `get_budget_progress()` ✅ Done
+
+> **Implemented:** `supabase/tests/budget_progress_test.sql` — PR [#150](https://github.com/iguliaev/moneylens/pull/150)
 
 **What**  
 `get_budget_progress()` is a 60-line SQL function with non-trivial deduplication logic (UNION-based to avoid double-counting transactions that match via both a category link and a tag link). It has zero test coverage.
@@ -112,7 +116,9 @@ Test structure mirrors `aggregation_logic_test.sql`: `BEGIN`, `SELECT plan(N)`, 
 
 ---
 
-### 2.2 `view_monthly_tagged_type_totals` — Edge Cases Not Tested
+### 2.2 `view_monthly_tagged_type_totals` — Edge Cases Not Tested ✅ Done
+
+> **Implemented:** extended `supabase/tests/aggregation_logic_test.sql` (tests 12–14) — PR [#151](https://github.com/iguliaev/moneylens/pull/151)
 
 **What**  
 `aggregation_logic_test.sql` tests happy-path tagged totals but does not cover:
@@ -132,7 +138,19 @@ Extend `aggregation_logic_test.sql` with three new test cases (incrementing `SEL
 
 ---
 
-### 2.3 `reset_user_data` — Budget Cleanup Already Tested (Confirmation)
+### 2.3 `delete_bank_account_safe` / `delete_tag_safe` — RETURN NEXT Bug ✅ Done
+
+> **Implemented:** `supabase/migrations/20260425000001_fix_delete_safe_return_next.sql` — PR [#147](https://github.com/iguliaev/moneylens/pull/147)
+
+**What**  
+Both `delete_bank_account_safe` and `delete_tag_safe` used bare `RETURN` inside `RETURNS TABLE` functions. In PL/pgSQL, bare `RETURN` exits without emitting a row — callers received `NULL` instead of `(ok, in_use_count)`. This caused `bank_accounts_usage_and_rpc_test.sql` tests 2 and 3 to fail on every run.
+
+**Fix**  
+Replaced bare `RETURN` with `RETURN NEXT` (emit row) + `RETURN` (exit) in both functions.
+
+---
+
+### 2.4 `reset_user_data` — Budget Cleanup Already Tested (Confirmation)
 
 **What**  
 `reset_user_data_test.sql` fully covers budget cleanup: it verifies `budgets`, `budget_categories`, and `budget_tags` are all zeroed for the reset user while the other user's budgets remain intact (tests 1, 3, and 4). No action required here.
@@ -141,49 +159,17 @@ Extend `aggregation_logic_test.sql` with three new test cases (incrementing `SEL
 
 ---
 
-### 2.4 No Database-Level CHECK Constraint on `transactions.amount`
+### 2.5 ~~No Database-Level CHECK Constraint on `transactions.amount`~~ — _Removed_
 
-**What**  
-`transactions.amount NUMERIC(12, 2) NOT NULL` has no `CHECK` constraint. The frontend validates that amounts are positive, but the database will accept a `INSERT INTO transactions (amount) VALUES (-50)` directly (e.g., via the Supabase REST API or a misbehaving client).
+**Decision:** Negative amounts on `transactions` are **intentional by design**. For example, a reversal or refund entered directly as a negative spend is a valid use case. Adding a `CHECK (amount > 0)` constraint would break this deliberately supported workflow.
 
-The `budgets` table correctly has `CHECK (target_amount > 0)`. The same discipline should apply to transactions.
+The `budgets` table `CHECK (target_amount > 0)` remains correct because a budget target must always be a positive goal amount.
 
-**Why it matters**  
-- **Correctness:** Negative amounts would corrupt all dashboard totals, analytics views, and budget progress calculations silently.
-- **Security/trust boundary:** Database constraints are the last line of defense. Relying solely on frontend validation is insufficient for any record directly accessible via the PostgREST API.
-
-**How to implement**  
-Add a new migration `20260419000001_transaction_amount_check.sql`:
-
-```sql
-ALTER TABLE public.transactions
-    ADD CONSTRAINT chk_transactions_amount_positive
-    CHECK (amount > 0);
-```
-
-If any existing rows have `amount <= 0`, the migration will fail. Run a pre-check query first:
-
-```sql
-SELECT id, amount FROM public.transactions WHERE amount <= 0;
-```
-
-Clean up or correct those rows before applying the constraint.
-
-**Risk:** **Potentially breaking** — if any existing data has zero or negative amounts the `ALTER TABLE` will fail and must be resolved first. Low probability for a personal finance app but must be verified. On production, use `NOT VALID` first then `VALIDATE CONSTRAINT` separately to avoid a long table lock:
-
-```sql
-ALTER TABLE public.transactions
-    ADD CONSTRAINT chk_transactions_amount_positive
-    CHECK (amount > 0) NOT VALID;
-
--- After verifying no violations:
-ALTER TABLE public.transactions
-    VALIDATE CONSTRAINT chk_transactions_amount_positive;
-```
+No migration needed for this item.
 
 ---
 
-### 2.5 Dual Tag Storage Inconsistency (`tags TEXT[]` vs `transaction_tags`)
+### 2.6 Dual Tag Storage Inconsistency (`tags TEXT[]` vs `transaction_tags`)
 
 **What**  
 The `transactions` table retains a legacy `tags TEXT[]` column. The new system uses the `transaction_tags` junction table. Two views use each approach:
@@ -208,7 +194,9 @@ Correctness of the "in use" badge on the Tags list page, and potential silent di
 
 ## 3. Data Model Improvements
 
-### 3.1 No `user_settings` Table
+### 3.1 No `user_settings` Table ✅ Done
+
+> **Implemented:** `supabase/migrations/20260425000002_add_user_settings.sql` + `supabase/tests/user_settings_rls_test.sql` + `apps/web-next/src/contexts/currency/index.tsx` — PR [#149](https://github.com/iguliaev/moneylens/pull/149)
 
 **What**  
 Currency preference (`USD`, `GBP`, etc.) is stored exclusively in the browser's `localStorage` via `CurrencyContextProvider`. There is no server-side record of this preference.
@@ -218,40 +206,11 @@ Currency preference (`USD`, `GBP`, etc.) is stored exclusively in the browser's 
 - **Correctness:** Currency is display-critical — it affects how all monetary values are labelled and formatted.
 - **Future-proofing:** Any future backend-driven feature (email summaries, reports) has no currency context to use.
 
-**How to implement**  
-Create a new migration `20260419000002_add_user_settings.sql`:
-
-```sql
-CREATE TABLE IF NOT EXISTS public.user_settings (
-    user_id  UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-    currency TEXT NOT NULL DEFAULT 'USD'
-                  CHECK (char_length(currency) = 3),  -- ISO 4217
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY user_settings_select ON public.user_settings
-    FOR SELECT USING (user_id = (SELECT auth.uid()));
-
-CREATE POLICY user_settings_insert ON public.user_settings
-    FOR INSERT WITH CHECK (user_id = (SELECT auth.uid()));
-
-CREATE POLICY user_settings_update ON public.user_settings
-    FOR UPDATE USING (user_id = (SELECT auth.uid()))
-    WITH CHECK (user_id = (SELECT auth.uid()));
-
-DROP TRIGGER IF EXISTS tg_user_settings_updated_at ON public.user_settings;
-CREATE TRIGGER tg_user_settings_updated_at
-    BEFORE UPDATE ON public.user_settings
-    FOR EACH ROW EXECUTE FUNCTION public.tg_set_updated_at();
-```
-
-**Frontend integration steps:**
-1. On first load, read from Supabase `user_settings`; fall back to `localStorage` value for backward compatibility.
-2. On currency change in Settings page, upsert into `user_settings` (and keep `localStorage` in sync for offline resilience).
-3. Add `user_settings` to the pgTAP test suite: verify RLS isolation between users and that the ISO 4217 CHECK constraint rejects invalid codes.
+**What was implemented**
+- `user_settings` table with `user_id PK`, `currency TEXT CHECK(char_length=3)` (ISO 4217), timestamps, RLS (select/insert/update), `tg_set_user_id` trigger (auto-sets user_id, client never supplies it), `tg_set_updated_at` trigger
+- `CurrencyContextProvider` updated: hydrates from Supabase on `INITIAL_SESSION`/`SIGNED_IN` auth events; `setCurrency` does optimistic localStorage update + fire-and-forget upsert; falls back to localStorage when signed out
+- 10 pgTAP tests covering: auto user_id via trigger, RLS isolation between users, updated_at trigger, CHECK constraint (rejects 2-char and 4-char codes)
+- All 153 pgTAP tests pass
 
 **Risk:** Additive DDL, no breaking changes. `localStorage` fallback ensures existing users are unaffected.
 
@@ -341,13 +300,14 @@ This makes the dashboard live without any page reload.
 
 | # | Category | Item | Effort | Risk | Priority |
 |---|---|---|---|---|---|
-| 1.1 | Performance | Add `(user_id, date)` index on `transactions` | Low | None | 🔴 High |
-| 1.2 | Performance | Rewrite `budgets_with_linked` to avoid correlated subqueries | Low | None | 🟡 Medium |
-| 2.1 | Testing | pgTAP tests for `get_budget_progress()` | Medium | None | 🔴 High |
-| 2.2 | Testing | Edge-case tests for `view_monthly_tagged_type_totals` | Low | None | 🟡 Medium |
-| 2.4 | Correctness | CHECK constraint on `transactions.amount` | Low | Low-Medium | 🔴 High |
-| 2.5 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
-| 3.1 | Data Model | Add `user_settings` table for currency + RLS | Medium | None | 🔴 High |
+| ~~1.1~~ | ~~Performance~~ | ~~Add `(user_id, date)` index on `transactions`~~ | — | — | ✅ Done — PR [#146](https://github.com/iguliaev/moneylens/pull/146) |
+| ~~1.2~~ | ~~Performance~~ | ~~Rewrite `budgets_with_linked` to avoid correlated subqueries~~ | — | — | ✅ Done — PR [#152](https://github.com/iguliaev/moneylens/pull/152) |
+| ~~2.1~~ | ~~Testing~~ | ~~pgTAP tests for `get_budget_progress()`~~ | — | — | ✅ Done — PR [#150](https://github.com/iguliaev/moneylens/pull/150) |
+| ~~2.2~~ | ~~Testing~~ | ~~Edge-case tests for `view_monthly_tagged_type_totals`~~ | — | — | ✅ Done — PR [#151](https://github.com/iguliaev/moneylens/pull/151) |
+| ~~2.3~~ | ~~Correctness~~ | ~~`delete_bank_account_safe` / `delete_tag_safe` RETURN NEXT bug~~ | — | — | ✅ Done — PR [#147](https://github.com/iguliaev/moneylens/pull/147) |
+| ~~2.5~~ | ~~Correctness~~ | ~~CHECK constraint on `transactions.amount`~~ | — | — | _Removed — negative amounts intentional_ |
+| 2.6 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
+| ~~3.1~~ | ~~Data Model~~ | ~~Add `user_settings` table for currency + RLS~~ | — | — | ✅ Done — PR [#149](https://github.com/iguliaev/moneylens/pull/149) |
 | 3.2 | Data Model | Document `budgets` nullable date semantics | Low | None | 🟢 Low |
 | 4.1 | Real-time | Wire Supabase Realtime into dashboard `usePeriodStats` | Medium | None | 🟡 Medium |
 
@@ -355,11 +315,11 @@ This makes the dashboard live without any page reload.
 
 ## 6. Recommended Implementation Order
 
-1. **1.1 — Date index** (one migration, five minutes, immediate measurable impact)
-2. **2.4 — Amount CHECK constraint** (pre-check data → `NOT VALID` → validate)
-3. **3.1 — `user_settings` table** (migration + frontend wiring)
-4. **2.1 — Budget progress pgTAP tests** (coverage for existing complex logic)
-5. **2.2 — Tag view edge-case tests** (extend existing test file)
-6. **1.2 — `budgets_with_linked` view rewrite** (performance, low risk)
+1. ~~**1.1 — Date index**~~ ✅ Done (PR #146)
+2. ~~**2.3 — RETURN NEXT bugfix**~~ ✅ Done (PR #147)
+3. ~~**3.1 — `user_settings` table**~~ ✅ Done (PR #149)
+4. ~~**2.1 — Budget progress pgTAP tests**~~ ✅ Done (PR #150)
+5. ~~**2.2 — Tag view edge-case tests**~~ ✅ Done (PR #151)
+6. ~~**1.2 — `budgets_with_linked` view rewrite**~~ ✅ Done (PR #152)
 7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
-8. **2.5 — Dual tag storage resolution** (requires full audit, do last)
+8. **2.6 — Dual tag storage resolution** (requires full audit, do last)

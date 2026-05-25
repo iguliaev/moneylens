@@ -19,6 +19,7 @@ import {
   TRANSACTION_TYPES,
 } from "../../constants/transactionTypes";
 import { formatAmount } from "../../utility";
+import { getTransactionEmptyState, TableSkeleton } from "../../components";
 
 const commonSelectOptions = {
   sorters: [{ field: "name", order: "asc" as const }],
@@ -99,6 +100,9 @@ export const TransactionList = () => {
     defaultValue: getDefaultFilter("tag_ids", filters, "in"),
   });
 
+  // Always call to keep React hook call count consistent (internally calls useNavigation())
+  const transactionEmptyState = getTransactionEmptyState();
+
   return (
     <List>
       <Segmented
@@ -110,7 +114,10 @@ export const TransactionList = () => {
         value={transactionType}
         onChange={(value) => setTransactionType(value as string)}
       />
-      <Table {...tableProps} rowKey="id">
+      {tableProps.loading && !tableProps.dataSource?.length ? (
+        <TableSkeleton columns={7} />
+      ) : (
+      <Table {...tableProps} rowKey="id" locale={{ emptyText: transactionEmptyState }}>
         <Table.Column
           dataIndex={["date"]}
           title="Date"
@@ -250,6 +257,7 @@ export const TransactionList = () => {
           )}
         />
       </Table>
+      )}
     </List>
   );
 };

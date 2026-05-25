@@ -6,7 +6,7 @@ import {
   ShowButton,
   DeleteButton,
 } from "@refinedev/antd";
-import { Table, Space, Tag } from "antd";
+import { Table, Space, Tag, Progress } from "antd";
 import {
   TRANSACTION_TYPE_LABELS,
   TransactionType,
@@ -14,6 +14,12 @@ import {
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
 import { useCurrency } from "../../contexts/currency";
+import {
+  getBudgetAlertState,
+  getProgressStatus,
+  WARN_STROKE_COLOR,
+} from "../../utility/budgetAlerts";
+import { getBudgetEmptyState, TableSkeleton } from "../../components";
 
 export const BudgetList = () => {
   const invalidate = useInvalidate();
@@ -24,9 +30,15 @@ export const BudgetList = () => {
     resource: "budgets_with_linked",
   });
 
+  // Always call to keep React hook call count consistent (internally calls useNavigation())
+  const budgetEmptyState = getBudgetEmptyState();
+
   return (
     <List>
-      <Table {...tableProps} rowKey="id">
+      {tableProps.loading && !tableProps.dataSource?.length ? (
+        <TableSkeleton columns={9} />
+      ) : (
+      <Table {...tableProps} rowKey="id" locale={{ emptyText: budgetEmptyState }}>
         <Table.Column dataIndex="name" title="Name" sorter />
         <Table.Column
           dataIndex="type"
@@ -52,6 +64,48 @@ export const BudgetList = () => {
         />
         <Table.Column dataIndex="tag_count" title="Tags" align="center" />
         <Table.Column
+          title="Progress"
+          key="progress"
+          align="center"
+          width={160}
+          render={(_: unknown, record: BaseRecord) => {
+            const currentAmount = Number(record.current_amount ?? 0);
+            const targetAmount = Number(record.target_amount ?? 0);
+            const { percent, alertLevel } = getBudgetAlertState(
+              currentAmount,
+              targetAmount,
+              record.type as TransactionType,
+            );
+            return (
+              <Space direction="vertical" size={2} style={{ width: "100%" }}>
+                <Progress
+                  percent={percent}
+                  size="small"
+                  status={getProgressStatus(
+                    alertLevel,
+                    percent,
+                    record.type as TransactionType,
+                  )}
+                  strokeColor={
+                    alertLevel === "warn" ? WARN_STROKE_COLOR : undefined
+                  }
+                  format={() => `${percent}%`}
+                />
+                {alertLevel === "warn" && (
+                  <Tag color="warning" style={{ fontSize: 11 }}>
+                    ⚠ Near limit
+                  </Tag>
+                )}
+                {alertLevel === "over" && (
+                  <Tag color="error" style={{ fontSize: 11 }}>
+                    Over budget
+                  </Tag>
+                )}
+              </Space>
+            );
+          }}
+        />
+        <Table.Column
           title="Actions"
           dataIndex="actions"
           render={(_, record: BaseRecord) => (
@@ -74,6 +128,7 @@ export const BudgetList = () => {
           )}
         />
       </Table>
+      )}
     </List>
   );
 };

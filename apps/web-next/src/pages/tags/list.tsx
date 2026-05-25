@@ -1,4 +1,5 @@
 import { ResourceList } from "../../components/resource-list";
+import { getTagEmptyState } from "../../components";
 
 export const TagList = () => {
   return (
@@ -10,6 +11,7 @@ export const TagList = () => {
         { dataIndex: "description", title: "Description" },
         { dataIndex: "in_use_count", title: "Usage Count" },
       ]}
+      emptyStateBuilder={getTagEmptyState}
     />
   );
 };

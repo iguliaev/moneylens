@@ -4,7 +4,7 @@
 
 ---
 
-## 1. Dashboard: Default to "Monthly Statistics" Tab
+## 1. Dashboard: Default to "Monthly Statistics" Tab ✅ Done — [PR #154](https://github.com/iguliaev/moneylens/pull/154)
 
 **Priority:** 🔴 High Impact / 🟢 Low Complexity — **Quick Win #1**
 
@@ -21,7 +21,7 @@ The app opens on "Monthly Statistics", scoped to the current month and year auto
 
 ---
 
-## 2. Categories Resource: Add Sidebar Icon
+## 2. Categories Resource: Add Sidebar Icon ✅ Done — [PR #155](https://github.com/iguliaev/moneylens/pull/155)
 
 **Priority:** 🔴 High Impact / 🟢 Low Complexity — **Quick Win #2**
 
@@ -40,92 +40,91 @@ Categories has a recognisable icon, giving the sidebar a uniform, professional l
 
 ---
 
-## 3. Budget Threshold Alerts (80% / 100% Warning)
+## 3. Budget Threshold Alerts (80% / 100% Warning) ✅ Done — [PR #156](https://github.com/iguliaev/moneylens/pull/156)
 
 **Priority:** 🔴 High Impact / 🟢 Low Complexity — **Quick Win #3**
 
 ### Current Experience
 `BudgetsSection.tsx` shows a progress bar with status change only at exactly 100%. There is no visual warning between 80–99% — the most actionable window for a user to adjust behaviour.
 
-### Improved Experience
+### Implemented Experience
 - **≥ 80% (spend budget):** Progress bar turns orange (`strokeColor="#faad14"`); a small `<Tag>` badge reads "⚠ Near limit".
-- **≥ 100% (spend budget):** Existing red `"exception"` status plus `<Tag color="error">Over budget</Tag>`.
+- **≥ 100% (spend budget):** Red `"exception"` status plus `<Tag color="error">Over budget</Tag>`.
+- Both `BudgetsSection` (dashboard) and `BudgetList` (list page) render the same colours via a shared `getProgressStatus()` helper.
+- `getBudgetAlertState()` in `src/utility/budgetAlerts.ts` encapsulates the threshold logic and clamps `percent` to `[0, 100]` to handle negative `currentAmount` (e.g. refunds).
 
-### How to Implement
-In `BudgetsSection.tsx`, derive an alert level before `<Progress>` render:
-```
-const isSpend = budget.type === "spend";
-const alertLevel = percent >= 100 ? "over" : percent >= 80 && isSpend ? "warn" : "none";
-```
-Use `strokeColor` prop on `<Progress>` for the warning state, and render a conditional `<Tag>` beneath the progress bar.
-
-Also add a compact **"Progress"** column to `BudgetList` with the same colour logic, so budget status is visible at a glance without clicking into each budget.
+### Implementation Notes
+- `src/utility/budgetAlerts.ts` — exports `getBudgetAlertState()`, `getProgressStatus()`, and `WARN_STROKE_COLOR`.
+- `BudgetsSection.tsx` and `pages/budgets/list.tsx` both consume the shared helpers.
+- E2E coverage added in `e2e/tests/budgets.spec.ts` (`"Budget alert states"` describe block): 85% → Near limit, 100% → Over budget (list and dashboard).
 
 ---
 
-## 4. "All Transactions" View in Transaction List
+## 4. "All Transactions" View in Transaction List 🚫 Won't Do
 
-**Priority:** 🔴 High Impact / 🟡 Medium Complexity
+**Priority:** ~~🔴 High Impact / 🟡 Medium Complexity~~ — **Deprioritised**: does not provide meaningful value to users at this stage. The per-type segmented view covers all practical use cases.
 
-### Current Experience
-`TransactionList` passes `transactionType` as a **permanent filter** (`operator: "eq"`). The segmented control only shows Spend / Earn / Save — no way to see all transactions at once.
 
-### Improved Experience
-An **"All"** option in the segmented control removes the type filter, showing every transaction with a new "Type" column to differentiate rows.
 
-### How to Implement
-1. Change the initial state to a sentinel value: `const [transactionType, setTransactionType] = useState("all")`
-2. Make the permanent filter conditional — omit it when `transactionType === "all"`
-3. Add `"All"` as the first option in the `<Segmented>` options array
-4. When `"all"` is active, render a Type column with a coloured tag
-5. Remove the type filter from `categorySelectProps` `useSelect` when `"all"` is active
-
----
-
-## 5. Full-Text Search in Transaction List (Notes / Amount Range)
+## 5. Full-Text Search in Transaction List (Notes / Amount Range) ✅ Done — [PR #172](https://github.com/iguliaev/moneylens/pull/172)
 
 **Priority:** 🔴 High Impact / 🟡 Medium Complexity
 
 ### Current Experience
 Column-level filter dropdowns exist for date, category, amount (exact match), bank account, and tags — but **no free-text search** on `notes`, and the amount filter is useless as an exact match.
 
-### Improved Experience
-A search bar above the table filters across `notes` using `containsi`. Amount filter becomes a min/max range.
+### Implemented Experience
+- Amount filter replaced with a **min/max range** (`operator: "between"`) matching the existing date range pattern.
+- Notes full-text search added as `Input.Search` in `<List headerButtons>` (debounced 400ms, `contains` → Supabase `ilike`). **Later superseded by the global header search (item 12).**
 
-### How to Implement
-- Add a debounced `searchQuery` state and pass it to `useTable` as `{ field: "notes", operator: "containsi", value: searchQuery || undefined }`.
-- Render `<Input.Search>` in the `<List headerButtons>` slot.
-- Replace the `<InputNumber>` in the amount filter with two `<InputNumber>` fields (Min/Max) using `operator: "between"` — mirroring the existing date range pattern.
+### Implementation Notes
+- `apps/web-next/src/pages/transactions/list.tsx` — `searchQuery` state + debounce `useEffect` + `Input.Search` in headerButtons; amount column replaced with Min/Max `InputNumber` pair.
+- `contains` operator maps to Supabase `ilike` (case-insensitive) in the Refine data provider — `containsi` is not in Refine's TypeScript union.
+- E2E coverage added in `transactions.spec.ts` (`"Transaction list filters"` describe block).
 
 ---
 
-## 6. Register KBar Quick-Add Transaction Action
+## 12. Global Header Search ✅ Done — [PR #173](https://github.com/iguliaev/moneylens/pull/173)
+
+**Priority:** 🔴 High Impact / 🟡 Medium Complexity
+
+### Current Experience
+After item 5, notes search lived in the transaction list header only, scoped to a single resource.
+
+### Improved Experience
+A global `AutoComplete` search bar in the app header (finefoods-antd pattern) searches across **Transactions** (notes), **Categories** (name), and **Bank Accounts** (name) simultaneously. Results appear as grouped options with "View all →" links; clicking a result navigates to the record's show page.
+
+Each **transaction** result shows a rich two-line layout:
+- Top row: note (bold) · formatted amount (active currency) · colour-coded type tag (Earn / Spend / Save)
+- Bottom row: category name · formatted date
+
+**Categories** and **Bank Accounts** keep a single-line format (name only).
+
+### Implementation Notes
+- `src/components/header/index.tsx` — Header restructured to `Row`/`Col`; `AutoComplete` + `Input` (SearchOutlined prefix) on the left, hidden on `xs`.
+- Three lazy `useList` hooks (`queryOptions: { enabled: false }`); a single debounced `useEffect` (300ms) calls `query.refetch()` on each.
+- Results grouped: `FileTextOutlined` Transactions → `/transactions/show/:id`, `AppstoreOutlined` Categories → `/categories/show/:id`, `BankOutlined` Bank Accounts → `/bank_accounts/show/:id`.
+- **Race condition fix:** a `stale` boolean is set in the `useEffect` cleanup alongside `clearTimeout`. In-flight `.then()` callbacks check `if (stale) return` before calling `setOptions`, preventing results from earlier (broader) queries from polluting the dropdown when a user types slowly.
+- `renderTransactionItem` helper renders the rich layout using `formatCurrency` + `useCurrency()`, `TYPE_COLORS`, and `TRANSACTION_TYPE_LABELS` from existing constants.
+- `Input.Search` removed from `list.tsx` headerButtons; notes-search E2E tests removed; settings combobox E2E test scoped to currency card to fix ambiguity.
+
+---
+
+## 6. Register KBar Quick-Add Transaction Action ✅ Done — [PR #157](https://github.com/iguliaev/moneylens/pull/157)
 
 **Priority:** 🟡 Medium Impact / 🟢 Low Complexity — **Quick Win #4**
 
-### Current Experience
-`<RefineKbar>` is set up but no custom actions are registered — the palette only shows auto-generated navigation shortcuts.
-
-### Improved Experience
+### Experience
 Pressing Cmd+K and typing "add" shows an **"Add Transaction"** action that navigates to `/transactions/create`.
 
-### How to Implement
-Create `src/hooks/useQuickActions.ts` using `useRegisterActions` from `@refinedev/kbar`:
-```ts
-useRegisterActions([{
-  id: "add-transaction",
-  name: "Add Transaction",
-  keywords: "new transaction add spend earn save",
-  perform: () => create("transactions"),
-  section: "Quick Actions",
-  priority: Priority.HIGH,
-}], []);
-```
-Call `useQuickActions()` inside the authenticated layout (e.g., in `Header`).
+### Implementation Notes
+- `src/hooks/useQuickActions.ts` — calls `useRegisterActions` from `@refinedev/kbar` with a single "Add Transaction" action (`Priority.HIGH`, section "Quick Actions", keywords `new transaction add spend earn save`)
+- `useNavigation().create("transactions")` navigates to the create page
+- `useQuickActions()` is called inside `Header` so it's always active in the authenticated layout
 
 ---
 
-## 7. Transaction Show Page: Replace "Loading…" with Skeleton
+## 7. Transaction Show Page: Replace "Loading…" with Skeleton ✅ Done — [PR #162](https://github.com/iguliaev/moneylens/pull/162)
 
 **Priority:** 🟡 Medium Impact / 🟢 Low Complexity — **Quick Win #5**
 
@@ -142,7 +141,7 @@ Also fix the hardcoded `"GBP"` currency on line 42 — replace with `useCurrency
 
 ---
 
-## 8. Budget List: Inline Progress Column
+## 8. Budget List: Inline Progress Column ✅ Done — [PR #156](https://github.com/iguliaev/moneylens/pull/156)
 
 **Priority:** 🟡 Medium Impact / 🟡 Medium Complexity
 
@@ -158,7 +157,7 @@ A **"Progress"** column renders a compact `<Progress>` bar with colour coding (m
 
 ---
 
-## 9. Empty States with Custom CTAs
+## 9. Empty States with Custom CTAs ✅ Done — [PR #164](https://github.com/iguliaev/moneylens/pull/164)
 
 **Priority:** 🟡 Medium Impact / 🟡 Medium Complexity
 
@@ -168,12 +167,14 @@ All list pages show Ant Design's default `<Empty description="No Data" />` — n
 ### Improved Experience
 Each list page shows a tailored empty state with a contextual CTA ("Add Transaction", "Create Budget", etc.).
 
-### How to Implement
-Create a reusable `<EmptyState title description actionLabel onAction />` component in `src/components/EmptyState.tsx`, using AntD's `<Empty>` with the CTA wired to Refine's `useNavigation().create`. Pass it via each `<Table>`'s `locale.emptyText` prop.
+### Implementation Notes
+- `src/components/EmptyState.tsx` — exports reusable `<EmptyState title description actionLabel onAction />` component using AntD's `<Empty>`.
+- The CTA is wired to Refine's `useNavigation().create` for navigation to create pages.
+- Integrated across all list pages (Transactions, Categories, Budgets, Bank Accounts, Tags) via `<Table>` `locale.emptyText` prop.
 
 ---
 
-## 10. Settings Page: Tabbed Layout
+## 10. Settings Page: Tabbed Layout ✅ Done — [PR #167](https://github.com/iguliaev/moneylens/pull/167)
 
 **Priority:** 🟡 Medium Impact / 🟡 Medium Complexity
 
@@ -183,12 +184,14 @@ The Settings page is a single vertically scrolling page with all sections stacke
 ### Improved Experience
 Settings are grouped into logical tabs: **General** | **Import & Export** | **⚠ Danger Zone**. The danger tab requires deliberate navigation.
 
-### How to Implement
-In `pages/settings/index.tsx`, wrap existing section components in `<Tabs>` items and extract each into a named sub-component.
+### Implementation Notes
+- `pages/settings/index.tsx` — replaced `<Divider>` with Ant Design `<Tabs items={[...]}>`; existing section components (CurrencySection, BulkUploadSection, DataResetSection) wrapped unchanged.
+- Tab order: General (default) → Import & Export → ⚠ Danger Zone (last, requires explicit click).
+- 9 existing e2e tests updated to navigate tabs before accessing content; new `settings-tabs.spec.ts` adds 6 dedicated tab tests.
 
 ---
 
-## 11. Loading Skeletons for List Pages
+## 11. Loading Skeletons for List Pages ✅ Done — [PR #169](https://github.com/iguliaev/moneylens/pull/169)
 
 **Priority:** 🟡 Medium Impact / 🔴 High Complexity
 
@@ -198,25 +201,30 @@ In `pages/settings/index.tsx`, wrap existing section components in `<Tabs>` item
 ### Improved Experience
 Each list renders skeleton rows during initial load, giving a stable, content-shaped placeholder.
 
-### How to Implement
-Create a `<TableSkeleton columns={N} rows={8} />` component using `<Skeleton.Input>` blocks. Conditionally render when `tableProps.loading && !tableProps.dataSource?.length`.
+### Implementation Notes
+- `src/components/TableSkeleton.tsx` — reusable `<TableSkeleton columns={N} rows={8} />` using `<Skeleton.Input>` blocks inside a real `<table>`.
+- Integrated across all 5 list pages: Transactions (8 cols), Categories (4 cols), Budgets (9 cols), Tags and Bank Accounts via the shared `ResourceList` component.
+- Skeleton shows only on initial load (`tableProps.loading && !tableProps.dataSource?.length`); re-fetches with cached data keep the table visible.
+- Segmented controls (Transactions, Categories) remain visible during skeleton load.
+- `getXxxEmptyState()` calls hoisted unconditionally before any conditional rendering to satisfy React Rules of Hooks (these functions call `useNavigation()` internally).
 
 ---
 
 ## Summary Table
 
-| # | Improvement | Impact | Complexity | Rough Effort |
-|---|-------------|--------|------------|-------------|
-| 1 | Dashboard defaults to Monthly tab | 🔴 High | 🟢 Low | 1 line |
-| 2 | Categories sidebar icon | 🔴 High | 🟢 Low | 3 lines |
-| 3 | Budget threshold alerts (80%/100%) | 🔴 High | 🟢 Low | ~30 lines |
-| 4 | "All Transactions" segmented option | 🔴 High | 🟡 Medium | ~40 lines |
-| 5 | Notes full-text search + amount range | 🔴 High | 🟡 Medium | ~50 lines |
-| 6 | KBar quick-add transaction action | 🟡 Medium | 🟢 Low | ~20 lines |
-| 7 | Transaction show: Skeleton loading | 🟡 Medium | 🟢 Low | ~10 lines |
-| 8 | Budget list: inline progress column | 🟡 Medium | 🟡 Medium | ~30 lines |
-| 9 | Empty states with CTA | 🟡 Medium | 🟡 Medium | ~60 lines |
-| 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines |
-| 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines |
+| # | Improvement | Impact | Complexity | Rough Effort | Status |
+|---|-------------|--------|------------|-------------|--------|
+| 1 | Dashboard defaults to Monthly tab | 🔴 High | 🟢 Low | 1 line | ✅ [PR #154](https://github.com/iguliaev/moneylens/pull/154) |
+| 2 | Categories sidebar icon | 🔴 High | 🟢 Low | 3 lines | ✅ [PR #155](https://github.com/iguliaev/moneylens/pull/155) |
+| 3 | Budget threshold alerts (80%/100%) | 🔴 High | 🟢 Low | ~30 lines | ✅ [PR #156](https://github.com/iguliaev/moneylens/pull/156) |
+| 4 | "All Transactions" segmented option | ~~🔴 High~~ | ~~🟡 Medium~~ | ~~~40 lines~~ | 🚫 Won't Do |
+| 5 | Notes full-text search + amount range | 🔴 High | 🟡 Medium | ~50 lines | ✅ [PR #172](https://github.com/iguliaev/moneylens/pull/172) |
+| 6 | KBar quick-add transaction action | 🟡 Medium | 🟢 Low | ~20 lines | ✅ [PR #157](https://github.com/iguliaev/moneylens/pull/157) |
+| 7 | Transaction show: Skeleton loading | 🟡 Medium | 🟢 Low | ~10 lines | ✅ [PR #162](https://github.com/iguliaev/moneylens/pull/162) |
+| 8 | Budget list: inline progress column | 🟡 Medium | 🟡 Medium | ~30 lines | ✅ [PR #156](https://github.com/iguliaev/moneylens/pull/156) |
+| 9 | Empty states with CTA | 🟡 Medium | 🟡 Medium | ~60 lines | ✅ [PR #164](https://github.com/iguliaev/moneylens/pull/164) |
+| 10 | Settings: tabbed layout | 🟡 Medium | 🟡 Medium | ~40 lines | ✅ [PR #167](https://github.com/iguliaev/moneylens/pull/167) |
+| 11 | List page loading skeletons | 🟡 Medium | 🔴 High | ~100 lines | ✅ [PR #169](https://github.com/iguliaev/moneylens/pull/169) |
+| 12 | Global header search (AutoComplete) | 🔴 High | 🟡 Medium | ~180 lines | ✅ [PR #173](https://github.com/iguliaev/moneylens/pull/173) |
 
 **Items 1–3** can ship in a single PR in under an hour. **Items 4–7** are self-contained and can be parallelised. **Items 8–11** suit a dedicated UX sprint.

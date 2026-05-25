@@ -97,14 +97,21 @@ test.describe("Data Reset Isolation", () => {
     // User A resets their data
     await loginUser(pageA, userA.email, userA.password);
     await pageA.goto("/settings");
-    await pageA.getByText("Danger Zone").scrollIntoViewIfNeeded();
+
+    // Click on Danger Zone tab
+    await pageA.getByRole("tab", { name: /danger zone/i }).click();
+
     await pageA.getByRole("button", { name: /reset.*data/i }).click();
     await pageA
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
 
     // Verify success with semantic locator
-    await expect(pageA.getByText(/data reset complete/i)).toBeVisible();
+    const successAlert = pageA
+      .getByRole("tabpanel", { name: /danger zone/i })
+      .getByRole("alert")
+      .filter({ hasText: /data reset complete/i });
+    await expect(successAlert).toBeVisible();
 
     // Clean up User A's context
     await contextA.close();

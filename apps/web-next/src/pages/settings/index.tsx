@@ -8,10 +8,10 @@ import {
   List,
   Space,
   Modal,
-  message,
-  Divider,
+  Tabs,
   Select,
 } from "antd";
+import { useNotification } from "@refinedev/core";
 import {
   UploadOutlined,
   DeleteOutlined,
@@ -19,63 +19,17 @@ import {
   GlobalOutlined,
 } from "@ant-design/icons";
 import type { UploadFile, UploadProps } from "antd/es/upload/interface";
-import { supabaseClient } from "../../utility";
+import {
+  bulkUploadData,
+  resetUserData,
+  type BulkUploadPayload,
+  type BulkUploadResult,
+  type DataResetResult,
+} from "../../utility";
 import { Show } from "@refinedev/antd";
 import { useCurrency, SUPPORTED_CURRENCIES } from "../../contexts/currency";
 
 const { Paragraph } = Typography;
-
-// === Types ===
-interface CategoryInput {
-  type: string;
-  name: string;
-  description?: string | null;
-}
-
-interface BankAccountInput {
-  name: string;
-  description?: string | null;
-}
-
-interface TagInput {
-  name: string;
-  description?: string | null;
-}
-
-interface BulkTransactionInput {
-  date: string;
-  type: string;
-  amount: number;
-  category?: string | null;
-  bank_account?: string | null;
-  tags?: string[] | null;
-  notes?: string | null;
-}
-
-interface BulkUploadPayload {
-  categories?: CategoryInput[];
-  bank_accounts?: BankAccountInput[];
-  tags?: TagInput[];
-  transactions?: BulkTransactionInput[];
-}
-
-interface BulkUploadResult {
-  success: boolean;
-  error?: string;
-  categories_inserted?: number;
-  bank_accounts_inserted?: number;
-  tags_inserted?: number;
-  transactions_inserted?: number;
-}
-
-interface DataResetResult {
-  success: boolean;
-  budgets_deleted?: number;
-  transactions_deleted: number;
-  categories_deleted: number;
-  tags_deleted: number;
-  bank_accounts_deleted: number;
-}
 
 // === Constants ===
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
@@ -123,6 +77,7 @@ const getUploadSummary = (payload: BulkUploadPayload): string => {
 
 // === Components ===
 const BulkUploadSection = () => {
+  const { open: openNotification } = useNotification();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -194,10 +149,7 @@ const BulkUploadSection = () => {
         return;
       }
 
-      // Call RPC
-      const { data, error } = await supabaseClient.rpc("bulk_upload_data", {
-        p_payload: payload,
-      });
+      const { data, error } = await bulkUploadData(payload);
 
       if (error) {
         // Try to parse error details
@@ -222,12 +174,25 @@ const BulkUploadSection = () => {
         throw new Error(error.message);
       }
 
-      setResult(data as BulkUploadResult);
+      if (!data) {
+        throw new Error("Bulk upload returned no result");
+      }
+
+      setResult(data);
       setFileList([]);
       setPreview(null);
-      message.success("Upload completed successfully!");
+      openNotification?.({
+        type: "success",
+        message: "Upload completed successfully",
+      });
     } catch (err) {
-      setFileError(err instanceof Error ? err.message : "Upload failed");
+      const message = err instanceof Error ? err.message : "Upload failed";
+      setFileError(message);
+      openNotification?.({
+        type: "error",
+        message: "Failed to upload data",
+        description: message,
+      });
     } finally {
       setIsUploading(false);
     }
@@ -320,6 +285,7 @@ const BulkUploadSection = () => {
 };
 
 const DataResetSection = () => {
+  const { open: openNotification } = useNotification();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [result, setResult] = useState<DataResetResult | null>(null);
@@ -330,16 +296,27 @@ const DataResetSection = () => {
     setIsDeleting(true);
 
     try {
-      const { data, error: rpcError } =
-        await supabaseClient.rpc("reset_user_data");
+      const { data, error: rpcError } = await resetUserData();
 
       if (rpcError) throw new Error(rpcError.message);
+      if (!data) throw new Error("Data reset returned no result");
 
-      setResult(data as DataResetResult);
+      setResult(data);
       setIsModalOpen(false);
-      message.success("Data reset completed successfully!");
+      openNotification?.({
+        type: "success",
+        message: "Data reset completed successfully",
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reset data");
+      const message =
+        err instanceof Error ? err.message : "Failed to reset data";
+      setIsModalOpen(false);
+      setError(message);
+      openNotification?.({
+        type: "error",
+        message: "Failed to reset data",
+        description: message,
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -456,15 +433,25 @@ const CurrencySection = () => {
 export const SettingsPage = () => {
   return (
     <Show title="Settings" headerButtons={() => null}>
-      <CurrencySection />
-
-      <Divider />
-
-      <BulkUploadSection />
-
-      <Divider />
-
-      <DataResetSection />
+      <Tabs
+        items={[
+          {
+            key: "general",
+            label: "General",
+            children: <CurrencySection />,
+          },
+          {
+            key: "import-export",
+            label: "Import & Export",
+            children: <BulkUploadSection />,
+          },
+          {
+            key: "danger",
+            label: "⚠ Danger Zone",
+            children: <DataResetSection />,
+          },
+        ]}
+      />
     </Show>
   );
 };

@@ -420,6 +420,27 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          created_at: string
+          currency: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       bank_accounts_with_usage: {
@@ -438,6 +459,7 @@ export type Database = {
         Row: {
           category_count: number | null
           created_at: string | null
+          current_amount: number | null
           deleted_at: string | null
           description: string | null
           end_date: string | null
@@ -449,36 +471,6 @@ export type Database = {
           type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
           user_id: string | null
-        }
-        Insert: {
-          category_count?: never
-          created_at?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          id?: string | null
-          name?: string | null
-          start_date?: string | null
-          tag_count?: never
-          target_amount?: number | null
-          type?: Database["public"]["Enums"]["transaction_type"] | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          category_count?: never
-          created_at?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          end_date?: string | null
-          id?: string | null
-          name?: string | null
-          start_date?: string | null
-          tag_count?: never
-          target_amount?: number | null
-          type?: Database["public"]["Enums"]["transaction_type"] | null
-          updated_at?: string | null
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -771,6 +763,31 @@ export type Database = {
         Returns: Json
       }
       bulk_upload_data: { Args: { p_payload: Json }; Returns: Json }
+      create_transaction_with_tags: {
+        Args: { p_tag_ids: string[]; p_transaction: Json }
+        Returns: {
+          amount: number
+          bank_account: string | null
+          bank_account_id: string | null
+          category: string | null
+          category_id: string | null
+          created_at: string
+          date: string
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          tags: string[] | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_bank_account_safe: {
         Args: { p_bank_account_id: string }
         Returns: {
@@ -839,6 +856,35 @@ export type Database = {
           p_type?: Database["public"]["Enums"]["transaction_type"]
         }
         Returns: number
+      }
+      update_transaction_with_tags: {
+        Args: {
+          p_tag_ids: string[]
+          p_transaction: Json
+          p_transaction_id: string
+        }
+        Returns: {
+          amount: number
+          bank_account: string | null
+          bank_account_id: string | null
+          category: string | null
+          category_id: string | null
+          created_at: string
+          date: string
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          tags: string[] | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

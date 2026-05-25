@@ -1,19 +1,24 @@
 import { useEffect, useMemo } from "react";
-import { Edit, useForm, useSelect } from "@refinedev/antd";
-import { useList } from "@refinedev/core";
-import { Form, DatePicker, Select, InputNumber, Input, message } from "antd";
+import { Edit, useForm, useSelect as useAntSelect } from "@refinedev/antd";
+import { useSelect as useCoreSelect } from "@refinedev/core";
+import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_OPTIONS,
   TransactionType,
 } from "../../constants/transactionTypes";
-import { supabaseClient } from "../../utility";
+import { useTransactionForm } from "../../hooks";
 
 export const TransactionEdit = () => {
   const { formProps, saveButtonProps, query, id, formLoading } = useForm({
     meta: {
       select: "*, transaction_tags(tag_id), category:categories(id, name)",
     },
+    warnWhenUnsavedChanges: false,
+  });
+  const { handleFinish, isLoading } = useTransactionForm({
+    mode: "edit",
+    id: id?.toString(),
   });
 
   const transactionsData = query?.data?.data;
@@ -33,7 +38,7 @@ export const TransactionEdit = () => {
 
   // Use useSelect for categories with type filtering
   const { selectProps: categorySelectProps, query: categoriesQuery } =
-    useSelect({
+    useAntSelect({
       resource: "categories",
       optionLabel: "name",
       optionValue: "id",
@@ -53,59 +58,30 @@ export const TransactionEdit = () => {
       },
     });
 
-  const { selectProps: bankAccountSelectProps } = useSelect({
+  const { selectProps: bankAccountSelectProps } = useAntSelect({
     resource: "bank_accounts",
     defaultValue: transactionsData?.bank_account_id,
     optionLabel: "name",
   });
 
   // Fetch all available tags
-  const { query: tagsQuery } = useList({
+  const { options: tagOptions, query: tagsQuery } = useCoreSelect({
     resource: "tags",
+    optionLabel: "name",
+    optionValue: "id",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
   });
 
-  const tagOptions = useMemo(() => {
-    return (
-      tagsQuery.data?.data?.map((tag) => ({
-        label: tag.name as string,
-        value: tag.id as string,
-      })) ?? []
-    );
-  }, [tagsQuery.data]);
-
-  // Set initial tag values when transaction data is loaded
+  // Set initial tag values when transaction data is loaded (including clearing for untagged transactions)
   useEffect(() => {
-    if (currentTagIds.length > 0 && formProps.form) {
+    if (formProps.form) {
       formProps.form.setFieldValue("tag_ids", currentTagIds);
     }
   }, [currentTagIds, formProps.form]);
 
-  // Custom onFinish to handle tags via RPC
-  const handleFinish = async (values: Record<string, unknown>) => {
-    const { tag_ids, ...transactionValues } = values;
-
-    // First save the transaction (via default form behavior)
-    await formProps.onFinish?.(transactionValues);
-
-    // Then update tags via RPC
-    if (id) {
-      try {
-        await supabaseClient.rpc("set_transaction_tags", {
-          p_transaction_id: id as string,
-          p_tag_ids: tag_ids ?? [],
-        });
-      } catch (error) {
-        console.error("Failed to set transaction tags:", error);
-        // Optionally show user-friendly error message
-        message.error("Transaction saved but failed to update tags");
-      }
-    }
-  };
-
   return (
-    <Edit saveButtonProps={saveButtonProps}>
+    <Edit saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
       <Form
         {...formProps}
         layout="vertical"

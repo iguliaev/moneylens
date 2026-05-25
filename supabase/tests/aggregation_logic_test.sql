@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(14);
 
 -- Create test supabase users
 select tests.create_supabase_user('user1@test.com');
@@ -14,6 +14,7 @@ insert into public.tags (user_id, name)
 values
   (tests.get_supabase_uid('user1@test.com'), 'groceries'),
   (tests.get_supabase_uid('user1@test.com'), 'salary'),
+  (tests.get_supabase_uid('user1@test.com'), 'essentials'),
   (tests.get_supabase_uid('user2@test.com'), 'groceries'),
   (tests.get_supabase_uid('user2@test.com'), 'salary');
 
@@ -79,6 +80,54 @@ WHERE
   (t.notes LIKE '%Lunch%' OR t.notes LIKE '%Dinner%' OR t.notes LIKE '%Vacation%') AND tag.name = 'groceries'
   OR (t.notes LIKE '%Salary%') AND tag.name = 'salary';
 
+
+-- ── Setup for edge-case tests 12–14 (months in 2026 to avoid collision) ─────
+
+-- Test 12: tagged spend tx in Jan 2026, soft-deleted → should be excluded
+-- Use a temp table to carry the inserted ID across statements (PostgreSQL CTE writes
+-- use the same snapshot and cannot see each other's effects on the target tables).
+create temp table _test12_id (id uuid) on commit drop;
+
+with tx12 as (
+  insert into public.transactions (user_id, date, type, category_id, amount)
+  select tests.get_supabase_uid('user1@test.com'), '2026-01-15', 'spend',
+    (select id from public.categories where user_id = tests.get_supabase_uid('user1@test.com') and name = 'food'),
+    77.00
+  returning id
+)
+insert into _test12_id select id from tx12;
+
+insert into public.transaction_tags (transaction_id, tag_id)
+select (select id from _test12_id),
+  (select id from public.tags where user_id = tests.get_supabase_uid('user1@test.com') and name = 'groceries');
+
+update public.transactions
+set deleted_at = now()
+where id in (select id from _test12_id);
+
+-- Test 13: untagged spend tx in Feb 2026 — no transaction_tags row → filtered by ARRAY_LENGTH check
+insert into public.transactions (user_id, date, type, category_id, amount)
+select tests.get_supabase_uid('user1@test.com'), '2026-02-15', 'spend',
+  (select id from public.categories where user_id = tests.get_supabase_uid('user1@test.com') and name = 'food'),
+  88.00;
+
+-- Test 14: spend tx in Mar 2026 tagged with BOTH groceries AND essentials
+-- ARRAY_AGG sorts alphabetically → tags = ARRAY['essentials','groceries']
+-- Grouped by the full array → single row, amount not doubled
+with tx14 as (
+  insert into public.transactions (user_id, date, type, category_id, amount)
+  select tests.get_supabase_uid('user1@test.com'), '2026-03-15', 'spend',
+    (select id from public.categories where user_id = tests.get_supabase_uid('user1@test.com') and name = 'food'),
+    99.00
+  returning id
+)
+insert into public.transaction_tags (transaction_id, tag_id)
+select tx14.id, tg.id
+from tx14
+cross join (
+  select id from public.tags
+  where user_id = tests.get_supabase_uid('user1@test.com') and name in ('groceries', 'essentials')
+) tg;
 
 -- as User 1
 select tests.authenticate_as('user1@test.com');
@@ -211,11 +260,50 @@ select results_eq(
     select * from (values
       ('earn'::text, array['salary']::text[], 3000.00::numeric),
       ('save'::text, array['groceries']::text[], 300.00::numeric),
+      ('spend'::text, array['essentials', 'groceries']::text[], 99.00::numeric),
       ('spend'::text, array['groceries']::text[], 300.00::numeric)
     ) as t(type, tags, total)
     order by type, tags::text
     $$,
     'view_tagged_type_totals returns correct totals per type and tag array across all time, user1'
+);
+
+
+-- Test 12: soft-deleted transaction is excluded from view_monthly_tagged_type_totals
+select is_empty(
+    $$ select total from public.view_monthly_tagged_type_totals
+       where user_id = tests.get_supabase_uid('user1@test.com')
+         and month = '2026-01-01'
+         and type::text = 'spend'
+         and tags = array['groceries']::text[] $$,
+    'soft-deleted tagged transaction is excluded from view_monthly_tagged_type_totals'
+);
+
+-- Test 13: untagged transaction does not appear in view_monthly_tagged_type_totals
+select is_empty(
+    $$ select total from public.view_monthly_tagged_type_totals
+       where user_id = tests.get_supabase_uid('user1@test.com')
+         and month = '2026-02-01'
+         and type::text = 'spend' $$,
+    'untagged transaction is excluded from view_monthly_tagged_type_totals (ARRAY_LENGTH filter)'
+);
+
+-- Test 14: multi-tag transaction appears as a single row with sorted tag array; amount not doubled
+select results_eq(
+    $$
+    select type::text, tags, total
+    from public.view_monthly_tagged_type_totals
+    where user_id = tests.get_supabase_uid('user1@test.com')
+      and month = '2026-03-01'
+      and type = 'spend'
+      and tags = array['essentials', 'groceries']::text[]
+    $$,
+    $$
+    select * from (values
+      ('spend'::text, array['essentials', 'groceries']::text[], 99.00::numeric)
+    ) as t(type, tags, total)
+    $$,
+    'multi-tag transaction appears once with alphabetically sorted tag array; amount is not double-counted'
 );
 
 
