@@ -131,13 +131,9 @@ const buildThemeConfig = (mode: ThemeMode): ThemeConfig => {
       colorBgContainer: surface.containerBackground,
       colorBgElevated: surface.elevatedBackground,
       colorBgTextHover: surface.elevatedBackground,
-      colorBorder: surface.borderSubtle,
-      colorBorderSecondary: surface.borderStrong,
       colorText: surface.textPrimary,
       colorTextSecondary: surface.textSecondary,
       colorTextTertiary: surface.textTertiary,
-      colorFillSecondary: surface.borderSubtle,
-      colorFillTertiary: surface.elevatedBackground,
       fontFamily: APP_FONT_FAMILY,
       fontFamilyCode: APP_CODE_FONT_FAMILY,
       borderRadius: 10,
@@ -147,14 +143,6 @@ const buildThemeConfig = (mode: ThemeMode): ThemeConfig => {
         bodyBg: surface.pageBackground,
         headerBg: surface.containerBackground,
         siderBg: surface.containerBackground,
-      },
-      Card: {
-        headerBg: surface.containerBackground,
-      },
-      Table: {
-        headerBg: surface.elevatedBackground,
-        rowHoverBg: surface.elevatedBackground,
-        headerColor: surface.textSecondary,
       },
     },
   };
