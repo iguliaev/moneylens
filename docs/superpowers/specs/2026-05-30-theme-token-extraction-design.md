@@ -28,8 +28,8 @@ This work does not cover:
 The current codebase already has an early token layer and global style entry points, but theme values are still scattered across page and component code. The main surfaces to normalize are:
 
 - `apps/web-next/src/theme/tokens.ts`
-- `apps/web-next/src/index.css`
-- `apps/web-next/src/contexts/color-mode/index.tsx`
+- `apps/web-next/src/index.tsx` and `apps/web-next/src/index.css`
+- Ant Design `ConfigProvider` wiring in `apps/web-next/src/contexts/color-mode/index.tsx`
 - dashboard chart and summary components
 - table, empty state, badge, and settings surfaces with hardcoded colors
 - auth/title shell styling where typography is still defined locally
@@ -50,7 +50,13 @@ Light and dark variants should share the same semantic names, with values tuned 
 
 ### 2. Global typography
 
-Move typography defaults into the app shell so pages inherit the same font family, base size, and text rendering rules. Page components should only override typography when they need a specific hierarchy or emphasis.
+Move typography defaults into the Vite app entry and Ant Design theme layer so pages inherit the same font family, base size, and text rendering rules. Page components should only override typography when they need a specific hierarchy or emphasis.
+
+Implementation should follow the existing stack:
+
+- keep theme values centralized in the Ant Design `theme`/`ConfigProvider` layer
+- use `apps/web-next/src/index.tsx` as the Vite entrypoint for global CSS imports
+- keep component styling within the current React + Refine + Ant Design structure
 
 ### 3. Component consumers
 
