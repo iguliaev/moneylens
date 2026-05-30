@@ -1,5 +1,6 @@
 import { Empty, Button, Space } from "antd";
 import React from "react";
+import { TEXT_MUTED_COLOR } from "../theme/tokens";
 
 interface EmptyStateProps {
   title: string;
@@ -24,7 +25,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     description={
       <Space direction="vertical" size="small">
         <div style={{ fontWeight: 600, fontSize: 16 }}>{title}</div>
-        <div style={{ fontSize: 14, color: "#666" }}>{description}</div>
+        <div style={{ fontSize: 14, color: TEXT_MUTED_COLOR }}>{description}</div>
       </Space>
     }
   >

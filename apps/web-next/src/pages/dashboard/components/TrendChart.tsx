@@ -16,6 +16,7 @@ import {
 } from "../../../constants/transactionTypes";
 import { makeCurrencyFormatter } from "../../../utility/currency";
 import type { TrendPoint } from "../../../hooks";
+import { CHART_GRID_COLOR } from "../../../theme/tokens";
 
 export const TrendChart = ({
   data,
@@ -32,7 +33,7 @@ export const TrendChart = ({
           data={data}
           margin={{ top: 4, right: 16, left: 16, bottom: 4 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
           <YAxis
             tickFormatter={(v) => fmt(v)}

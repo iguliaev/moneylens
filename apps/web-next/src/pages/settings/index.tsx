@@ -28,6 +28,11 @@ import {
 } from "../../utility";
 import { Show } from "@refinedev/antd";
 import { useCurrency, SUPPORTED_CURRENCIES } from "../../contexts/currency";
+import {
+  DANGER_BORDER_COLOR,
+  DANGER_TEXT_COLOR,
+  SEMANTIC_COLORS,
+} from "../../theme/tokens";
 
 const { Paragraph } = Typography;
 
@@ -326,10 +331,10 @@ const DataResetSection = () => {
     <>
       <Card
         title="Danger Zone"
-        extra={<DeleteOutlined style={{ color: "#ff4d4f" }} />}
+        extra={<DeleteOutlined style={{ color: SEMANTIC_COLORS.error }} />}
         styles={{
-          header: { borderColor: "#ffccc7", color: "#cf1322" },
-          body: { borderColor: "#ffccc7", color: "#cf1322" },
+          header: { borderColor: DANGER_BORDER_COLOR, color: DANGER_TEXT_COLOR },
+          body: { borderColor: DANGER_BORDER_COLOR, color: DANGER_TEXT_COLOR },
         }}
       >
         <Paragraph>

@@ -1,4 +1,9 @@
 import { Typography } from "antd";
+import {
+  TREND_MUTED_COLOR,
+  TREND_NEGATIVE_COLOR,
+  TREND_POSITIVE_COLOR,
+} from "../../../theme/tokens";
 
 const { Text } = Typography;
 
@@ -17,7 +22,7 @@ export const TrendBadge = ({
 
   if (previous === 0 && current === 0) {
     return (
-      <Text style={{ ...baseStyle, color: "#8c8c8c" }}>
+      <Text style={{ ...baseStyle, color: TREND_MUTED_COLOR }}>
         — 0.0% vs prev period
       </Text>
     );
@@ -26,7 +31,12 @@ export const TrendBadge = ({
   if (previous === 0) {
     const isPositive = current > 0;
     return (
-      <Text style={{ ...baseStyle, color: isPositive ? "#52c41a" : "#ff4d4f" }}>
+      <Text
+        style={{
+          ...baseStyle,
+          color: isPositive ? TREND_POSITIVE_COLOR : TREND_NEGATIVE_COLOR,
+        }}
+      >
         {isPositive ? "↑" : "↓"} New vs prev period
       </Text>
     );
@@ -36,7 +46,7 @@ export const TrendBadge = ({
 
   if (pct === 0) {
     return (
-      <Text style={{ ...baseStyle, color: "#8c8c8c" }}>
+      <Text style={{ ...baseStyle, color: TREND_MUTED_COLOR }}>
         → 0.0% vs prev period
       </Text>
     );
@@ -44,7 +54,12 @@ export const TrendBadge = ({
 
   const isUp = pct > 0;
   return (
-    <Text style={{ ...baseStyle, color: isUp ? "#52c41a" : "#ff4d4f" }}>
+    <Text
+      style={{
+        ...baseStyle,
+        color: isUp ? TREND_POSITIVE_COLOR : TREND_NEGATIVE_COLOR,
+      }}
+    >
       {isUp ? "↑" : "↓"} {Math.abs(pct).toFixed(1)}% vs prev period
     </Text>
   );
