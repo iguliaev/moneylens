@@ -14,7 +14,7 @@
 
 **Files:**
 - Create: `apps/web-next/src/theme/tokens.ts`
-- Create: `apps/web-next/src/index.css`
+- Create: `apps/web-next/src/styles/global.css`
 - Modify: `apps/web-next/src/contexts/color-mode/index.tsx`
 - Modify: `apps/web-next/src/index.tsx`
 - Modify: `apps/web-next/index.html`
@@ -27,23 +27,13 @@ Read the current light/dark wiring in `apps/web-next/src/contexts/color-mode/ind
 
 Add `apps/web-next/src/theme/tokens.ts` with semantic tokens for both themes. The module must expose:
 
-- `surface`
-- `surfaceElevated`
-- `surfaceCard`
-- `text`
-- `textSecondary`
-- `textMuted`
-- `border`
-- `borderSubtle`
-- `borderStrong`
-- `primary`
-- `success`
-- `warning`
-- `danger`
-- `chartPalette`
-- `fontFamily`
+- `SEMANTIC_COLORS`
+- `CHART_SERIES_COLORS`
+- tokenized semantic color exports consumed by features (for example, `TEXT_MUTED_COLOR`, `CHART_GRID_COLOR`, `DANGER_TEXT_COLOR`)
+- `APP_FONT_FAMILY`
 - `lightThemeConfig`
 - `darkThemeConfig`
+- `applyThemeMode()`
 
 Keep the palette conservative: reuse the current blue/status intent, but centralize values behind semantic names rather than page-specific literals.
 
@@ -53,7 +43,7 @@ Update `apps/web-next/src/contexts/color-mode/index.tsx` so `ConfigProvider` con
 
 - [ ] **Step 4: Add global typography and page baseline styles**
 
-Create `apps/web-next/src/index.css` and import it from `apps/web-next/src/index.tsx`. Set the base system font stack, color, and page background there so React/Refine pages inherit consistent typography. Update `apps/web-next/index.html` so the document theme-color metadata matches the active light/dark theme.
+Create `apps/web-next/src/styles/global.css` and import it from `apps/web-next/src/index.tsx`. Set the base system font stack, color, and page background there so React/Refine pages inherit consistent typography. Update `apps/web-next/index.html` so the document theme-color metadata matches the active light/dark theme.
 
 - [ ] **Step 5: Verify the app still compiles**
 
@@ -69,7 +59,7 @@ Expected: `tsc --noEmit` passes with no errors.
 - [ ] **Step 6: Commit Task 1**
 
 ```bash
-git add apps/web-next/src/theme/tokens.ts apps/web-next/src/index.css apps/web-next/src/index.tsx apps/web-next/src/contexts/color-mode/index.tsx apps/web-next/index.html
+git add apps/web-next/src/theme/tokens.ts apps/web-next/src/styles/global.css apps/web-next/src/index.tsx apps/web-next/src/contexts/color-mode/index.tsx apps/web-next/index.html
 git commit -m "feat(theme): add shared token layer and typography baseline"
 ```
 
@@ -184,19 +174,6 @@ npm run test:e2e:ci -- e2e/tests/theme-tokens.spec.ts
 Expected: the new spec passes before broader verification begins.
 
 - [ ] **Step 3: Run the full validation suite**
-
-Run:
-
-```bash
-cd apps/web-next
-npm run check-types
-npm run build
-npm run test:e2e:ci
-```
-
-Expected: typecheck passes, production build succeeds, and the Playwright suite passes.
-
-- [ ] **Step 4: Run the full validation suite**
 
 Run:
 

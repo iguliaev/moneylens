@@ -104,15 +104,15 @@ export const TRANSACTION_TYPE_VALUE_COLORS = {
   save: SEMANTIC_COLORS.save,
 } as const;
 
-export const TREND_MUTED_COLOR = "var(--app-text-muted)";
-export const TREND_NEUTRAL_COLOR = "var(--app-text-secondary)";
+export const TREND_MUTED_COLOR = "var(--app-text-muted, #8c8c8c)";
+export const TREND_NEUTRAL_COLOR = "var(--app-text-secondary, #6b7280)";
 export const TREND_POSITIVE_COLOR = SEMANTIC_COLORS.success;
 export const TREND_NEGATIVE_COLOR = SEMANTIC_COLORS.error;
-export const CHART_GRID_COLOR = "var(--app-chart-grid)";
+export const CHART_GRID_COLOR = "var(--app-chart-grid, #e5e7eb)";
 export const BUDGET_WARN_STROKE_COLOR = SEMANTIC_COLORS.warning;
-export const TEXT_MUTED_COLOR = "var(--app-text-muted)";
-export const DANGER_TEXT_COLOR = "var(--app-danger-text)";
-export const DANGER_BORDER_COLOR = "var(--app-danger-border)";
+export const TEXT_MUTED_COLOR = "var(--app-text-muted, #8c8c8c)";
+export const DANGER_TEXT_COLOR = "var(--app-danger-text, #cf1322)";
+export const DANGER_BORDER_COLOR = "var(--app-danger-border, #ffccc7)";
 
 const buildThemeConfig = (mode: ThemeMode): ThemeConfig => {
   const surface = THEME_SURFACES[mode];
