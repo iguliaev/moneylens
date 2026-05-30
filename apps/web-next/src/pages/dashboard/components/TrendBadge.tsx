@@ -1,4 +1,4 @@
-import { Typography } from "antd";
+import { theme, Typography } from "antd";
 
 const { Text } = Typography;
 
@@ -9,6 +9,8 @@ export const TrendBadge = ({
   current: number;
   previous: number;
 }) => {
+  const { token } = theme.useToken();
+
   const baseStyle = {
     fontSize: 12,
     display: "block",
@@ -17,7 +19,7 @@ export const TrendBadge = ({
 
   if (previous === 0 && current === 0) {
     return (
-      <Text style={{ ...baseStyle, color: "#8c8c8c" }}>
+      <Text style={{ ...baseStyle, color: token.colorTextSecondary }}>
         — 0.0% vs prev period
       </Text>
     );
@@ -26,7 +28,12 @@ export const TrendBadge = ({
   if (previous === 0) {
     const isPositive = current > 0;
     return (
-      <Text style={{ ...baseStyle, color: isPositive ? "#52c41a" : "#ff4d4f" }}>
+      <Text
+        style={{
+          ...baseStyle,
+          color: isPositive ? token.colorSuccess : token.colorError,
+        }}
+      >
         {isPositive ? "↑" : "↓"} New vs prev period
       </Text>
     );
@@ -36,7 +43,7 @@ export const TrendBadge = ({
 
   if (pct === 0) {
     return (
-      <Text style={{ ...baseStyle, color: "#8c8c8c" }}>
+      <Text style={{ ...baseStyle, color: token.colorTextSecondary }}>
         → 0.0% vs prev period
       </Text>
     );
@@ -44,7 +51,7 @@ export const TrendBadge = ({
 
   const isUp = pct > 0;
   return (
-    <Text style={{ ...baseStyle, color: isUp ? "#52c41a" : "#ff4d4f" }}>
+    <Text style={{ ...baseStyle, color: isUp ? token.colorSuccess : token.colorError }}>
       {isUp ? "↑" : "↓"} {Math.abs(pct).toFixed(1)}% vs prev period
     </Text>
   );

@@ -1,4 +1,4 @@
-import { Card } from "antd";
+import { Card, theme } from "antd";
 import {
   BarChart,
   Bar,
@@ -25,6 +25,8 @@ export const TrendChart = ({
   currency: string;
 }) => {
   const fmt = makeCurrencyFormatter(currency);
+  const { token } = theme.useToken();
+
   return (
     <Card title="Income vs Spending vs Savings">
       <ResponsiveContainer width="100%" height={260}>
@@ -32,7 +34,7 @@ export const TrendChart = ({
           data={data}
           margin={{ top: 4, right: 16, left: 16, bottom: 4 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <CartesianGrid strokeDasharray="3 3" stroke={token.colorSplit} />
           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
           <YAxis
             tickFormatter={(v) => fmt(v)}

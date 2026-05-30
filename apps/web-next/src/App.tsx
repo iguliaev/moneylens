@@ -11,7 +11,6 @@ import {
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
 import {
-  AuthPage,
   ErrorComponent,
   ThemedLayout,
   useNotificationProvider,
@@ -62,6 +61,7 @@ import {
 import { SettingsPage } from "./pages/settings";
 import { ProjectTitle } from "./components/title";
 import { Header, EnvironmentBanner, ErrorBoundary } from "./components";
+import { BrandedAuthPage } from "./components/auth/BrandedAuthPage";
 
 const I18N_TRANSLATIONS: Record<string, string> = {
   "documentTitle.default": "MoneyLens",
@@ -250,33 +250,19 @@ function App() {
                   >
                     <Route
                       path="/login"
-                      element={
-                        <AuthPage type="login" title={<ProjectTitle />} />
-                      }
+                      element={<BrandedAuthPage type="login" />}
                     />
                     <Route
                       path="/register"
-                      element={
-                        <AuthPage type="register" title={<ProjectTitle />} />
-                      }
+                      element={<BrandedAuthPage type="register" />}
                     />
                     <Route
                       path="/forgot-password"
-                      element={
-                        <AuthPage
-                          type="forgotPassword"
-                          title={<ProjectTitle />}
-                        />
-                      }
+                      element={<BrandedAuthPage type="forgotPassword" />}
                     />
                     <Route
                       path="/update-password"
-                      element={
-                        <AuthPage
-                          type="updatePassword"
-                          title={<ProjectTitle />}
-                        />
-                      }
+                      element={<BrandedAuthPage type="updatePassword" />}
                     />
                   </Route>
                   <Route

@@ -1,0 +1,21 @@
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  background: #f6f3ee;
+  color: #132033;
+}
+
+:root[data-color-mode="dark"] body {
+  background: #0f1117;
+  color: #e6eeff;
+}
+
+a {
+  color: inherit;
+}

@@ -1,4 +1,4 @@
-import { Card, Typography } from "antd";
+import { Card, theme, Typography } from "antd";
 import {
   BarChart,
   Bar,
@@ -24,6 +24,8 @@ export const TagBar = ({
   currency: string;
 }) => {
   const fmt = makeCurrencyFormatter(currency);
+  const { token } = theme.useToken();
+
   return (
     <Card title={title}>
       {data.length === 0 ? (
@@ -40,7 +42,7 @@ export const TagBar = ({
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#f0f0f0"
+              stroke={token.colorSplit}
               horizontal={false}
             />
             <XAxis

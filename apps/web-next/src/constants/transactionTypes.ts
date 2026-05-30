@@ -1,3 +1,5 @@
+import { brandColors } from "../theme/tokens";
+
 export const TRANSACTION_TYPES = {
   EARN: "earn",
   SPEND: "spend",
@@ -37,7 +39,7 @@ export const TYPE_COLORS: Record<TransactionType, string> = {
 
 // Hex colours for CSS style properties (e.g. Statistic.valueStyle)
 export const TYPE_VALUE_COLORS: Record<TransactionType, string> = {
-  [TRANSACTION_TYPES.EARN]: "#3f8600",
-  [TRANSACTION_TYPES.SPEND]: "#cf1322",
-  [TRANSACTION_TYPES.SAVE]: "#1890ff",
+  [TRANSACTION_TYPES.EARN]: brandColors.success,
+  [TRANSACTION_TYPES.SPEND]: brandColors.danger,
+  [TRANSACTION_TYPES.SAVE]: brandColors.primary,
 };

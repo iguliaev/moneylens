@@ -1,4 +1,5 @@
 import type { TransactionType } from "../constants/transactionTypes";
+import { brandColors } from "../theme/tokens";
 
 export type BudgetAlertLevel = "over" | "warn" | "none";
 
@@ -59,4 +60,4 @@ export function getProgressStatus(
 }
 
 /** strokeColor override for the AntD <Progress> warn state */
-export const WARN_STROKE_COLOR = "#faad14";
+export const WARN_STROKE_COLOR = brandColors.warning;

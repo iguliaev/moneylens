@@ -10,6 +10,7 @@ import {
   Modal,
   Tabs,
   Select,
+  theme,
 } from "antd";
 import { useNotification } from "@refinedev/core";
 import {
@@ -286,6 +287,7 @@ const BulkUploadSection = () => {
 
 const DataResetSection = () => {
   const { open: openNotification } = useNotification();
+  const { token } = theme.useToken();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [result, setResult] = useState<DataResetResult | null>(null);
@@ -326,10 +328,10 @@ const DataResetSection = () => {
     <>
       <Card
         title="Danger Zone"
-        extra={<DeleteOutlined style={{ color: "#ff4d4f" }} />}
+        extra={<DeleteOutlined style={{ color: token.colorError }} />}
         styles={{
-          header: { borderColor: "#ffccc7", color: "#cf1322" },
-          body: { borderColor: "#ffccc7", color: "#cf1322" },
+          header: { borderColor: token.colorErrorBorder, color: token.colorError },
+          body: { borderColor: token.colorErrorBorder, color: token.colorError },
         }}
       >
         <Paragraph>

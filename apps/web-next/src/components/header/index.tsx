@@ -3,18 +3,21 @@ import { useGetIdentity, useList } from "@refinedev/core";
 import {
   AutoComplete,
   Avatar,
+  Button,
   Col,
   Grid,
   Input,
   Layout as AntdLayout,
   Row,
   Space,
-  Switch,
   Tag,
+  Tooltip,
   theme,
   Typography,
 } from "antd";
 import {
+  MoonOutlined,
+  SunOutlined,
   AppstoreOutlined,
   BankOutlined,
   FileTextOutlined,
@@ -234,7 +237,8 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
   }, [value, currency, txRefetch, catRefetch, bankRefetch]);
 
   const headerStyles: React.CSSProperties = {
-    backgroundColor: token.colorBgElevated,
+    backgroundColor: token.colorBgContainer,
+    borderBottom: `1px solid ${token.colorBorderSecondary}`,
     padding: "0px 24px",
     height: "64px",
   };
@@ -271,13 +275,18 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
         )}
         <Col flex="none">
           <Space>
-            <Switch
-              checkedChildren="🌛"
-              unCheckedChildren="🔆"
-              onChange={() => setMode(mode === "light" ? "dark" : "light")}
-              defaultChecked={mode === "dark"}
-              aria-label="Toggle color mode"
-            />
+            <Tooltip
+              title={
+                mode === "light" ? "Switch to dark mode" : "Switch to light mode"
+              }
+            >
+              <Button
+                type="text"
+                icon={mode === "dark" ? <SunOutlined /> : <MoonOutlined />}
+                onClick={() => setMode(mode === "light" ? "dark" : "light")}
+                aria-label="Toggle color mode"
+              />
+            </Tooltip>
             <Space style={{ marginLeft: "8px" }} size="middle">
               {user?.name && <Text strong>{user.name}</Text>}
               {user?.avatar && <Avatar src={user?.avatar} alt={user?.name} />}

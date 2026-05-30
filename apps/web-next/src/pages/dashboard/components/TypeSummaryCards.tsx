@@ -1,4 +1,4 @@
-import { Card, Col, Row, Statistic } from "antd";
+import { Card, Col, Row, Statistic, theme } from "antd";
 import { TrendBadge } from "./TrendBadge";
 import { useCurrency } from "../../../contexts/currency";
 import {
@@ -20,6 +20,7 @@ export const TypeSummaryCards = ({
   loading: boolean;
 }) => {
   const { currency } = useCurrency();
+  const { token } = theme.useToken();
   const getAmount = (type: TransactionType, source: TypeSummary[] = data) =>
     source.find((d) => d.type === type)?.total ?? 0;
 
@@ -74,9 +75,9 @@ export const TypeSummaryCards = ({
             valueStyle={{
               color:
                 netIncome > 0
-                  ? "#52c41a"
+                  ? token.colorSuccess
                   : netIncome < 0
-                    ? "#ff4d4f"
+                    ? token.colorError
                     : undefined,
             }}
           />
