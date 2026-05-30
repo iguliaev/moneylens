@@ -24,17 +24,21 @@ export const ColorModeContext = createContext<ColorModeContextType>(
 export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
   children,
 }) => {
-  const colorModeFromLocalStorage = localStorage.getItem("colorMode");
-  const isSystemPreferenceDark = window?.matchMedia(
-    "(prefers-color-scheme: dark)"
-  ).matches;
+  const [mode, setMode] = useState<ThemeMode>(() => {
+    const colorModeFromLocalStorage = window.localStorage.getItem("colorMode");
+    const isSystemPreferenceDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+    const systemPreference: ThemeMode = isSystemPreferenceDark ? "dark" : "light";
+    const initialMode: ThemeMode =
+      colorModeFromLocalStorage === "light" || colorModeFromLocalStorage === "dark"
+        ? colorModeFromLocalStorage
+        : systemPreference;
 
-  const systemPreference: ThemeMode = isSystemPreferenceDark ? "dark" : "light";
-  const [mode, setMode] = useState<ThemeMode>(
-    colorModeFromLocalStorage === "light" || colorModeFromLocalStorage === "dark"
-      ? colorModeFromLocalStorage
-      : systemPreference
-  );
+    // Apply mode before first paint to avoid a flash of light tokens for dark mode users.
+    applyThemeMode(initialMode);
+    return initialMode;
+  });
 
   useEffect(() => {
     window.localStorage.setItem("colorMode", mode);

@@ -186,7 +186,7 @@ npm run test:e2e:ci
 
 Expected: typecheck passes, production build succeeds, and the Playwright suite passes.
 
-- [ ] **Step 5: Commit Task 4**
+- [ ] **Step 4: Commit Task 4**
 
 ```bash
 git add apps/web-next/e2e/tests/theme-tokens.spec.ts
