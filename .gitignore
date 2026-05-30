@@ -4,3 +4,5 @@ venv/
 supabase/.temp/
 apps/fiery-trams-battle/
 .playwright-cli/
+.worktrees/
+worktrees/
