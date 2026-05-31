@@ -1,5 +1,8 @@
 # Theme Token Extraction Implementation Plan
 
+> **Status: ✅ COMPLETE — PR [#185](https://github.com/iguliaev/moneylens/pull/185) · 2026-05-31**  
+> All 4 tasks implemented with CSS variable fallbacks, pre-paint mode application, and comprehensive e2e coverage.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Centralize light/dark theme values into a shared token layer and move app-wide typography into the Vite/Ant Design shell without changing the product's visual identity.
