@@ -9,6 +9,10 @@ import {
 } from "../../../constants/transactionTypes";
 import { type TypeSummary } from "../../../hooks";
 import { formatCurrency } from "../../../utility/currency";
+import {
+  TREND_NEGATIVE_COLOR,
+  TREND_POSITIVE_COLOR,
+} from "../../../theme/tokens";
 
 export const TypeSummaryCards = ({
   data,
@@ -74,9 +78,9 @@ export const TypeSummaryCards = ({
             valueStyle={{
               color:
                 netIncome > 0
-                  ? "#52c41a"
+                  ? TREND_POSITIVE_COLOR
                   : netIncome < 0
-                    ? "#ff4d4f"
+                    ? TREND_NEGATIVE_COLOR
                     : undefined,
             }}
           />

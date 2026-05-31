@@ -13,19 +13,12 @@ import {
 import { getMonthKeysInRange, formatMonthLabel } from "../../../utility/monthHelpers";
 import { makeCurrencyFormatter } from "../../../utility/currency";
 import type { CategorySpendPoint, TagSpendPoint } from "../../../hooks";
+import {
+  CHART_GRID_COLOR,
+  CHART_SERIES_COLORS,
+} from "../../../theme/tokens";
 
 const { Text } = Typography;
-
-const CHART_COLORS = [
-  "#1677ff",
-  "#52c41a",
-  "#ff4d4f",
-  "#fa8c16",
-  "#722ed1",
-  "#13c2c2",
-  "#eb2f96",
-  "#fadb14",
-];
 
 export const SpendingTrendlineChart = ({
   categorySpendByMonth,
@@ -141,7 +134,7 @@ export const SpendingTrendlineChart = ({
             data={chartData}
             margin={{ top: 4, right: 16, left: 16, bottom: 4 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
             <YAxis
               tickFormatter={(v) => fmt(v)}
@@ -156,7 +149,7 @@ export const SpendingTrendlineChart = ({
                 type="monotone"
                 dataKey={`k${i}`}
                 name={item}
-                stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                stroke={CHART_SERIES_COLORS[i % CHART_SERIES_COLORS.length]}
                 strokeWidth={2.5}
                 dot={false}
                 activeDot={{ r: 4 }}

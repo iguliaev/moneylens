@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { makeCurrencyFormatter } from "../../../utility/currency";
+import { CHART_GRID_COLOR } from "../../../theme/tokens";
 
 const { Text } = Typography;
 
@@ -40,7 +41,7 @@ export const TagBar = ({
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="#f0f0f0"
+              stroke={CHART_GRID_COLOR}
               horizontal={false}
             />
             <XAxis
