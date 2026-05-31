@@ -1,5 +1,8 @@
 # Quiet Ledger Implementation Plan
 
+> **Status: ⏸️ PAUSED** — Deferred for later (not the right timing now)  
+> Favicon (#184) merged as interim step. Full visual identity rollout held pending product direction clarity.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Apply the Quiet Ledger visual identity across the app shell, charts, auth pages, and shared brand assets.
