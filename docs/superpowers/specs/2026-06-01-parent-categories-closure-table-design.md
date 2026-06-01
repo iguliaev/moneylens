@@ -19,6 +19,7 @@ In scope:
 - Category create/edit/delete behavior with hierarchy integrity
 - Category list and transaction category picker updates
 - Parent rollup reporting queries
+- Bulk upload compatibility with hierarchy-aware categories
 - Database and UI test coverage for new behavior
 
 Out of scope:
@@ -93,6 +94,15 @@ Transactions remain single-category (`category_id`) and **leaf-only**:
 - Category picker must only allow categories with no depth-1 descendants
 - Validation enforces selected category is leaf at write time
 
+### 6.1 Bulk upload behavior
+
+Existing bulk upload functionality must be preserved and remain operational with hierarchy support:
+
+- Uploaded rows must map category using **leaf category name only**
+- If a category name resolves to a parent (non-leaf), the row is rejected with a clear validation error
+- If a category name is unknown, the row is rejected using existing invalid-category handling
+- No parent/child path syntax is required in this phase
+
 ## 7. Reporting and Rollups
 
 Parent totals are computed by joining through closure table:
@@ -136,6 +146,7 @@ UI/E2E tests:
 - Assign parent to category in create/edit flows
 - Transaction category picker excludes parent categories
 - Reporting shows parent rollup with child breakdown
+- Bulk upload accepts valid leaf category names and rejects parent category names
 
 ## 11. Risks and Mitigations
 
