@@ -1,6 +1,6 @@
 # Parent Categories (Closure Table) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add parent/child categories with closure-table rollups, keep transactions leaf-only, and preserve bulk upload behavior with leaf category names.
 
@@ -55,7 +55,7 @@
 - Create: `supabase/migrations/20260601210000_add_category_hierarchy.sql`
 - Test: `supabase/tests/category_hierarchy_test.sql`
 
-- [ ] **Step 1: Write failing pgTAP tests for hierarchy table + invariants**
+- [x] **Step 1: Write failing pgTAP tests for hierarchy table + invariants**
 
 ```sql
 begin;
@@ -78,12 +78,12 @@ select * from finish();
 rollback;
 ```
 
-- [ ] **Step 2: Run pgTAP test to verify failure**
+- [x] **Step 2: Run pgTAP test to verify failure**
 
 Run: `supabase test db -- --include category_hierarchy_test.sql`  
 Expected: FAIL with missing `category_hierarchy` objects.
 
-- [ ] **Step 3: Implement migration for closure table + indexes**
+- [x] **Step 3: Implement migration for closure table + indexes**
 
 ```sql
 create table if not exists public.category_hierarchy (
@@ -100,7 +100,7 @@ create index if not exists idx_category_hierarchy_descendant_depth
   on public.category_hierarchy(descendant_id, depth);
 ```
 
-- [ ] **Step 4: Add hierarchy maintenance trigger helpers**
+- [x] **Step 4: Add hierarchy maintenance trigger helpers**
 
 ```sql
 alter table public.categories add column if not exists parent_id uuid null
@@ -131,7 +131,7 @@ end;
 $$;
 ```
 
-- [ ] **Step 5: Re-run pgTAP and commit**
+- [x] **Step 5: Re-run pgTAP and commit**
 
 Run: `supabase test db -- --include category_hierarchy_test.sql`  
 Expected: PASS for table/index/invariant checks.
@@ -151,7 +151,7 @@ git commit -m "feat(db): add category hierarchy closure table"
 - Modify: `supabase/tests/bulk_insert_test.sql`
 - Modify: `supabase/tests/bulk_upload_entities_test.sql`
 
-- [ ] **Step 1: Write failing pgTAP test for parent-name rejection in bulk insert**
+- [x] **Step 1: Write failing pgTAP test for parent-name rejection in bulk insert**
 
 ```sql
 select throws_ok(
@@ -164,12 +164,12 @@ select throws_ok(
 );
 ```
 
-- [ ] **Step 2: Run targeted DB tests to confirm current failure mode**
+- [x] **Step 2: Run targeted DB tests to confirm current failure mode**
 
 Run: `supabase test db -- --include bulk_insert_test.sql --include bulk_upload_entities_test.sql`  
 Expected: FAIL because parent categories are currently not distinguished from leaves.
 
-- [ ] **Step 3: Update `bulk_insert_transactions` category lookup to require leaves**
+- [x] **Step 3: Update `bulk_insert_transactions` category lookup to require leaves**
 
 ```sql
 select c.id into v_category_id
@@ -192,7 +192,7 @@ if v_category_id is null then
 end if;
 ```
 
-- [ ] **Step 4: Add parent/type/depth integrity checks**
+- [x] **Step 4: Add parent/type/depth integrity checks**
 
 ```sql
 create or replace function public.validate_category_parent()
@@ -221,7 +221,7 @@ end;
 $$;
 ```
 
-- [ ] **Step 5: Re-run DB tests and commit**
+- [x] **Step 5: Re-run DB tests and commit**
 
 Run: `supabase test db -- --include category_hierarchy_test.sql --include bulk_insert_test.sql --include bulk_upload_entities_test.sql`  
 Expected: PASS.
@@ -239,7 +239,7 @@ git commit -m "feat(db): enforce leaf-only category assignment for bulk uploads"
 - Modify: `apps/web-next/src/types/database.types.ts`
 - Create: `apps/web-next/src/utility/categoryHierarchy.ts`
 
-- [ ] **Step 1: Write failing type-level usage in helper**
+- [x] **Step 1: Write failing type-level usage in helper**
 
 ```ts
 // categoryHierarchy.ts (initial failing use)
@@ -251,12 +251,12 @@ export const isLeafCategory = (_category: Category): boolean => {
 };
 ```
 
-- [ ] **Step 2: Run type check to confirm missing shape/functions**
+- [x] **Step 2: Run type check to confirm missing shape/functions**
 
 Run: `cd apps/web-next && npm run check-types`  
 Expected: FAIL in helper/consumers until types and helper logic are complete.
 
-- [ ] **Step 3: Regenerate DB types and implement helper**
+- [x] **Step 3: Regenerate DB types and implement helper**
 
 ```bash
 supabase gen types typescript --local > types.gen.ts
@@ -275,7 +275,7 @@ export const isLeafCategory = (category: Category): boolean =>
   Number(category.child_count ?? 0) === 0;
 ```
 
-- [ ] **Step 4: Re-run type checks and commit**
+- [x] **Step 4: Re-run type checks and commit**
 
 Run: `cd apps/web-next && npm run check-types`  
 Expected: PASS.
@@ -296,7 +296,7 @@ git commit -m "chore(types): add hierarchy-aware category typing"
 - Modify: `apps/web-next/src/pages/categories/show.tsx`
 - Test: `apps/web-next/e2e/tests/categories.spec.ts`
 
-- [ ] **Step 1: Add failing E2E for parent-child category flow**
+- [x] **Step 1: Add failing E2E for parent-child category flow**
 
 ```ts
 test("user can create parent and child categories", async ({ page }) => {
@@ -305,12 +305,12 @@ test("user can create parent and child categories", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 2: Run E2E to observe failure**
+- [x] **Step 2: Run E2E to observe failure**
 
 Run: `cd apps/web-next && npm run test:e2e:ci -- e2e/tests/categories.spec.ts -g "parent and child"`  
 Expected: FAIL (no parent selector / no hierarchy rendering).
 
-- [ ] **Step 3: Implement parent selector in create/edit forms**
+- [x] **Step 3: Implement parent selector in create/edit forms**
 
 ```tsx
 <Form.Item label="Parent Category" name={["parent_id"]}>
@@ -328,7 +328,7 @@ const parentOptions = (categories ?? [])
   .map((c) => ({ label: c.name, value: c.id }));
 ```
 
-- [ ] **Step 4: Implement hierarchy-aware list/show rendering**
+- [x] **Step 4: Implement hierarchy-aware list/show rendering**
 
 ```tsx
 <Table.Column
@@ -345,7 +345,7 @@ const parentOptions = (categories ?? [])
 <TextField value={record?.parent?.name ?? "—"} />
 ```
 
-- [ ] **Step 5: Re-run E2E + commit**
+- [x] **Step 5: Re-run E2E + commit**
 
 Run: `cd apps/web-next && npm run test:e2e:ci -- e2e/tests/categories.spec.ts`  
 Expected: PASS.
@@ -365,7 +365,7 @@ git commit -m "feat(categories): add parent-child hierarchy UI"
 - Modify: `apps/web-next/src/utility/categoryHierarchy.ts`
 - Test: `apps/web-next/e2e/tests/transactions.spec.ts`
 
-- [ ] **Step 1: Add failing E2E for selecting parent category in transaction form**
+- [x] **Step 1: Add failing E2E for selecting parent category in transaction form**
 
 ```ts
 test("transaction form shows leaf categories only", async ({ page }) => {
@@ -374,12 +374,12 @@ test("transaction form shows leaf categories only", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 2: Run test and confirm failure**
+- [x] **Step 2: Run test and confirm failure**
 
 Run: `cd apps/web-next && npm run test:e2e:ci -- e2e/tests/transactions.spec.ts -g "leaf categories only"`  
 Expected: FAIL (current list includes all categories).
 
-- [ ] **Step 3: Filter select options to leaves**
+- [x] **Step 3: Filter select options to leaves**
 
 ```tsx
 const leafCategoryOptions = (categorySelectProps.options ?? []).filter((opt) =>
@@ -389,7 +389,7 @@ const leafCategoryOptions = (categorySelectProps.options ?? []).filter((opt) =>
 <Select {...categorySelectProps} options={leafCategoryOptions} />
 ```
 
-- [ ] **Step 4: Run E2E and commit**
+- [x] **Step 4: Run E2E and commit**
 
 Run: `cd apps/web-next && npm run test:e2e:ci -- e2e/tests/transactions.spec.ts -g "leaf categories only"`  
 Expected: PASS.
@@ -408,7 +408,7 @@ git commit -m "feat(transactions): restrict category selection to leaves"
 - Modify: `supabase/tests/bulk_insert_test.sql`
 - Modify: `supabase/tests/bulk_upload_entities_test.sql`
 
-- [ ] **Step 1: Add failing tests for parent-category upload rejection**
+- [x] **Step 1: Add failing tests for parent-category upload rejection**
 
 ```ts
 test("bulk upload rejects transaction rows referencing parent categories", async ({ page }) => {
@@ -427,7 +427,7 @@ select throws_like(
 );
 ```
 
-- [ ] **Step 2: Run targeted tests to confirm failures first**
+- [x] **Step 2: Run targeted tests to confirm failures first**
 
 Run: `supabase test db -- --include bulk_insert_test.sql --include bulk_upload_entities_test.sql`  
 Expected: FAIL before server logic update is complete.
@@ -435,7 +435,7 @@ Expected: FAIL before server logic update is complete.
 Run: `cd apps/web-next && npm run test:e2e:ci -- e2e/tests/bulk-upload.spec.ts -g "parent categories"`  
 Expected: FAIL before UI assertions align.
 
-- [ ] **Step 3: Align errors/messages and fixtures with new behavior**
+- [x] **Step 3: Align errors/messages and fixtures with new behavior**
 
 ```json
 {
@@ -450,7 +450,7 @@ Expected: FAIL before UI assertions align.
 }
 ```
 
-- [ ] **Step 4: Re-run DB + E2E tests and commit**
+- [x] **Step 4: Re-run DB + E2E tests and commit**
 
 Run: `supabase test db -- --include bulk_insert_test.sql --include bulk_upload_entities_test.sql`  
 Expected: PASS.
@@ -470,22 +470,22 @@ git commit -m "test: cover bulk upload behavior with category hierarchy"
 **Files:**
 - Modify: all touched files from Tasks 1-6
 
-- [ ] **Step 1: Run app checks**
+- [x] **Step 1: Run app checks**
 
 Run: `cd apps/web-next && npm run check-types && npm run lint && npm run build`  
 Expected: all PASS.
 
-- [ ] **Step 2: Run focused E2E suite for touched areas**
+- [x] **Step 2: Run focused E2E suite for touched areas**
 
 Run: `cd apps/web-next && npm run test:e2e:ci -- e2e/tests/categories.spec.ts e2e/tests/transactions.spec.ts e2e/tests/bulk-upload.spec.ts`  
 Expected: PASS.
 
-- [ ] **Step 3: Run DB tests**
+- [x] **Step 3: Run DB tests**
 
 Run: `supabase test db -- --include category_hierarchy_test.sql --include bulk_insert_test.sql --include bulk_upload_entities_test.sql`  
 Expected: PASS.
 
-- [ ] **Step 4: Final commit**
+- [x] **Step 4: Final commit**
 
 ```bash
 git add -A
