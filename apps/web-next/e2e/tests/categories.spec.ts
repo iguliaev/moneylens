@@ -6,6 +6,7 @@ import {
   cleanupReferenceDataForUser,
   createCategoryForType,
   waitForFormReady,
+  selectFromVisibleAntdDropdown,
 } from "../utils/test-helpers";
 
 test.describe("Categories", () => {
@@ -251,5 +252,90 @@ test.describe("Categories", () => {
       await expect(page.getByText(name, { exact: true })).toBeVisible();
       await expect(page.getByText(desc, { exact: true })).toBeVisible();
     });
+  });
+
+  test("user can create parent and child categories", async ({ page }) => {
+    const ts = Date.now();
+    const parentName = `e2e-parent-${ts}`;
+    const childName = `e2e-child-${ts}`;
+    const categoryType = "spend";
+
+    // Create parent category (no parent selected)
+    await createCategoryForType(page, categoryType, parentName);
+
+    // Create child category with parent selected
+    await page.goto("/categories");
+    await page.getByRole("button", { name: /create/i }).click();
+    await expect(
+      page.getByRole("heading", { name: "Create Category" })
+    ).toBeVisible();
+
+    await selectFromVisibleAntdDropdown(page, "* Type", categoryType);
+
+    await page.getByRole("textbox", { name: "* Name" }).fill(childName);
+
+    // Select parent
+    await selectFromVisibleAntdDropdown(page, "Parent Category", parentName);
+
+    await page.getByRole("button", { name: /save/i }).click();
+
+    await expect(page).toHaveURL(/\/categories/);
+    await expect(
+      page.getByRole("heading", { name: "Categories" })
+    ).toBeVisible();
+
+    // Switch to spend tab and verify hierarchy rendering
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(/spend/i)
+      .click();
+
+    // Parent row should be visible (plain name, no indent)
+    await expect(
+      page.getByRole("cell", { name: parentName, exact: true })
+    ).toBeVisible();
+
+    // Child row should be visible with indent marker
+    await expect(page.getByText(`↳ ${childName}`)).toBeVisible();
+  });
+
+  test("show page displays parent category name", async ({ page }) => {
+    const ts = Date.now();
+    const parentName = `e2e-show-parent-${ts}`;
+    const childName = `e2e-show-child-${ts}`;
+    const categoryType = "earn";
+
+    // Create parent
+    await createCategoryForType(page, categoryType, parentName);
+
+    // Create child
+    await page.goto("/categories");
+    await page.getByRole("button", { name: /create/i }).click();
+    await selectFromVisibleAntdDropdown(page, "* Type", categoryType);
+    await page.getByRole("textbox", { name: "* Name" }).fill(childName);
+    await selectFromVisibleAntdDropdown(page, "Parent Category", parentName);
+    await page.getByRole("button", { name: /save/i }).click();
+    await expect(page).toHaveURL(/\/categories/);
+
+    // Switch to earn tab
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(/earn/i)
+      .click();
+
+    // Open show for child
+    await page
+      .getByRole("row")
+      .filter({ hasText: childName })
+      .getByRole("button", { name: "eye" })
+      .click();
+
+    await expect(
+      page.getByRole("heading", { name: "Show Category" })
+    ).toBeVisible();
+
+    // Parent name should be visible on show page
+    await expect(page.getByText("Parent Category")).toBeVisible();
+    await expect(page.getByText(parentName)).toBeVisible();
   });
 });

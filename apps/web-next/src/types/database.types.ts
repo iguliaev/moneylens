@@ -213,6 +213,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          parent_id: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string | null
           user_id: string
@@ -223,6 +224,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          parent_id?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
           user_id: string
@@ -233,11 +235,74 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          parent_id?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories_with_usage"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      category_hierarchy: {
+        Row: {
+          ancestor_id: string
+          depth: number
+          descendant_id: string
+        }
+        Insert: {
+          ancestor_id: string
+          depth: number
+          descendant_id: string
+        }
+        Update: {
+          ancestor_id?: string
+          depth?: number
+          descendant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_hierarchy_ancestor_id_fkey"
+            columns: ["ancestor_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_hierarchy_ancestor_id_fkey"
+            columns: ["ancestor_id"]
+            isOneToOne: false
+            referencedRelation: "categories_with_usage"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_hierarchy_descendant_id_fkey"
+            columns: ["descendant_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_hierarchy_descendant_id_fkey"
+            columns: ["descendant_id"]
+            isOneToOne: false
+            referencedRelation: "categories_with_usage"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {
@@ -476,16 +541,33 @@ export type Database = {
       }
       categories_with_usage: {
         Row: {
+          child_count: number | null
           created_at: string | null
           description: string | null
           id: string | null
           in_use_count: number | null
           name: string | null
+          parent_id: string | null
           type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories_with_usage"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags_with_usage: {
         Row: {
@@ -763,6 +845,31 @@ export type Database = {
         Returns: Json
       }
       bulk_upload_data: { Args: { p_payload: Json }; Returns: Json }
+      create_transaction_with_tags: {
+        Args: { p_tag_ids: string[]; p_transaction: Json }
+        Returns: {
+          amount: number
+          bank_account: string | null
+          bank_account_id: string | null
+          category: string | null
+          category_id: string | null
+          created_at: string
+          date: string
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          tags: string[] | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_bank_account_safe: {
         Args: { p_bank_account_id: string }
         Returns: {
@@ -831,6 +938,35 @@ export type Database = {
           p_type?: Database["public"]["Enums"]["transaction_type"]
         }
         Returns: number
+      }
+      update_transaction_with_tags: {
+        Args: {
+          p_tag_ids: string[]
+          p_transaction: Json
+          p_transaction_id: string
+        }
+        Returns: {
+          amount: number
+          bank_account: string | null
+          bank_account_id: string | null
+          category: string | null
+          category_id: string | null
+          created_at: string
+          date: string
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          tags: string[] | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

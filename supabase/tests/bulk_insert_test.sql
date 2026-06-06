@@ -5,7 +5,7 @@ BEGIN;
 
 -- Load pgtap extension
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT extensions.plan(15);
+SELECT extensions.plan(16);
 
 -- Create test user using helper
 SELECT tests.create_supabase_user('user1@test.com');
@@ -217,6 +217,24 @@ SELECT extensions.is(
   (SELECT COUNT(*) FROM public.transactions WHERE user_id = tests.get_supabase_uid('user1@test.com')),
   4::bigint,
   'Transactions are scoped to authenticated user'
+);
+
+-- Test 13: Reject parent category in bulk insert (leaf-only enforcement)
+-- Setup: insert parent 'Utilities' then child 'Electricity' so Utilities becomes a parent
+INSERT INTO public.categories (id, user_id, type, name)
+VALUES ('bbbbbbbb-0000-0000-0000-000000000001'::uuid,
+        tests.get_supabase_uid('user1@test.com'), 'spend', 'Utilities');
+
+INSERT INTO public.categories (id, user_id, type, name, parent_id)
+VALUES ('bbbbbbbb-0000-0000-0000-000000000002'::uuid,
+        tests.get_supabase_uid('user1@test.com'), 'spend', 'Electricity',
+        'bbbbbbbb-0000-0000-0000-000000000001'::uuid);
+
+SELECT extensions.throws_ok(
+  $$ SELECT bulk_insert_transactions('[{"date":"2026-01-01","type":"spend","category":"Utilities","amount":10}]'::jsonb) $$,
+  'P0001',
+  'Bulk insert failed with 1 error(s)',
+  'Reject parent category names in bulk transactions'
 );
 
 SELECT extensions.finish();

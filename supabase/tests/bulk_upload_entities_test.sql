@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(23);
 
 -- Create test users
 select tests.create_supabase_user('user1@test.com');
@@ -24,6 +24,7 @@ select tests.create_supabase_user('user12@test.com');
 select tests.create_supabase_user('user13@test.com');
 select tests.create_supabase_user('user14@test.com');
 select tests.create_supabase_user('user15@test.com');
+select tests.create_supabase_user('user16@test.com');
 
 -- Authenticate as user1 when helpful (not required for insert_categories which uses explicit user_id)
 select tests.authenticate_as('user1@test.com');
@@ -277,6 +278,28 @@ SELECT is(
 -- to test unauthenticated behavior. The authentication checks in insert_categories, 
 -- insert_bank_accounts, insert_tags, and bulk_upload_data are still validated through
 -- the function code review and by the fact that all other tests require authentication.
+
+-- Test 23: Bulk upload rejects transaction referencing a parent category
+select tests.authenticate_as('user16@test.com');
+-- Create parent 'Utilities' and child 'Electricity' so Utilities becomes a non-leaf
+DO $$
+BEGIN
+  INSERT INTO public.categories (id, user_id, type, name)
+  VALUES ('cccccccc-0000-0000-0000-000000000001'::uuid,
+          tests.get_supabase_uid('user16@test.com'), 'spend', 'Utilities');
+  INSERT INTO public.categories (id, user_id, type, name, parent_id)
+  VALUES ('cccccccc-0000-0000-0000-000000000002'::uuid,
+          tests.get_supabase_uid('user16@test.com'), 'spend', 'Electricity',
+          'cccccccc-0000-0000-0000-000000000001'::uuid);
+END $$;
+
+SELECT throws_like(
+  $$ SELECT bulk_upload_data(jsonb_build_object(
+      'transactions', '[{"date":"2026-01-01","type":"spend","amount":"20.00","category":"Utilities"}]'::jsonb
+    )) $$,
+  '%Bulk insert failed with 1 error(s)%',
+  'Bulk upload rejects parent category names in transactions'
+);
 
 select * from finish();
 rollback;
