@@ -161,11 +161,22 @@ supabase db pull
 
 ## Database Schema Guidelines
 
+### ⚠️ Migration-Only Rule — CRITICAL
+
+**NEVER modify existing files in `supabase/migrations/`.** Every schema change — table creation, column addition/removal/rename, index changes, RLS policy changes, function updates — **MUST go through a new migration file.**
+
+The workflow is always:
+1. `supabase migration new <descriptive_name>` — creates a new timestamped file
+2. Write your SQL changes in that new file
+3. Never touch previously committed migration files
+
+Editing existing migrations breaks the audit trail and will corrupt any environment that has already applied them.
+
 ### Creating Migrations
 
 1. Create migration: `supabase migration new my_feature`
 2. Edit the generated SQL file in `supabase/migrations/`
-3. Apply locally: `supabase dmigration up`
+3. Apply locally: `supabase migration up`
 4. Test with: `supabase test db`
 5. Update seeds if needed in `supabase/seeds/`
 
