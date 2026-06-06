@@ -14,11 +14,14 @@ export const CategoryEdit = () => {
   }, [formLoading, formProps.form]);
 
   const { selectProps: parentSelectProps } = useSelect({
-    resource: "categories",
+    resource: "categories_with_usage",
     optionLabel: "name",
     optionValue: "id",
     filters: selectedType
-      ? [{ field: "type", operator: "eq", value: selectedType }]
+      ? [
+          { field: "type", operator: "eq", value: selectedType },
+          { field: "parent_id", operator: "null", value: null },
+        ]
       : [{ field: "type", operator: "eq", value: "__none__" }],
     pagination: { pageSize: 200 },
   });

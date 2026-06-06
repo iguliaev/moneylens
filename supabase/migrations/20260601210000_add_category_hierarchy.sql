@@ -62,6 +62,19 @@ BEGIN
     RAISE EXCEPTION 'Parent category must have same type';
   END IF;
 
+  -- Enforce max 2-level hierarchy: proposed parent must be a root
+  IF (SELECT parent_id FROM public.categories WHERE id = new.parent_id) IS NOT NULL THEN
+    RAISE EXCEPTION 'Parent category already has a parent — max 2 levels allowed';
+  END IF;
+
+  -- Enforce max 2-level hierarchy: cannot assign parent to a category that already has children
+  IF EXISTS (
+    SELECT 1 FROM public.category_hierarchy
+    WHERE ancestor_id = new.id AND depth = 1
+  ) THEN
+    RAISE EXCEPTION 'Cannot assign a parent to a category that already has children';
+  END IF;
+
   RETURN new;
 END;
 $$;

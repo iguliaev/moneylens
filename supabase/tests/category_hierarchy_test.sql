@@ -4,7 +4,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT extensions.plan(12);
+SELECT extensions.plan(14);
 
 SELECT tests.create_supabase_user('hier_user@test.com');
 SELECT tests.authenticate_as('hier_user@test.com');
@@ -114,6 +114,40 @@ SELECT extensions.is(
       AND depth = 1),
   0::bigint,
   'Leaf category has zero depth=1 descendants'
+);
+
+-- ─── Max depth enforcement ─────────────────────────────────────────────────────
+
+-- Seed a second root category for re-parenting test
+INSERT INTO public.categories (id, user_id, type, name)
+VALUES (
+  '00000000-0000-0000-0000-000000000004'::uuid,
+  tests.get_supabase_uid('hier_user@test.com'),
+  'spend',
+  'OtherRoot'
+);
+
+-- Attempt to create a grandchild (child of Electricity, which is already a child)
+SELECT extensions.throws_ok(
+  $$ INSERT INTO public.categories (id, user_id, type, name, parent_id)
+     VALUES (
+       '00000000-0000-0000-0000-000000000005'::uuid,
+       '00000000-0000-0000-0000-000000000099'::uuid,
+       'spend',
+       'GrandchildCategory',
+       '00000000-0000-0000-0000-000000000002'
+     ) $$,
+  'Parent category already has a parent — max 2 levels allowed',
+  'Trigger prevents grandchild creation (depth > 2)'
+);
+
+-- Attempt to re-parent a category that already has children (Utilities has Electricity)
+SELECT extensions.throws_ok(
+  $$ UPDATE public.categories
+     SET parent_id = '00000000-0000-0000-0000-000000000004'::uuid
+     WHERE id = '00000000-0000-0000-0000-000000000001'::uuid $$,
+  'Cannot assign a parent to a category that already has children',
+  'Trigger prevents re-parenting a category that already has children'
 );
 
 SELECT extensions.finish();
