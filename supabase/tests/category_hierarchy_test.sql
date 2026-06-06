@@ -4,7 +4,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT extensions.plan(14);
+SELECT extensions.plan(15);
 
 SELECT tests.create_supabase_user('hier_user@test.com');
 SELECT tests.authenticate_as('hier_user@test.com');
@@ -128,17 +128,32 @@ VALUES (
 );
 
 -- Attempt to create a grandchild (child of Electricity, which is already a child)
+-- Uses same user so only the depth guard fires (not the ownership check)
 SELECT extensions.throws_ok(
   $$ INSERT INTO public.categories (id, user_id, type, name, parent_id)
      VALUES (
        '00000000-0000-0000-0000-000000000005'::uuid,
-       '00000000-0000-0000-0000-000000000099'::uuid,
+       tests.get_supabase_uid('hier_user@test.com'),
        'spend',
        'GrandchildCategory',
        '00000000-0000-0000-0000-000000000002'
      ) $$,
   'Parent category already has a parent — max 2 levels allowed',
   'Trigger prevents grandchild creation (depth > 2)'
+);
+
+-- Attempt to assign another user''s category as parent (cross-user ownership check)
+SELECT extensions.throws_ok(
+  $$ INSERT INTO public.categories (id, user_id, type, name, parent_id)
+     VALUES (
+       '00000000-0000-0000-0000-000000000006'::uuid,
+       '00000000-0000-0000-0000-000000000099'::uuid,
+       'spend',
+       'CrossUserChild',
+       '00000000-0000-0000-0000-000000000004'
+     ) $$,
+  'Parent category must belong to the same user',
+  'Trigger prevents assigning another user''s category as parent'
 );
 
 -- Attempt to re-parent a category that already has children (Utilities has Electricity)
