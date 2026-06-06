@@ -1,0 +1,11 @@
+{
+  "transactions": [
+    {
+      "date": "2025-12-20",
+      "type": "spend",
+      "category": "e2e-parent-cat",
+      "amount": 20.0,
+      "notes": "Should be rejected - parent category"
+    }
+  ]
+}
