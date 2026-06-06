@@ -19,9 +19,8 @@ export const TransactionCreate = () => {
     resource: "categories_with_usage",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
-    filters: type
-      ? [{ field: "type", operator: "eq", value: type }]
-      : [{ field: "type", operator: "eq", value: "__none__" }],
+    filters: type ? [{ field: "type", operator: "eq", value: type }] : [],
+    queryOptions: { enabled: !!type },
   });
 
   const leafCategoryOptions = (categoriesResult?.data ?? [])

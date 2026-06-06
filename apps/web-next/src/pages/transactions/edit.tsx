@@ -46,13 +46,30 @@ export const TransactionEdit = () => {
       sorters: [{ field: "name", order: "asc" }],
       filters: selectedType
         ? [{ field: "type", operator: "eq", value: selectedType }]
-        : [{ field: "type", operator: "eq", value: "__none__" }],
+        : [],
       queryOptions: { enabled: !!selectedType },
     });
 
-  const leafCategoryOptions = (categoriesResult?.data ?? [])
-    .filter(isLeafCategory)
-    .map((c: Category) => ({ label: c.name, value: c.id }));
+  const currentCategoryId = transactionsData?.category_id as string | undefined;
+
+  const leafCategoryOptions = useMemo(() => {
+    const all = categoriesResult?.data ?? [];
+    const leaves = all
+      .filter(isLeafCategory)
+      .map((c: Category) => ({ label: c.name, value: c.id }));
+    // Always include the current category even if it has since become a parent,
+    // so the form doesn't show a raw UUID or blank value.
+    if (
+      currentCategoryId &&
+      !leaves.some((o) => o.value === currentCategoryId)
+    ) {
+      const current = all.find((c: Category) => c.id === currentCategoryId);
+      if (current) {
+        leaves.unshift({ label: current.name, value: current.id });
+      }
+    }
+    return leaves;
+  }, [categoriesResult?.data, currentCategoryId]);
 
   const { selectProps: bankAccountSelectProps } = useAntSelect({
     resource: "bank_accounts",

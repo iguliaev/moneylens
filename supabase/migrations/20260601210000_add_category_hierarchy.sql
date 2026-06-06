@@ -45,7 +45,9 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-DECLARE v_parent_type public.transaction_type;
+DECLARE
+  v_parent_type public.transaction_type;
+  v_parent_user_id uuid;
 BEGIN
   IF new.parent_id IS NULL THEN
     RETURN new;
@@ -56,8 +58,14 @@ BEGIN
     RAISE EXCEPTION 'Category cannot be parent of itself';
   END IF;
 
-  -- Verify parent exists and has same type
-  SELECT type INTO v_parent_type FROM public.categories WHERE id = new.parent_id;
+  -- Verify parent exists, belongs to same user, and has same type
+  SELECT type, user_id INTO v_parent_type, v_parent_user_id
+  FROM public.categories WHERE id = new.parent_id;
+
+  IF v_parent_user_id IS DISTINCT FROM new.user_id THEN
+    RAISE EXCEPTION 'Parent category must belong to the same user';
+  END IF;
+
   IF v_parent_type IS DISTINCT FROM new.type THEN
     RAISE EXCEPTION 'Parent category must have same type';
   END IF;

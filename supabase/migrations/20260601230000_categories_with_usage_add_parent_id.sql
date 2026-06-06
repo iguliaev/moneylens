@@ -19,21 +19,24 @@ AS
     c.created_at,
     c.updated_at,
     COALESCE(u.cnt, 0::bigint) AS in_use_count
-  FROM categories c
+  FROM public.categories c
   LEFT JOIN (
     SELECT
-      transactions.user_id,
-      transactions.category_id,
+      public.transactions.user_id,
+      public.transactions.category_id,
       count(*) AS cnt
-    FROM transactions
-    WHERE transactions.category_id IS NOT NULL
-      AND transactions.deleted_at IS NULL
-    GROUP BY transactions.user_id, transactions.category_id
+    FROM public.transactions
+    WHERE public.transactions.category_id IS NOT NULL
+      AND public.transactions.deleted_at IS NULL
+    GROUP BY public.transactions.user_id, public.transactions.category_id
   ) u ON u.user_id = c.user_id AND u.category_id = c.id
   LEFT JOIN (
     SELECT ancestor_id, count(*) AS child_count
-    FROM category_hierarchy
+    FROM public.category_hierarchy
     WHERE depth = 1
     GROUP BY ancestor_id
   ) ch_kids ON ch_kids.ancestor_id = c.id
   WHERE c.deleted_at IS NULL;
+
+COMMENT ON VIEW public.categories_with_usage IS
+  'Categories with transaction usage count, hierarchy parent_id, and child_count for leaf detection.';

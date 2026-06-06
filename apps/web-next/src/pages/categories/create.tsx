@@ -16,7 +16,8 @@ export const CategoryCreate = () => {
           { field: "type", operator: "eq", value: selectedType },
           { field: "parent_id", operator: "null", value: null },
         ]
-      : [{ field: "type", operator: "eq", value: "__none__" }],
+      : [],
+    queryOptions: { enabled: !!selectedType },
     pagination: { pageSize: 200 },
   });
 
