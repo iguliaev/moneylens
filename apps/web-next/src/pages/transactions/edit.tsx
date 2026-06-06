@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Edit, useForm, useSelect as useAntSelect } from "@refinedev/antd";
-import { useSelect as useCoreSelect } from "@refinedev/core";
+import { useSelect as useCoreSelect, useList } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import {
@@ -8,6 +8,8 @@ import {
   TransactionType,
 } from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
+import type { Category } from "../../utility/categoryHierarchy";
+import { isLeafCategory } from "../../utility/categoryHierarchy";
 
 export const TransactionEdit = () => {
   const { formProps, saveButtonProps, query, id, formLoading } = useForm({
@@ -37,26 +39,20 @@ export const TransactionEdit = () => {
     | undefined;
 
   // Use useSelect for categories with type filtering
-  const { selectProps: categorySelectProps, query: categoriesQuery } =
-    useAntSelect({
-      resource: "categories",
-      optionLabel: "name",
-      optionValue: "id",
+  const { result: categoriesResult, query: categoriesQuery } =
+    useList<Category>({
+      resource: "categories_with_usage",
       pagination: { mode: "off" },
       sorters: [{ field: "name", order: "asc" }],
       filters: selectedType
-        ? [
-            {
-              field: "type",
-              operator: "eq",
-              value: selectedType,
-            },
-          ]
-        : [],
-      queryOptions: {
-        enabled: !!selectedType,
-      },
+        ? [{ field: "type", operator: "eq", value: selectedType }]
+        : [{ field: "type", operator: "eq", value: "__none__" }],
+      queryOptions: { enabled: !!selectedType },
     });
+
+  const leafCategoryOptions = (categoriesResult?.data ?? [])
+    .filter(isLeafCategory)
+    .map((c: Category) => ({ label: c.name, value: c.id }));
 
   const { selectProps: bankAccountSelectProps } = useAntSelect({
     resource: "bank_accounts",
@@ -130,7 +126,7 @@ export const TransactionEdit = () => {
           ]}
         >
           <Select
-            {...categorySelectProps}
+            options={leafCategoryOptions}
             loading={categoriesQuery.isLoading}
             showSearch
             filterOption={(input, option) =>

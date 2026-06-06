@@ -11,6 +11,7 @@ import {
   getTransactionRow,
   waitForTransactionEditReady,
   selectFromVisibleAntdDropdown,
+  supabaseAdmin,
 } from "../utils/test-helpers";
 
 test.describe("Transactions", () => {
@@ -441,14 +442,18 @@ test.describe("Transactions", () => {
       .getByTitle(/^essentials$/i)
       .click();
     await expect(
-      page.locator(".ant-select-selection-item").filter({ hasText: /^essentials$/i })
+      page
+        .locator(".ant-select-selection-item")
+        .filter({ hasText: /^essentials$/i })
     ).toBeVisible();
     await page
       .locator(".ant-select-dropdown:visible")
       .getByTitle(/^monthly$/i)
       .click();
     await expect(
-      page.locator(".ant-select-selection-item").filter({ hasText: /^monthly$/i })
+      page
+        .locator(".ant-select-selection-item")
+        .filter({ hasText: /^monthly$/i })
     ).toBeVisible();
     await page.keyboard.press("Escape");
 
@@ -526,7 +531,9 @@ test.describe("Transactions", () => {
 
     // Should show earn categories (Salary)
     await expect(
-      page.locator(".ant-select-dropdown:visible").getByText("Salary", { exact: true })
+      page
+        .locator(".ant-select-dropdown:visible")
+        .getByText("Salary", { exact: true })
     ).toBeVisible();
 
     // Close dropdown
@@ -545,7 +552,9 @@ test.describe("Transactions", () => {
 
     // Should show save categories (Savings)
     await expect(
-      page.locator(".ant-select-dropdown:visible").getByText("Savings", { exact: true })
+      page
+        .locator(".ant-select-dropdown:visible")
+        .getByText("Savings", { exact: true })
     ).toBeVisible();
   });
 
@@ -567,10 +576,28 @@ test.describe("Transactions", () => {
     await page.getByLabel("Amount").blur();
     await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
-  test("amount range filter shows only transactions within range", async ({ page }) => {
+  test("amount range filter shows only transactions within range", async ({
+    page,
+  }) => {
     const date = e2eCurrentMonthDate();
-    await createTransactionWithoutTags(page, date, "spend", "Groceries", "30.00", "Main Account", "low-amount");
-    await createTransactionWithoutTags(page, date, "spend", "Groceries", "200.00", "Main Account", "high-amount");
+    await createTransactionWithoutTags(
+      page,
+      date,
+      "spend",
+      "Groceries",
+      "30.00",
+      "Main Account",
+      "low-amount"
+    );
+    await createTransactionWithoutTags(
+      page,
+      date,
+      "spend",
+      "Groceries",
+      "200.00",
+      "Main Account",
+      "high-amount"
+    );
 
     // Navigate directly with amount between filter applied via URL params (syncWithLocation: true)
     await page.goto(
@@ -584,5 +611,48 @@ test.describe("Transactions", () => {
     // Only the high-amount row should be visible
     await expect(page.getByText("high-amount")).toBeVisible();
     await expect(page.getByText("low-amount")).not.toBeVisible();
+  });
+
+  test("transaction form shows leaf categories only", async ({ page }) => {
+    const ts = Date.now();
+    const parentName = `e2e-leaf-parent-${ts}`;
+    const childName = `e2e-leaf-child-${ts}`;
+
+    // Seed parent + child category via admin client
+    const { data: parent } = await supabaseAdmin
+      .from("categories")
+      .insert({
+        user_id: testUser.userId,
+        type: "spend",
+        name: parentName,
+      })
+      .select("id")
+      .single();
+
+    await supabaseAdmin.from("categories").insert({
+      user_id: testUser.userId,
+      type: "spend",
+      name: childName,
+      parent_id: parent!.id,
+    });
+
+    await page.goto("/transactions/create");
+    await page.waitForLoadState("networkidle");
+
+    // Select "spend" type to load category options
+    await selectFromVisibleAntdDropdown(page, "* Type", "spend");
+
+    // Open category dropdown
+    await page.getByRole("combobox", { name: "* Category" }).click();
+
+    // Leaf child should be selectable
+    await expect(
+      page.locator(".ant-select-dropdown:visible").getByTitle(childName)
+    ).toBeVisible();
+
+    // Parent (which has a child) should NOT appear in the options
+    await expect(
+      page.locator(".ant-select-dropdown:visible").getByTitle(parentName)
+    ).not.toBeVisible();
   });
 });
