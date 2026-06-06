@@ -1,9 +1,11 @@
 import { Create, useForm, useSelect as useAntSelect } from "@refinedev/antd";
-import { useSelect as useCoreSelect } from "@refinedev/core";
+import { useSelect as useCoreSelect, useList } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
+import type { Category } from "../../utility/categoryHierarchy";
+import { isLeafCategory } from "../../utility/categoryHierarchy";
 
 export const TransactionCreate = () => {
   const { formProps, saveButtonProps } = useForm({
@@ -13,21 +15,17 @@ export const TransactionCreate = () => {
 
   const type = Form.useWatch("type", formProps.form);
 
-  const { selectProps: categorySelectProps } = useAntSelect({
-    resource: "categories",
-    optionLabel: "name",
+  const { result: categoriesResult } = useList<Category>({
+    resource: "categories_with_usage",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
-    filters: type
-      ? [
-          {
-            field: "type",
-            operator: "eq",
-            value: type,
-          },
-        ]
-      : undefined,
+    filters: type ? [{ field: "type", operator: "eq", value: type }] : [],
+    queryOptions: { enabled: !!type },
   });
+
+  const leafCategoryOptions = (categoriesResult?.data ?? [])
+    .filter(isLeafCategory)
+    .map((c: Category) => ({ label: c.name, value: c.id }));
 
   const { options: tagOptions, query: tagsQuery } = useCoreSelect({
     resource: "tags",
@@ -46,34 +44,18 @@ export const TransactionCreate = () => {
 
   return (
     <Create saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
-      <Form
-        {...formProps}
-        layout="vertical"
-        onFinish={handleFinish}
-      >
+      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
         <Form.Item
           label="Date"
           name={["date"]}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
+          rules={[{ required: true }]}
           getValueProps={(value) => ({
             value: value ? dayjs(value) : undefined,
           })}
         >
           <DatePicker format="YYYY-MM-DD" />
         </Form.Item>
-        <Form.Item
-          label="Type"
-          name={["type"]}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-        >
+        <Form.Item label="Type" name={["type"]} rules={[{ required: true }]}>
           <Select
             options={TRANSACTION_TYPE_OPTIONS}
             onChange={() =>
@@ -84,13 +66,17 @@ export const TransactionCreate = () => {
         <Form.Item
           label="Category"
           name={"category_id"}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
+          rules={[{ required: true }]}
         >
-          <Select {...categorySelectProps} />
+          <Select
+            options={leafCategoryOptions}
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label as string)
+                ?.toLowerCase()
+                .includes(input.toLowerCase())
+            }
+          />
         </Form.Item>
         <Form.Item
           label="Amount"
@@ -110,11 +96,7 @@ export const TransactionCreate = () => {
         <Form.Item
           label="Bank Account"
           name={"bank_account_id"}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
+          rules={[{ required: true }]}
         >
           <Select {...bankAccountSelectProps} />
         </Form.Item>

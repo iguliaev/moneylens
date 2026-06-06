@@ -185,4 +185,69 @@ test.describe("Bulk Upload", () => {
         .filter({ hasText: new RegExp("Upload Successful", "i") })
     ).not.toBeVisible();
   });
+
+  test("bulk upload rejects transaction rows referencing parent categories", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const parentName = `e2e-parent-cat-${ts}`;
+    const childName = `e2e-child-cat-${ts}`;
+
+    // Seed parent + child via admin so parent becomes non-leaf
+    const { data: parent } = await supabaseAdmin
+      .from("categories")
+      .insert({ user_id: testUser.userId, type: "spend", name: parentName })
+      .select("id")
+      .single();
+
+    await supabaseAdmin.from("categories").insert({
+      user_id: testUser.userId,
+      type: "spend",
+      name: childName,
+      parent_id: parent!.id,
+    });
+
+    // Upload fixture referencing the parent category name
+    await page.goto("/settings");
+    await page.getByRole("tab", { name: /import.*export/i }).click();
+
+    // Build a temp fixture file via page.evaluate (blob URL trick) is not ideal;
+    // instead use setInputFiles with a buffer constructed from the fixture template
+    const fixtureContent = JSON.stringify({
+      transactions: [
+        {
+          date: "2025-12-20",
+          type: "spend",
+          category: parentName,
+          amount: 20.0,
+          notes: "should fail - parent category",
+        },
+      ],
+    });
+
+    await page.locator("input[type='file']").setInputFiles({
+      name: "parent-category-upload.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(fixtureContent),
+    });
+
+    // Preview should show 1 transaction
+    await expect(page.getByText(/Preview:.*1 transactions/i)).toBeVisible();
+
+    // Click upload
+    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
+
+    // Error alert should appear (parent category rejected)
+    await expect(
+      page.getByRole("alert").filter({ hasText: /error/i })
+    ).toBeVisible();
+
+    // No transactions should have been inserted
+    const { data: txns } = await supabaseAdmin
+      .from("transactions")
+      .select("id")
+      .eq("user_id", testUser.userId);
+
+    expect(txns).toHaveLength(0);
+  });
 });
