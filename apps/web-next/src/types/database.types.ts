@@ -541,16 +541,33 @@ export type Database = {
       }
       categories_with_usage: {
         Row: {
+          child_count: number | null
           created_at: string | null
           description: string | null
           id: string | null
           in_use_count: number | null
           name: string | null
+          parent_id: string | null
           type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories_with_usage"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags_with_usage: {
         Row: {
