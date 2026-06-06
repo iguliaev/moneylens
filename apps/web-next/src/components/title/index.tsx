@@ -1,30 +1,26 @@
 import React from "react";
 import { theme } from "antd";
 import { Link } from "@refinedev/core";
+import logoMarkUrl from "../../assets/logo-mark.svg";
+
 export const ProjectTitle: React.FC = () => {
   const { token } = theme.useToken();
-  const textColor = token.colorTextHeading;
 
   return (
-    <Link to="/">
-      <svg
-        width="140"
-        height="32"
-        viewBox="0 0 140 32"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <text
-          x="0"
-          y="24"
-          fontFamily="Arial, Helvetica, sans-serif"
-          fontSize="24"
-          fontWeight="bold"
-          fill={textColor}
-        >
-          MoneyLens
-        </text>
-      </svg>
+    <Link
+      to="/"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 12,
+        color: token.colorTextHeading,
+        textDecoration: "none",
+      }}
+    >
+      <img src={logoMarkUrl} alt="" aria-hidden width={32} height={32} />
+      <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.03em" }}>
+        MoneyLens
+      </span>
     </Link>
   );
 };

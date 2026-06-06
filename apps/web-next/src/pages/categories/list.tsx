@@ -51,33 +51,48 @@ export const CategoryList = () => {
       {tableProps.loading && !tableProps.dataSource?.length ? (
         <TableSkeleton columns={4} />
       ) : (
-      <Table {...tableProps} rowKey="id" locale={{ emptyText: categoryEmptyState }}>
-        <Table.Column dataIndex="name" title="Name" sorter />
-        <Table.Column dataIndex="description" title="Description" sorter />
-        <Table.Column dataIndex="in_use_count" title="Usage Count" sorter />
-        <Table.Column
-          title="Actions"
-          dataIndex="actions"
-          render={(_, record: BaseRecord) => (
-            <Space>
-              <EditButton hideText size="small" recordItemId={record.id} />
-              <ShowButton hideText size="small" recordItemId={record.id} />
-              <DeleteButton
-                hideText
-                size="small"
-                recordItemId={record.id}
-                resource="categories"
-                onSuccess={() => {
-                  invalidate({
-                    resource: "categories_with_usage",
-                    invalidates: ["list"],
-                  });
-                }}
-              />
-            </Space>
-          )}
-        />
-      </Table>
+        <Table
+          {...tableProps}
+          rowKey="id"
+          locale={{ emptyText: categoryEmptyState }}
+        >
+          <Table.Column
+            dataIndex="name"
+            title="Name"
+            sorter
+            render={(value, record: BaseRecord) =>
+              record.parent_id ? (
+                <span style={{ paddingLeft: 16 }}>↳ {value}</span>
+              ) : (
+                value
+              )
+            }
+          />
+          <Table.Column dataIndex="description" title="Description" sorter />
+          <Table.Column dataIndex="in_use_count" title="Usage Count" sorter />
+          <Table.Column
+            title="Actions"
+            dataIndex="actions"
+            render={(_, record: BaseRecord) => (
+              <Space>
+                <EditButton hideText size="small" recordItemId={record.id} />
+                <ShowButton hideText size="small" recordItemId={record.id} />
+                <DeleteButton
+                  hideText
+                  size="small"
+                  recordItemId={record.id}
+                  resource="categories"
+                  onSuccess={() => {
+                    invalidate({
+                      resource: "categories_with_usage",
+                      invalidates: ["list"],
+                    });
+                  }}
+                />
+              </Space>
+            )}
+          />
+        </Table>
       )}
     </List>
   );

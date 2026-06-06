@@ -161,11 +161,31 @@ supabase db pull
 
 ## Database Schema Guidelines
 
+### ⚠️ Migration-Only Rule — CRITICAL
+
+Every schema change — table creation, column addition/removal/rename, index changes, RLS policy changes, function updates — **MUST go through a migration file.** Whether you create a new file or edit an existing one depends on whether the change has already reached `main`:
+
+**When the feature has NOT yet been merged to `main`:**
+You may edit the last migration file that belongs to your feature branch. This avoids unnecessary migration file proliferation and keeps the audit trail clean.
+
+**When the change IS already on `main` (or you're unsure):**
+**NEVER modify existing committed migration files.** Always create a new one:
+1. `supabase migration new <descriptive_name>` — creates a new timestamped file
+2. Write your SQL changes in that new file
+
+Editing already-merged migrations breaks the audit trail and will corrupt any environment that has already applied them.
+
+**Decision rule:** Before touching a migration file, run:
+```bash
+git log main..HEAD -- supabase/migrations/<file>
+```
+If the file appears in the output, it hasn't been merged — you can edit it. If it doesn't appear, create a new migration instead.
+
 ### Creating Migrations
 
 1. Create migration: `supabase migration new my_feature`
 2. Edit the generated SQL file in `supabase/migrations/`
-3. Apply locally: `supabase dmigration up`
+3. Apply locally: `supabase migration up`
 4. Test with: `supabase test db`
 5. Update seeds if needed in `supabase/seeds/`
 

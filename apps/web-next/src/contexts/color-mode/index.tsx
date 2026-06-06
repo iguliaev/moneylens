@@ -1,15 +1,20 @@
-import { RefineThemes } from "@refinedev/antd";
-import { ConfigProvider, theme } from "antd";
+import { ConfigProvider } from "antd";
 import {
   type PropsWithChildren,
   createContext,
   useEffect,
   useState,
 } from "react";
+import {
+  applyThemeMode,
+  darkThemeConfig,
+  lightThemeConfig,
+  type ThemeMode,
+} from "../../theme/tokens";
 
 type ColorModeContextType = {
-  mode: string;
-  setMode: (mode: string) => void;
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
 };
 
 export const ColorModeContext = createContext<ColorModeContextType>(
@@ -19,25 +24,30 @@ export const ColorModeContext = createContext<ColorModeContextType>(
 export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
   children,
 }) => {
-  const colorModeFromLocalStorage = localStorage.getItem("colorMode");
-  const isSystemPreferenceDark = window?.matchMedia(
-    "(prefers-color-scheme: dark)"
-  ).matches;
+  const [mode, setMode] = useState<ThemeMode>(() => {
+    const colorModeFromLocalStorage = window.localStorage.getItem("colorMode");
+    const isSystemPreferenceDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+    const systemPreference: ThemeMode = isSystemPreferenceDark ? "dark" : "light";
+    const initialMode: ThemeMode =
+      colorModeFromLocalStorage === "light" || colorModeFromLocalStorage === "dark"
+        ? colorModeFromLocalStorage
+        : systemPreference;
 
-  const systemPreference = isSystemPreferenceDark ? "dark" : "light";
-  const [mode, setMode] = useState(
-    colorModeFromLocalStorage || systemPreference
-  );
+    // Apply mode before first paint to avoid a flash of light tokens for dark mode users.
+    applyThemeMode(initialMode);
+    return initialMode;
+  });
 
   useEffect(() => {
     window.localStorage.setItem("colorMode", mode);
+    applyThemeMode(mode);
   }, [mode]);
 
-  const setColorMode = (newMode: string) => {
+  const setColorMode = (newMode: ThemeMode) => {
     setMode(newMode);
   };
-
-  const { darkAlgorithm, defaultAlgorithm } = theme;
 
   return (
     <ColorModeContext.Provider
@@ -47,10 +57,8 @@ export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
       }}
     >
       <ConfigProvider
-        // you can change the theme colors here. example: ...RefineThemes.Magenta,
         theme={{
-          ...RefineThemes.Blue,
-          algorithm: mode === "light" ? defaultAlgorithm : darkAlgorithm,
+          ...(mode === "light" ? lightThemeConfig : darkThemeConfig),
         }}
       >
         {children}

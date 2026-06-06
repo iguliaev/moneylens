@@ -5,7 +5,11 @@ import { Typography } from "antd";
 const { Title } = Typography;
 
 export const CategoryShow = () => {
-  const { query, result: record } = useShow();
+  const { query, result: record } = useShow({
+    meta: {
+      select: "*, parent:parent_id(id, name)",
+    },
+  });
   const { isLoading } = query;
 
   return (
@@ -16,6 +20,8 @@ export const CategoryShow = () => {
       <TextField value={record?.name} />
       <Title level={5}>Description</Title>
       <TextField value={record?.description} />
+      <Title level={5}>Parent Category</Title>
+      <TextField value={record?.parent?.name ?? "—"} />
       <Title level={5}>Created At</Title>
       <DateField value={record?.created_at} />
       <Title level={5}>Updated At</Title>
