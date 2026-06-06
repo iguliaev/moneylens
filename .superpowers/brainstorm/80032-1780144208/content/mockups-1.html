@@ -1,0 +1,448 @@
+<style>
+  :root {
+    --bg: #f6f3ee;
+    --ink: #132033;
+    --muted: rgba(19, 32, 51, 0.66);
+    --line: rgba(19, 32, 51, 0.12);
+    --card: rgba(255, 255, 255, 0.72);
+    --shadow: 0 24px 60px rgba(19, 32, 51, 0.14);
+    --accent: #1b6fd8;
+  }
+
+  .board {
+    display: grid;
+    gap: 18px;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.68));
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    padding: 24px;
+    backdrop-filter: blur(18px);
+  }
+
+  .kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  h1, h2, h3, p { margin: 0; }
+
+  h1 {
+    font-size: 28px;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    max-width: 12ch;
+  }
+
+  .lead {
+    margin-top: 12px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 54ch;
+  }
+
+  .chiprow {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+
+  .chip {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 12px;
+    color: var(--ink);
+    background: rgba(255,255,255,0.58);
+  }
+
+  .sample {
+    display: grid;
+    gap: 14px;
+  }
+
+  .logo-sample {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .lens {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 38% 34%, rgba(255,255,255,0.95) 0 12%, transparent 13%),
+      radial-gradient(circle at 50% 50%, rgba(27,111,216,0.98) 0 52%, rgba(27,111,216,0.3) 53% 70%, transparent 71%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55);
+  }
+
+  .mini-card {
+    border-radius: 22px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.8);
+  }
+
+  .stat {
+    display: grid;
+    gap: 4px;
+  }
+
+  .stat .value {
+    font-size: 30px;
+    letter-spacing: -0.05em;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .stat .label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .bars {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+    align-items: end;
+    height: 84px;
+  }
+
+  .bar {
+    border-radius: 999px 999px 8px 8px;
+    background: linear-gradient(180deg, rgba(27,111,216,0.95), rgba(27,111,216,0.24));
+  }
+
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .swatch {
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .option {
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    padding: 16px;
+    background: var(--card);
+    box-shadow: 0 10px 24px rgba(19, 32, 51, 0.08);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .option:hover {
+    transform: translateY(-3px);
+    border-color: rgba(27, 111, 216, 0.32);
+    box-shadow: 0 18px 32px rgba(19, 32, 51, 0.12);
+  }
+
+  .option.selected {
+    border-color: rgba(27, 111, 216, 0.55);
+    box-shadow: 0 0 0 3px rgba(27, 111, 216, 0.12), 0 18px 32px rgba(19, 32, 51, 0.14);
+  }
+
+  .option-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .letter {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(27, 111, 216, 0.12);
+    color: var(--accent);
+  }
+
+  .option h3 {
+    font-size: 15px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .option p {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .thumb {
+    margin-top: 14px;
+    border-radius: 20px;
+    padding: 14px;
+    min-height: 210px;
+    border: 1px solid rgba(19, 32, 51, 0.08);
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.95), transparent 40%),
+      linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.62));
+    overflow: hidden;
+  }
+
+  .thumb.dark {
+    background:
+      radial-gradient(circle at 20% 0%, rgba(27,111,216,0.28), transparent 36%),
+      linear-gradient(180deg, #131722, #0c1017);
+    color: #f5f8ff;
+  }
+
+  .thumb.dark .mini-card,
+  .thumb.dark .chip {
+    background: rgba(255,255,255,0.06);
+    color: #f5f8ff;
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  .thumb.dark .stat .label,
+  .thumb.dark p {
+    color: rgba(245,248,255,0.68);
+  }
+
+  .thumb.editorial {
+    background:
+      linear-gradient(135deg, rgba(242,232,219,0.98), rgba(255,255,255,0.86)),
+      radial-gradient(circle at top right, rgba(195,117,74,0.15), transparent 30%);
+  }
+
+  .thumb .stack {
+    display: grid;
+    gap: 10px;
+  }
+
+  .thumb .grid {
+    display: grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 10px;
+  }
+
+  .countdown {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .metric {
+    border-radius: 18px;
+    padding: 12px;
+    background: rgba(255,255,255,0.56);
+    border: 1px solid rgba(19,32,51,0.08);
+    flex: 1;
+  }
+
+  .metric strong {
+    display: block;
+    font-size: 16px;
+    letter-spacing: -0.03em;
+  }
+
+  .metric span {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 1000px) {
+    .hero,
+    .options {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="board">
+  <div class="hero">
+    <div class="panel">
+      <div class="kicker">MoneyLens / visual identity mockups</div>
+      <h1>Three concrete directions for the brand system.</h1>
+      <p class="lead">
+        Compare these as if they were the app's first pass: logo treatment, palette feel,
+        and the mood of the dashboard/auth experience.
+      </p>
+      <div class="chiprow">
+        <div class="chip">Logo + wordmark</div>
+        <div class="chip">Palette + type</div>
+        <div class="chip">Dashboard mood</div>
+        <div class="chip">Auth page atmosphere</div>
+      </div>
+    </div>
+
+    <div class="panel sample">
+      <div class="logo-sample">
+        <div class="lens"></div>
+        <div>MoneyLens</div>
+      </div>
+      <div class="mini-card">
+        <div class="stat">
+          <div class="value">£12,480</div>
+          <div class="label">Month net cash flow</div>
+        </div>
+        <div class="bars">
+          <div class="bar" style="height: 34%"></div>
+          <div class="bar" style="height: 58%"></div>
+          <div class="bar" style="height: 44%"></div>
+          <div class="bar" style="height: 72%"></div>
+          <div class="bar" style="height: 52%"></div>
+          <div class="bar" style="height: 88%"></div>
+          <div class="bar" style="height: 66%"></div>
+          <div class="bar" style="height: 78%"></div>
+        </div>
+      </div>
+      <div class="palette">
+        <div class="swatch" style="background:#1b6fd8"></div>
+        <div class="swatch" style="background:#49aa19"></div>
+        <div class="swatch" style="background:#e84749"></div>
+        <div class="swatch" style="background:#0f1117"></div>
+        <div class="swatch" style="background:#f6f3ee"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="options" data-multiselect>
+    <div class="option" data-choice="quiet-ledger" onclick="toggleSelect(this)">
+      <div class="option-header">
+        <div class="letter">A</div>
+        <h3>Quiet Ledger</h3>
+      </div>
+      <p>Refined minimalism. Warm paper background, soft shadows, crisp blue accents, and a calm financial editorial feel.</p>
+      <div class="thumb">
+        <div class="stack">
+          <div class="logo-sample">
+            <div class="lens"></div>
+            <div>MoneyLens</div>
+          </div>
+          <div class="grid">
+            <div class="mini-card">
+              <div class="stat">
+                <div class="value">+£4,820</div>
+                <div class="label">Income heavy month</div>
+              </div>
+            </div>
+            <div class="mini-card">
+              <div class="stat">
+                <div class="value">32</div>
+                <div class="label">Transactions reviewed</div>
+              </div>
+            </div>
+          </div>
+          <div class="metric">
+            <strong>Soft palette</strong>
+            <span>White, sand, cobalt, slate</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="option" data-choice="night-terminal" onclick="toggleSelect(this)">
+      <div class="option-header">
+        <div class="letter">B</div>
+        <h3>Night Terminal</h3>
+      </div>
+      <p>Data-forward dark mode. High contrast surfaces, neon-ish highlights, and a sharper, more technical money view.</p>
+      <div class="thumb dark">
+        <div class="stack">
+          <div class="logo-sample">
+            <div class="lens"></div>
+            <div>MoneyLens</div>
+          </div>
+          <div class="grid">
+            <div class="mini-card">
+              <div class="stat">
+                <div class="value">£12,480</div>
+                <div class="label">Net flow this month</div>
+              </div>
+            </div>
+            <div class="mini-card">
+              <div class="stat">
+                <div class="value">+18%</div>
+                <div class="label">Above target</div>
+              </div>
+            </div>
+          </div>
+          <div class="countdown">
+            <div class="metric">
+              <strong>Grid-first</strong>
+              <span>Sharper cards and a darker shell</span>
+            </div>
+            <div class="metric">
+              <strong>Signal accents</strong>
+              <span>Blue, green, red, and electric neutrals</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="option" data-choice="editorial-precision" onclick="toggleSelect(this)">
+      <div class="option-header">
+        <div class="letter">C</div>
+        <h3>Editorial Precision</h3>
+      </div>
+      <p>A premium print-inspired direction. Strong typography, slightly warmer neutrals, and a more curated, magazine-like identity.</p>
+      <div class="thumb editorial">
+        <div class="stack">
+          <div class="logo-sample">
+            <div class="lens"></div>
+            <div>MoneyLens</div>
+          </div>
+          <div class="mini-card">
+            <div class="stat">
+              <div class="value">£12,480</div>
+              <div class="label">Cashflow narrative</div>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="metric">
+              <strong>Warm neutrals</strong>
+              <span>Paper, walnut, ink, and accent blue</span>
+            </div>
+            <div class="metric">
+              <strong>Refined spacing</strong>
+              <span>More breathing room, less visual noise</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
