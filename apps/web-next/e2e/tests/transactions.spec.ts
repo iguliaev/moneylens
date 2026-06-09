@@ -732,6 +732,16 @@ test.describe("Transactions", () => {
       ).toBeVisible();
       await expect(page.getByText(otherNote)).not.toBeVisible();
     } finally {
+      await supabaseAdmin
+        .from("transactions")
+        .delete()
+        .eq("user_id", testUser.userId)
+        .like("notes", `persist-groceries-${ts}-%`);
+      await supabaseAdmin
+        .from("transactions")
+        .delete()
+        .eq("user_id", testUser.userId)
+        .eq("notes", otherNote);
       if (otherCategoryId) {
         await supabaseAdmin.from("categories").delete().eq("id", otherCategoryId);
       }
