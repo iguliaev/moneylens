@@ -613,6 +613,250 @@ test.describe("Transactions", () => {
     await expect(page.getByText("low-amount")).not.toBeVisible();
   });
 
+  test("category filter persists when moving to page 2", async ({ page }) => {
+    const ts = Date.now();
+    const now = new Date().toISOString();
+    const otherCategoryName = `Other Spend ${ts}`;
+    const otherNote = `persist-other-${ts}`;
+    let otherCategoryId: string | undefined;
+
+    try {
+      const { data: groceriesCategory, error: groceriesCategoryError } =
+        await supabaseAdmin
+          .from("categories")
+          .select("id")
+          .eq("user_id", testUser.userId)
+          .eq("type", "spend")
+          .eq("name", "Groceries")
+          .single();
+      if (groceriesCategoryError || !groceriesCategory?.id) {
+        throw new Error(
+          `Failed to resolve Groceries category: ${
+            groceriesCategoryError?.message ?? "missing category id"
+          }`
+        );
+      }
+
+      const { data: mainAccount, error: mainAccountError } = await supabaseAdmin
+        .from("bank_accounts")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("name", "Main Account")
+        .single();
+      if (mainAccountError || !mainAccount?.id) {
+        throw new Error(
+          `Failed to resolve Main Account: ${
+            mainAccountError?.message ?? "missing bank account id"
+          }`
+        );
+      }
+
+      const { data: otherCategory, error: otherCategoryError } =
+        await supabaseAdmin
+          .from("categories")
+          .insert({
+            user_id: testUser.userId,
+            type: "spend",
+            name: otherCategoryName,
+            description: "category-filter-persistence",
+            created_at: now,
+            updated_at: now,
+          })
+          .select("id")
+          .single();
+      if (otherCategoryError || !otherCategory?.id) {
+        throw new Error(
+          `Failed to create secondary spend category: ${
+            otherCategoryError?.message ?? "missing category id"
+          }`
+        );
+      }
+      otherCategoryId = otherCategory.id;
+
+      const filteredTransactions = Array.from({ length: 11 }).map((_, index) => ({
+        user_id: testUser.userId,
+        date: e2eCurrentMonthDate(15),
+        type: "spend" as const,
+        amount: 10 + index,
+        category: "Groceries",
+        category_id: groceriesCategory.id,
+        bank_account_id: mainAccount.id,
+        notes: `persist-groceries-${ts}-${index + 1}`,
+        created_at: now,
+        updated_at: now,
+      }));
+
+      const { error: transactionsError } = await supabaseAdmin
+        .from("transactions")
+        .insert([
+          ...filteredTransactions,
+          {
+            user_id: testUser.userId,
+            date: e2eCurrentMonthDate(1),
+            type: "spend" as const,
+            amount: 999,
+            category: otherCategoryName,
+            category_id: otherCategory.id,
+            bank_account_id: mainAccount.id,
+            notes: otherNote,
+            created_at: now,
+            updated_at: now,
+          },
+        ]);
+      if (transactionsError) {
+        throw new Error(`Failed to seed transactions: ${transactionsError.message}`);
+      }
+
+      await page.goto(
+        "/transactions?" +
+          "pageSize=10&currentPage=1" +
+          "&sorters[0][field]=date&sorters[0][order]=desc" +
+          "&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend" +
+          `&filters[1][field]=category_id&filters[1][operator]=in&filters[1][value][0]=${groceriesCategory.id}`
+      );
+      await page.waitForLoadState("networkidle");
+
+      await expect(page.getByText(otherNote)).not.toBeVisible();
+
+      const secondPageButton = page
+        .locator(".ant-pagination-item")
+        .filter({ hasText: /^2$/ })
+        .first();
+      await expect(secondPageButton).toBeVisible();
+      await secondPageButton.click();
+      await page.waitForLoadState("networkidle");
+
+      await expect(page).toHaveURL(/category_id/);
+      await expect(
+        page.getByText(new RegExp(`persist-groceries-${ts}-`)).first()
+      ).toBeVisible();
+      await expect(page.getByText(otherNote)).not.toBeVisible();
+    } finally {
+      if (otherCategoryId) {
+        await supabaseAdmin.from("categories").delete().eq("id", otherCategoryId);
+      }
+    }
+  });
+
+  test("switching transaction type clears active list filters", async ({ page }) => {
+    let hasRange416 = false;
+    page.on("response", (response) => {
+      if (
+        response.url().includes("/transactions_with_details") &&
+        response.status() === 416
+      ) {
+        hasRange416 = true;
+      }
+    });
+
+    const { data: groceriesCategory, error: groceriesCategoryError } =
+      await supabaseAdmin
+        .from("categories")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("type", "spend")
+        .eq("name", "Groceries")
+        .single();
+
+    if (groceriesCategoryError || !groceriesCategory?.id) {
+      throw new Error(
+        `Failed to resolve Groceries category: ${
+          groceriesCategoryError?.message ?? "missing category id"
+        }`
+      );
+    }
+
+    const { data: savingsCategory, error: savingsCategoryError } = await supabaseAdmin
+      .from("categories")
+      .select("id")
+      .eq("user_id", testUser.userId)
+      .eq("type", "save")
+      .eq("name", "Savings")
+      .single();
+
+    if (savingsCategoryError || !savingsCategory?.id) {
+      throw new Error(
+        `Failed to resolve Savings category: ${
+          savingsCategoryError?.message ?? "missing category id"
+        }`
+      );
+    }
+
+    const { data: mainAccount, error: mainAccountError } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("id")
+      .eq("user_id", testUser.userId)
+      .eq("name", "Main Account")
+      .single();
+
+    if (mainAccountError || !mainAccount?.id) {
+      throw new Error(
+        `Failed to resolve Main Account: ${
+          mainAccountError?.message ?? "missing bank account id"
+        }`
+      );
+    }
+
+    const ts = Date.now();
+    const now = new Date().toISOString();
+    const seededSpend = Array.from({ length: 65 }).map((_, index) => ({
+      user_id: testUser.userId,
+      date: e2eCurrentMonthDate(15),
+      type: "spend" as const,
+      amount: 10 + index,
+      category: "Groceries",
+      category_id: groceriesCategory.id,
+      bank_account_id: mainAccount.id,
+      notes: `switch-spend-${ts}-${index + 1}`,
+      created_at: now,
+      updated_at: now,
+    }));
+
+    const { error: transactionsError } = await supabaseAdmin
+      .from("transactions")
+      .insert([
+        ...seededSpend,
+        {
+          user_id: testUser.userId,
+          date: e2eCurrentMonthDate(15),
+          type: "save" as const,
+          amount: 777,
+          category: "Savings",
+          category_id: savingsCategory.id,
+          bank_account_id: mainAccount.id,
+          notes: `switch-save-${ts}`,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+    if (transactionsError) {
+      throw new Error(`Failed to seed transactions: ${transactionsError.message}`);
+    }
+
+    await page.goto(
+      "/transactions?" +
+        "pageSize=10&currentPage=7" +
+        "&sorters[0][field]=date&sorters[0][order]=desc" +
+        "&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend" +
+        `&filters[1][field]=category_id&filters[1][operator]=in&filters[1][value][0]=${groceriesCategory.id}`
+    );
+    await page.waitForLoadState("networkidle");
+    await expect(page).toHaveURL(/category_id/);
+    expect(hasRange416).toBeFalsy();
+
+    hasRange416 = false;
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(/^save$/i)
+      .click();
+    await page.waitForLoadState("networkidle");
+
+    await expect(page).toHaveURL(/currentPage=1/);
+    await expect(page).not.toHaveURL(/category_id|bank_account_id|tag_ids|amount/);
+    await expect(page.getByText(new RegExp(`switch-save-${ts}`))).toBeVisible();
+    expect(hasRange416).toBeFalsy();
+  });
+
   test("transaction form shows leaf categories only", async ({ page }) => {
     const ts = Date.now();
     const parentName = `e2e-leaf-parent-${ts}`;
