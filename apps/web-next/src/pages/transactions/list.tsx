@@ -12,7 +12,6 @@ import {
   getDefaultFilter,
 } from "@refinedev/antd";
 import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
-import { useState } from "react";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_LABELS,
@@ -51,26 +50,19 @@ const MultiSelectFilter = ({
 
 export const TransactionList = () => {
   const invalidate = useInvalidate();
-  const [transactionType, setTransactionType] = useState<string>(
-    TRANSACTION_TYPES.SPEND
-  );
 
-  const { tableProps, filters, setFilters } = useTable({
+  const { tableProps, filters, setFilters, setCurrentPage } = useTable({
     syncWithLocation: true,
     resource: "transactions_with_details",
     sorters: {
       initial: [{ field: "date", order: "desc" }],
     },
     filters: {
-      permanent: [
-        {
-          field: "type",
-          operator: "eq",
-          value: transactionType,
-        },
-      ],
+      initial: [{ field: "type", operator: "eq", value: TRANSACTION_TYPES.SPEND }],
     },
   });
+  const transactionType =
+    (getDefaultFilter("type", filters, "eq") as string) ?? TRANSACTION_TYPES.SPEND;
 
   // Category select - filtered by current transaction type
   const { selectProps: categorySelectProps } = useSelect({
@@ -112,7 +104,12 @@ export const TransactionList = () => {
           value: type,
         }))}
         value={transactionType}
-        onChange={(value) => setTransactionType(value as string)}
+        onChange={(value) => {
+          const nextType = value as string;
+          if (nextType === transactionType) return;
+          setCurrentPage(1);
+          setFilters([{ field: "type", operator: "eq", value: nextType }], "replace");
+        }}
       />
       {tableProps.loading && !tableProps.dataSource?.length ? (
         <TableSkeleton columns={7} />
@@ -171,7 +168,7 @@ export const TransactionList = () => {
               />
             </FilterDropdown>
           )}
-          defaultFilteredValue={getDefaultFilter("category_id", filters, "in")}
+          filteredValue={getDefaultFilter("category_id", filters, "in") ?? null}
         />
         <Table.Column
           dataIndex="amount"
@@ -186,7 +183,7 @@ export const TransactionList = () => {
               />
             </FilterDropdown>
           )}
-          defaultFilteredValue={getDefaultFilter("amount", filters, "eq")}
+          filteredValue={getDefaultFilter("amount", filters, "eq") ?? null}
         />
         <Table.Column
           key="tag_ids"
@@ -207,7 +204,7 @@ export const TransactionList = () => {
               />
             </FilterDropdown>
           )}
-          defaultFilteredValue={getDefaultFilter("tag_ids", filters, "in")}
+          filteredValue={getDefaultFilter("tag_ids", filters, "in") ?? null}
         />
         <Table.Column
           key="bank_account_id"
@@ -222,11 +219,11 @@ export const TransactionList = () => {
               />
             </FilterDropdown>
           )}
-          defaultFilteredValue={getDefaultFilter(
+          filteredValue={getDefaultFilter(
             "bank_account_id",
             filters,
             "in"
-          )}
+          ) ?? null}
         />
         <Table.Column
           key="notes"
