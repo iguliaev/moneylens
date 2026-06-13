@@ -1,7 +1,7 @@
 # Parent Categories via Closure Table (Design Spec)
 
 Date: 2026-06-01  
-Status: Approved for design phase
+Status: Implemented — PR [#189](https://github.com/iguliaev/moneylens/pull/189) · 2026-06-13
 
 ## 1. Goal
 

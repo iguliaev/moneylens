@@ -1,5 +1,7 @@
 # Parent Categories (Closure Table) Implementation Plan
 
+> **Status: ✅ COMPLETE — PR [#189](https://github.com/iguliaev/moneylens/pull/189) · 2026-06-13**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add parent/child categories with closure-table rollups, keep transactions leaf-only, and preserve bulk upload behavior with leaf category names.
