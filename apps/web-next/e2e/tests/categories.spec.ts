@@ -7,6 +7,7 @@ import {
   createCategoryForType,
   waitForFormReady,
   selectFromVisibleAntdDropdown,
+  supabaseAdmin,
 } from "../utils/test-helpers";
 
 test.describe("Categories", () => {
@@ -220,6 +221,76 @@ test.describe("Categories", () => {
     await expect(
       page.getByRole("cell", { name: spendCategoryName, exact: true })
     ).not.toBeVisible();
+  });
+
+  test("switching category type resets pagination and avoids 416", async ({
+    page,
+  }) => {
+    let hasRange416 = false;
+    page.on("response", (response) => {
+      if (
+        response.url().includes("/categories_with_usage") &&
+        response.status() === 416
+      ) {
+        hasRange416 = true;
+      }
+    });
+
+    const ts = Date.now();
+    const now = new Date().toISOString();
+    const categoryPrefix = `e2e-category-pagination-${ts}-`;
+    const extraSpendCategories = Array.from({ length: 11 }).map((_, index) => ({
+      user_id: testUser.userId,
+      type: "spend" as const,
+      name: `${categoryPrefix}${index + 1}`,
+      description: "pagination-regression",
+      created_at: now,
+      updated_at: now,
+    }));
+
+    try {
+      const { error: categoriesError } = await supabaseAdmin
+        .from("categories")
+        .insert(extraSpendCategories);
+      if (categoriesError) {
+        throw new Error(
+          `Failed to seed pagination categories: ${categoriesError.message}`
+        );
+      }
+
+      await page.goto("/categories");
+      await page.waitForLoadState("networkidle");
+
+      await page
+        .getByRole("radiogroup", { name: "segmented control" })
+        .getByText(/^spend$/i)
+        .click();
+      await page.waitForLoadState("networkidle");
+
+      const secondPageButton = page
+        .locator(".ant-pagination-item")
+        .filter({ hasText: /^2$/ })
+        .first();
+      await expect(secondPageButton).toBeVisible();
+      await secondPageButton.click();
+      await page.waitForLoadState("networkidle");
+      await expect(page).toHaveURL(/currentPage=2/);
+
+      await page
+        .getByRole("radiogroup", { name: "segmented control" })
+        .getByText(/^earn$/i)
+        .click();
+      await page.waitForLoadState("networkidle");
+
+      await expect(page).toHaveURL(/currentPage=1/);
+      expect(hasRange416).toBeFalsy();
+    } finally {
+      await supabaseAdmin
+        .from("categories")
+        .delete()
+        .eq("user_id", testUser.userId)
+        .like("name", `${categoryPrefix}%`);
+    }
   });
 
   [

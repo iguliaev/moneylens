@@ -20,7 +20,7 @@ export const CategoryList = () => {
     TRANSACTION_TYPES.EARN
   );
 
-  const { tableProps } = useTable({
+  const { tableProps, setCurrentPage } = useTable({
     syncWithLocation: true,
     resource: "categories_with_usage",
     filters: {
@@ -46,7 +46,12 @@ export const CategoryList = () => {
           value: type,
         }))}
         value={categoryType}
-        onChange={(value) => setCategoryType(value as string)}
+        onChange={(value) => {
+          const nextType = value as string;
+          if (nextType === categoryType) return;
+          setCurrentPage(1);
+          setCategoryType(nextType);
+        }}
       />
       {tableProps.loading && !tableProps.dataSource?.length ? (
         <TableSkeleton columns={4} />
