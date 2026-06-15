@@ -239,7 +239,7 @@ test.describe("Categories", () => {
     const ts = Date.now();
     const now = new Date().toISOString();
     const categoryPrefix = `e2e-category-pagination-${ts}-`;
-    const extraSpendCategories = Array.from({ length: 10 }).map((_, index) => ({
+    const extraSpendCategories = Array.from({ length: 11 }).map((_, index) => ({
       user_id: testUser.userId,
       type: "spend" as const,
       name: `${categoryPrefix}${index + 1}`,
