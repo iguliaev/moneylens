@@ -1,0 +1,116 @@
+name: Prepare Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version in vX.Y.Z format
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: prepare-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ inputs.version }}"
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version: $VERSION. Expected format vX.Y.Z."
+            exit 1
+          fi
+
+      - name: Ensure tag does not exist
+        run: |
+          VERSION="${{ inputs.version }}"
+          git fetch --tags --force origin
+          if git show-ref --verify --quiet "refs/tags/$VERSION"; then
+            echo "Tag already exists: $VERSION"
+            exit 1
+          fi
+
+      - name: Create or update release PR
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ inputs.version }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const version = process.env.VERSION;
+            const base = "release";
+            const head = "main";
+            const title = `release: ${version}`;
+
+            const tags = await github.paginate(github.rest.repos.listTags, {
+              owner,
+              repo,
+              per_page: 100
+            });
+
+            const previousTag = tags[0]?.name;
+
+            const releaseNotesParams = {
+              owner,
+              repo,
+              tag_name: version,
+              target_commitish: "main"
+            };
+
+            if (previousTag) {
+              releaseNotesParams.previous_tag_name = previousTag;
+            }
+
+            const notes = await github.rest.repos.generateReleaseNotes(releaseNotesParams);
+            const body = notes.data.body || "";
+
+            const openPrs = await github.rest.pulls.list({
+              owner,
+              repo,
+              base,
+              head: `${owner}:${head}`,
+              state: "open",
+              per_page: 100
+            });
+
+            if (openPrs.data.length > 0) {
+              const [primary, ...duplicates] = openPrs.data;
+
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number: primary.number,
+                title,
+                body
+              });
+
+              for (const pr of duplicates) {
+                await github.rest.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  state: "closed"
+                });
+              }
+            } else {
+              await github.rest.pulls.create({
+                owner,
+                repo,
+                title,
+                head,
+                base,
+                body
+              });
+            }
