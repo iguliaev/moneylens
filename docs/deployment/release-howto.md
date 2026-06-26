@@ -7,6 +7,7 @@ This guide describes the step-by-step process for creating a production release.
 - [`gh` CLI](https://cli.github.com/) installed and authenticated
 - Permission to open and merge PRs into the `release` branch
 - All intended changes are merged into `main` and verified on staging
+- Authenticate with `GITHUB_TOKEN` first; use a PAT only if workflow permissions or branch protection require it
 
 ---
 
@@ -22,34 +23,28 @@ Review the list of commits. If anything looks unexpected, resolve it before proc
 
 ---
 
-## Step 2 — Open a PR from main into release
+## Step 2 — Run release preparation workflow
 
-Since direct pushes to `release` are restricted, create a PR via `gh`:
+Trigger release prep with the target version:
 
 ```bash
-gh pr create --base release --head main --title "release: vX.Y.Z" --body "Production release vX.Y.Z"
+gh workflow run prepare-release.yaml -f version=vX.Y.Z
 ```
 
-Have the PR reviewed and approved, then merge it:
+This creates or updates a `main -> release` PR titled `release: vX.Y.Z` and pre-fills the PR body with generated release notes.
+
+---
+
+## Step 3 — Review and merge the release PR
+
+Review, approve, and merge the `release: vX.Y.Z` PR into `release`.
 
 ```bash
 gh pr merge --merge --subject "release: vX.Y.Z"
 ```
 
 > Use `--merge` (not `--squash`) to preserve individual commit history.  
-> Merging into `release` automatically triggers a production deployment.
-
----
-
-## Step 3 — Tag the release
-
-Pull the updated `release` branch locally first:
-
-```bash
-git checkout release && git pull origin release
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
+> Merging into `release` automatically triggers production deployment flow.
 
 Use [semantic versioning](https://semver.org/):
 - `vX.0.0` — breaking changes
@@ -58,25 +53,21 @@ Use [semantic versioning](https://semver.org/):
 
 ---
 
-## Step 4 — Create a GitHub Release
+## Step 4 — Automatic tag + GitHub Release
 
-```bash
-gh release create vX.Y.Z --title "vX.Y.Z" --generate-notes --target release
-```
-
-`--generate-notes` automatically generates a changelog from merged PRs since the last release.
-Use `--notes "..."` instead if you prefer to write the notes manually.
+After the release PR is merged, `finalize-release.yaml` runs automatically. It creates tag `vX.Y.Z` on the merge commit and publishes the matching GitHub Release with generated notes.
 
 ---
 
 ## Step 5 — Sync main (optional but recommended)
 
-If you want the merge commit back on `main`, open a PR from `release` → `main`:
+If you want the merge commit back on `main`, trigger the sync workflow:
 
 ```bash
-gh pr create --base main --head release --title "chore: sync release back to main" --body "Post-release sync"
-gh pr merge --merge
+gh workflow run sync-release-main.yaml
 ```
+
+This creates or updates a `release -> main` PR for review and merge.
 
 ---
 
@@ -116,7 +107,7 @@ gh pr merge --merge
 | Command | Purpose |
 |---|---|
 | `git log release..main --oneline` | Preview commits going into release |
-| `gh pr create --base release --head main` | Open release PR (required by branch rules) |
+| `gh workflow run prepare-release.yaml -f version=vX.Y.Z` | Create/update release PR with generated notes |
 | `gh pr merge --merge` | Merge with merge commit (preserves history) |
-| `git tag vX.Y.Z && git push origin vX.Y.Z` | Create and push a tag |
-| `gh release create vX.Y.Z --generate-notes` | Create GitHub Release with auto changelog |
+| `finalize-release.yaml` (auto on merged release PR) | Create tag and GitHub Release automatically |
+| `gh workflow run sync-release-main.yaml` | Create/update optional `release -> main` sync PR |
