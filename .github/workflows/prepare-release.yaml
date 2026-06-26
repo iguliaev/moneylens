@@ -54,6 +54,12 @@ jobs:
             const head = "main";
             const title = `release: ${version}`;
 
+            const compareSemver = (a, b) => {
+              if (a.major !== b.major) return a.major - b.major;
+              if (a.minor !== b.minor) return a.minor - b.minor;
+              return a.patch - b.patch;
+            };
+
             const tags = await github.paginate(github.rest.repos.listTags, {
               owner,
               repo,
@@ -71,15 +77,16 @@ jobs:
               };
             };
 
+            const targetSemver = parseSemver(version);
+
             const previousTag = tags
               .map((tag) => tag.name)
               .filter((tag) => semverTagPattern.test(tag))
               .map((tag) => ({ tag, semver: parseSemver(tag) }))
               .filter((entry) => entry.semver !== null)
+              .filter((entry) => compareSemver(entry.semver, targetSemver) < 0)
               .sort((a, b) => {
-                if (b.semver.major !== a.semver.major) return b.semver.major - a.semver.major;
-                if (b.semver.minor !== a.semver.minor) return b.semver.minor - a.semver.minor;
-                return b.semver.patch - a.semver.patch;
+                return compareSemver(b.semver, a.semver);
               })[0]?.tag;
 
             const releaseNotesParams = {
@@ -127,7 +134,7 @@ jobs:
                 console.log(`Closed duplicate release PR #${pr.number}.`);
               }
             } else {
-              await github.rest.pulls.create({
+              const created = await github.rest.pulls.create({
                 owner,
                 repo,
                 title,
@@ -135,5 +142,5 @@ jobs:
                 base,
                 body
               });
-              console.log(`Created release PR for ${version}.`);
+              console.log(`Created release PR #${created.data.number}: ${created.data.html_url}`);
             }
