@@ -60,7 +60,27 @@ jobs:
               per_page: 100
             });
 
-            const previousTag = tags[0]?.name;
+            const semverTagPattern = /^v\d+\.\d+\.\d+$/;
+            const parseSemver = (tag) => {
+              const match = /^v(\d+)\.(\d+)\.(\d+)$/.exec(tag);
+              if (!match) return null;
+              return {
+                major: Number(match[1]),
+                minor: Number(match[2]),
+                patch: Number(match[3])
+              };
+            };
+
+            const previousTag = tags
+              .map((tag) => tag.name)
+              .filter((tag) => semverTagPattern.test(tag))
+              .map((tag) => ({ tag, semver: parseSemver(tag) }))
+              .filter((entry) => entry.semver !== null)
+              .sort((a, b) => {
+                if (b.semver.major !== a.semver.major) return b.semver.major - a.semver.major;
+                if (b.semver.minor !== a.semver.minor) return b.semver.minor - a.semver.minor;
+                return b.semver.patch - a.semver.patch;
+              })[0]?.tag;
 
             const releaseNotesParams = {
               owner,
@@ -95,6 +115,7 @@ jobs:
                 title,
                 body
               });
+              console.log(`Updated release PR #${primary.number} for ${version}.`);
 
               for (const pr of duplicates) {
                 await github.rest.pulls.update({
@@ -103,6 +124,7 @@ jobs:
                   pull_number: pr.number,
                   state: "closed"
                 });
+                console.log(`Closed duplicate release PR #${pr.number}.`);
               }
             } else {
               await github.rest.pulls.create({
@@ -113,4 +135,5 @@ jobs:
                 base,
                 body
               });
+              console.log(`Created release PR for ${version}.`);
             }
