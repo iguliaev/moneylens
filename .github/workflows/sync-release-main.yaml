@@ -63,13 +63,31 @@ jobs:
                 core.info(`Closed duplicate sync PR #${pr.number}.`);
               }
             } else {
-              const created = await github.rest.pulls.create({
-                owner,
-                repo,
-                title,
-                head,
-                base,
-                body
-              });
-              core.info(`Created sync PR #${created.data.number}: ${created.data.html_url}`);
+              try {
+                const created = await github.rest.pulls.create({
+                  owner,
+                  repo,
+                  title,
+                  head,
+                  base,
+                  body
+                });
+                core.info(`Created sync PR #${created.data.number}: ${created.data.html_url}`);
+              } catch (error) {
+                const isNoDiff422 = error?.status === 422
+                  && (
+                    typeof error?.message === "string" && error.message.includes("No commits between")
+                    || Array.isArray(error?.response?.data?.errors)
+                      && error.response.data.errors.some((entry) =>
+                        typeof entry?.message === "string" && entry.message.includes("No commits between")
+                      )
+                  );
+
+                if (isNoDiff422) {
+                  core.info(`No sync PR created: ${head} and ${base} are already in sync (no commits to merge).`);
+                  return;
+                }
+
+                throw error;
+              }
             }
