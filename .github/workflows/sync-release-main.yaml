@@ -1,0 +1,75 @@
+name: Sync Release Back to Main
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: sync-release-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update release -> main sync PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const base = "main";
+            const head = "release";
+            const title = "chore: sync release back to main";
+            const body = [
+              "## Release → Main sync",
+              "",
+              "This PR keeps `main` aligned with release merge commits after a production release.",
+              "",
+              "_Managed by `.github/workflows/sync-release-main.yaml`._"
+            ].join("\n");
+
+            const openPrs = await github.rest.pulls.list({
+              owner,
+              repo,
+              base,
+              head: `${owner}:${head}`,
+              state: "open",
+              per_page: 100
+            });
+
+            if (openPrs.data.length > 0) {
+              const [primary, ...duplicates] = openPrs.data;
+
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number: primary.number,
+                title,
+                body
+              });
+              core.info(`Updated existing sync PR #${primary.number}.`);
+
+              for (const pr of duplicates) {
+                await github.rest.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  state: "closed"
+                });
+                core.info(`Closed duplicate sync PR #${pr.number}.`);
+              }
+            } else {
+              const created = await github.rest.pulls.create({
+                owner,
+                repo,
+                title,
+                head,
+                base,
+                body
+              });
+              core.info(`Created sync PR #${created.data.number}: ${created.data.html_url}`);
+            }
