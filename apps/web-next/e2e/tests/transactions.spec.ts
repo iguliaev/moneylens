@@ -867,6 +867,209 @@ test.describe("Transactions", () => {
     expect(hasRange416).toBeFalsy();
   });
 
+  test("category dropdown shows parent/child labels and supports parent-name search", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const parentName = `Vacations-${ts}`;
+    const childName = `Groceries-${ts}`;
+    const fullLabel = `${parentName} / ${childName}`;
+    const note = `txn-hierarchy-search-${ts}`;
+    let parentId: string | undefined;
+    let childId: string | undefined;
+
+    try {
+      const { data: parent, error: parentError } = await supabaseAdmin
+        .from("categories")
+        .insert({ user_id: testUser.userId, type: "spend", name: parentName })
+        .select("id")
+        .single();
+
+      if (parentError || !parent?.id) {
+        throw new Error(
+          `Failed to create parent category: ${
+            parentError?.message ?? "missing parent id"
+          }`
+        );
+      }
+      parentId = parent.id;
+
+      const { data: child, error: childError } = await supabaseAdmin
+        .from("categories")
+        .insert({
+          user_id: testUser.userId,
+          type: "spend",
+          name: childName,
+          parent_id: parent.id,
+        })
+        .select("id")
+        .single();
+
+      if (childError || !child?.id) {
+        throw new Error(
+          `Failed to create child category: ${
+            childError?.message ?? "missing child id"
+          }`
+        );
+      }
+      childId = child.id;
+
+      await page.goto("/transactions/create");
+      await page.waitForLoadState("networkidle");
+
+      await selectFromVisibleAntdDropdown(page, "* Type", "spend");
+
+      const categoryCombobox = page.getByRole("combobox", { name: "* Category" });
+      await categoryCombobox.click();
+
+      const categoryDropdown = page.locator(".ant-select-dropdown:visible");
+      await expect(categoryDropdown.getByTitle(fullLabel)).toBeVisible();
+
+      await categoryDropdown
+        .locator(".ant-select-selection-search-input")
+        .first()
+        .fill("vacat");
+      await expect(categoryDropdown.getByTitle(fullLabel)).toBeVisible();
+
+      await createTransactionWithoutTags(
+        page,
+        e2eCurrentMonthDate(),
+        "spend",
+        fullLabel,
+        "123.45",
+        "Main Account",
+        note
+      );
+
+      const row = getTransactionRow(page, { note, category: fullLabel });
+      await row.getByRole("button", { name: "edit" }).click();
+      await expect(page).toHaveURL(/\/transactions\/edit\//);
+      await waitForTransactionEditReady(page);
+
+      await expect(
+        page
+          .locator(".ant-select-selection-item")
+          .filter({ hasText: new RegExp(`^${fullLabel}$`, "i") })
+      ).toBeVisible();
+    } finally {
+      if (childId) {
+        await supabaseAdmin.from("categories").delete().eq("id", childId);
+      }
+      if (parentId) {
+        await supabaseAdmin.from("categories").delete().eq("id", parentId);
+      }
+    }
+  });
+
+  test("transactions list and details show consistent hierarchy label including legacy slash names", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const date = e2eCurrentMonthDate();
+    const parentName = `Category/Subcategory-${ts}`;
+    const childName = `Groceries-${ts}`;
+    const fullLabel = `${parentName} / ${childName}`;
+    const note = `txn-hierarchy-details-${ts}`;
+    let parentId: string | undefined;
+    let childId: string | undefined;
+
+    try {
+      const { data: parent, error: parentError } = await supabaseAdmin
+        .from("categories")
+        .insert({ user_id: testUser.userId, type: "spend", name: parentName })
+        .select("id")
+        .single();
+
+      if (parentError || !parent?.id) {
+        throw new Error(
+          `Failed to create parent category: ${
+            parentError?.message ?? "missing parent id"
+          }`
+        );
+      }
+      parentId = parent.id;
+
+      const { data: child, error: childError } = await supabaseAdmin
+        .from("categories")
+        .insert({
+          user_id: testUser.userId,
+          type: "spend",
+          name: childName,
+          parent_id: parent.id,
+        })
+        .select("id")
+        .single();
+
+      if (childError || !child?.id) {
+        throw new Error(
+          `Failed to create child category: ${
+            childError?.message ?? "missing child id"
+          }`
+        );
+      }
+      childId = child.id;
+
+      const { data: account, error: accountError } = await supabaseAdmin
+        .from("bank_accounts")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("name", "Main Account")
+        .single();
+
+      if (accountError || !account?.id) {
+        throw new Error(
+          `Failed to resolve Main Account: ${
+            accountError?.message ?? "missing account id"
+          }`
+        );
+      }
+
+      const { error: transactionError } = await supabaseAdmin
+        .from("transactions")
+        .insert({
+          user_id: testUser.userId,
+          date,
+          type: "spend",
+          category_id: child.id,
+          bank_account_id: account.id,
+          amount: 87.0,
+          notes: note,
+        });
+      if (transactionError) {
+        throw new Error(
+          `Failed to create transaction: ${transactionError.message}`
+        );
+      }
+
+      await page.goto("/transactions");
+      await page.waitForLoadState("networkidle");
+      await page
+        .getByRole("radiogroup", { name: "segmented control" })
+        .getByText(/^spend$/i)
+        .click();
+
+      const row = getTransactionRow(page, {
+        note,
+        date,
+        category: fullLabel,
+        amount: "87.00",
+        bankAccount: "Main Account",
+      });
+      await expect(row).toBeVisible();
+
+      await row.getByRole("button", { name: "show" }).click();
+      await expect(page).toHaveURL(/\/transactions\/show\//);
+      await expect(page.getByText(fullLabel)).toBeVisible();
+    } finally {
+      if (childId) {
+        await supabaseAdmin.from("categories").delete().eq("id", childId);
+      }
+      if (parentId) {
+        await supabaseAdmin.from("categories").delete().eq("id", parentId);
+      }
+    }
+  });
+
   test("transaction form shows leaf categories only", async ({ page }) => {
     const ts = Date.now();
     const parentName = `e2e-leaf-parent-${ts}`;
