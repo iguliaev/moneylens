@@ -55,6 +55,7 @@ Examples:
 
 - Search must match both parent and child terms.
 - Implement select filtering against a normalized search string containing both parts (for example: `"vacations groceries"`), while still rendering the visible label as `Vacations / Groceries`.
+- Treat historical category names that already contain `/` as literal names (no automatic hierarchy parsing from names).
 
 ### Transaction Details
 
@@ -78,7 +79,8 @@ Examples:
 
 1. Missing parent relation: show child name.
 2. Historical category shape changes: keep edit fallback option injection and render best available label.
-3. Empty category data during loading: preserve existing loading and skeleton behavior.
+3. Legacy slash-in-name categories: keep raw names and rely on spaced hierarchy delimiter to preserve readability (example: `Category/Subcategory / Groceries`).
+4. Empty category data during loading: preserve existing loading and skeleton behavior.
 
 ## Testing Strategy
 
@@ -97,4 +99,3 @@ Examples:
 1. Users can distinguish similarly named child categories at a glance in all transaction workflows.
 2. All in-scope surfaces use one identical category label format.
 3. Top-level categories remain readable and unchanged (`Name` only).
-
