@@ -67,11 +67,8 @@ export const CategoryList = () => {
           <Table.Column
             dataIndex="name"
             title="Name"
-            sorter
             render={(value: string, record: BaseRecord) =>
-              record.parent_name
-                ? `${record.parent_name} / ${value}`
-                : value
+              record.parent_name ? `${record.parent_name} / ${value}` : value
             }
           />
           <Table.Column dataIndex="description" title="Description" sorter />
