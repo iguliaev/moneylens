@@ -34,7 +34,13 @@ export const useBudgets = () => {
   const rows = (query.data?.data ?? []) as BudgetViewRow[];
 
   const budgets: BudgetProgress[] = rows.flatMap((b) => {
-    if (!b.id || !b.name || !b.type || b.created_at == null || b.updated_at == null)
+    if (
+      !b.id ||
+      !b.name ||
+      !b.type ||
+      b.created_at == null ||
+      b.updated_at == null
+    )
       return [];
     return [
       {

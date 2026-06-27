@@ -109,16 +109,31 @@ const renderTransactionItem = (
       >
         <FileTextOutlined style={{ marginTop: 3 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-            <Text strong ellipsis style={{ flex: 1 }}>{note}</Text>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Text strong ellipsis style={{ flex: 1 }}>
+              {note}
+            </Text>
             <Space size={4}>
               {t.amount != null && (
-                <Text type="secondary" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 12, whiteSpace: "nowrap" }}
+                >
                   {formatCurrency(t.amount, currency)}
                 </Text>
               )}
               {t.type && (
-                <Tag color={TYPE_COLORS[t.type]} style={{ margin: 0, fontSize: 11 }}>
+                <Tag
+                  color={TYPE_COLORS[t.type]}
+                  style={{ margin: 0, fontSize: 11 }}
+                >
                   {TRANSACTION_TYPE_LABELS[t.type]}
                 </Tag>
               )}
@@ -201,22 +216,36 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
             });
           }
 
-          const catItems = (catRes.data?.data ?? []) as Array<{ id: string | number; name: string }>;
+          const catItems = (catRes.data?.data ?? []) as Array<{
+            id: string | number;
+            name: string;
+          }>;
           if (catItems.length) {
             newOptions.push({
               label: renderTitle("Categories", "/categories"),
               options: catItems.map((c) =>
-                renderItem(c.name, `/categories/show/${c.id}`, <AppstoreOutlined />)
+                renderItem(
+                  c.name,
+                  `/categories/show/${c.id}`,
+                  <AppstoreOutlined />
+                )
               ),
             });
           }
 
-          const bankItems = (bankRes.data?.data ?? []) as Array<{ id: string | number; name: string }>;
+          const bankItems = (bankRes.data?.data ?? []) as Array<{
+            id: string | number;
+            name: string;
+          }>;
           if (bankItems.length) {
             newOptions.push({
               label: renderTitle("Bank Accounts", "/bank_accounts"),
               options: bankItems.map((b) =>
-                renderItem(b.name, `/bank_accounts/show/${b.id}`, <BankOutlined />)
+                renderItem(
+                  b.name,
+                  `/bank_accounts/show/${b.id}`,
+                  <BankOutlined />
+                )
               ),
             });
           }
@@ -262,7 +291,9 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
               }}
             >
               <Input
-                prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+                prefix={
+                  <SearchOutlined style={{ color: token.colorTextTertiary }} />
+                }
                 placeholder="Search transactions, categories, accounts…"
                 aria-label="global search"
               />

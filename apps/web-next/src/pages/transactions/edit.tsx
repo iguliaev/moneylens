@@ -58,13 +58,11 @@ export const TransactionEdit = () => {
 
   const leafCategoryOptions = useMemo(() => {
     const all = categoriesResult?.data ?? [];
-    const leaves = all
-      .filter(isLeafCategory)
-      .map((c: Category) => ({
-        label: formatCategoryLabel(c),
-        value: c.id,
-        searchText: getCategorySearchText(c),
-      }));
+    const leaves = all.filter(isLeafCategory).map((c: Category) => ({
+      label: formatCategoryLabel(c),
+      value: c.id,
+      searchText: getCategorySearchText(c),
+    }));
     // Always include the current category even if it has since become a parent,
     // so the form doesn't show a raw UUID or blank value.
     if (

@@ -18,11 +18,12 @@ export interface BudgetAlertState {
 export function getBudgetAlertState(
   currentAmount: number,
   targetAmount: number,
-  type: TransactionType,
+  type: TransactionType
 ): BudgetAlertState {
   // Exact ratio — used for threshold comparisons so that e.g. 79.6% does not
   // round up to 80 and falsely trigger "Near limit".
-  const rawPercent = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
+  const rawPercent =
+    targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
   // Rounded and clamped to [0, 100] for the AntD <Progress> bar.
   // Negative currentAmount (e.g. refunds) is clamped to 0.
   const percent = Math.max(0, Math.min(100, Math.round(rawPercent)));
@@ -46,7 +47,7 @@ export function getBudgetAlertState(
 export function getProgressStatus(
   alertLevel: BudgetAlertLevel,
   percent: number,
-  type: TransactionType,
+  type: TransactionType
 ): "normal" | "exception" | "success" {
   if (alertLevel === "warn") return "normal";
   if (alertLevel === "over") return "exception";

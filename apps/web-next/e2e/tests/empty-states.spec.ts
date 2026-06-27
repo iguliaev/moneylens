@@ -29,7 +29,9 @@ test.describe("Empty States", () => {
     // Verify empty state title and description are visible
     await expect(page.getByText("No Transactions Yet")).toBeVisible();
     await expect(
-      page.getByText("Start tracking your finances by adding your first transaction.")
+      page.getByText(
+        "Start tracking your finances by adding your first transaction."
+      )
     ).toBeVisible();
 
     // Verify CTA button is visible and clickable
@@ -50,7 +52,9 @@ test.describe("Empty States", () => {
     // Verify empty state title and description are visible
     await expect(page.getByText("No Budgets Yet")).toBeVisible();
     await expect(
-      page.getByText("Create a budget to track your spending goals and stay on target.")
+      page.getByText(
+        "Create a budget to track your spending goals and stay on target."
+      )
     ).toBeVisible();
 
     // Verify CTA button is visible and clickable
@@ -71,7 +75,9 @@ test.describe("Empty States", () => {
     // Verify empty state title and description are visible
     await expect(page.getByText("No Categories Yet")).toBeVisible();
     await expect(
-      page.getByText("Add categories to organize and track your transactions better.")
+      page.getByText(
+        "Add categories to organize and track your transactions better."
+      )
     ).toBeVisible();
 
     // Verify CTA button is visible and clickable
@@ -92,7 +98,9 @@ test.describe("Empty States", () => {
     // Verify empty state title and description are visible
     await expect(page.getByText("No Bank Accounts Yet")).toBeVisible();
     await expect(
-      page.getByText("Link your bank accounts to start tracking all your transactions in one place.")
+      page.getByText(
+        "Link your bank accounts to start tracking all your transactions in one place."
+      )
     ).toBeVisible();
 
     // Verify CTA button is visible and clickable
@@ -113,7 +121,9 @@ test.describe("Empty States", () => {
     // Verify empty state title and description are visible
     await expect(page.getByText("No Tags Yet")).toBeVisible();
     await expect(
-      page.getByText("Create tags to label and filter your transactions by custom attributes.")
+      page.getByText(
+        "Create tags to label and filter your transactions by custom attributes."
+      )
     ).toBeVisible();
 
     // Verify CTA button is visible and clickable
