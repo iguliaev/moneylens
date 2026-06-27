@@ -361,13 +361,15 @@ test.describe("Categories", () => {
       .getByText(/spend/i)
       .click();
 
-    // Parent row should be visible (plain name, no indent)
+    // Parent row should be visible (plain name — root categories show name only)
     await expect(
       page.getByRole("cell", { name: parentName, exact: true })
     ).toBeVisible();
 
-    // Child row should be visible with indent marker
-    await expect(page.getByText(`↳ ${childName}`)).toBeVisible();
+    // Child row should be visible as "Parent / Child" hierarchy label
+    await expect(
+      page.getByRole("cell", { name: `${parentName} / ${childName}`, exact: true })
+    ).toBeVisible();
   });
 
   test("show page displays parent category name", async ({ page }) => {
