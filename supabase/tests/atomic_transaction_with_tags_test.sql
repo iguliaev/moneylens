@@ -14,7 +14,7 @@ select tests.authenticate_as('atomic_user2@test.com');
 
 INSERT INTO public.categories (user_id, type, name)
 VALUES (auth.uid(), 'spend'::public.transaction_type, 'User2Cat')
-ON CONFLICT (user_id, type, name) DO NOTHING;
+ON CONFLICT ON CONSTRAINT unique_user_type_name DO NOTHING;
 
 INSERT INTO public.bank_accounts (user_id, name)
 VALUES (auth.uid(), 'User2Account')
@@ -29,7 +29,7 @@ select tests.authenticate_as('atomic_user1@test.com');
 -- Seed reference data for user1
 INSERT INTO public.categories (user_id, type, name)
 VALUES (auth.uid(), 'spend'::public.transaction_type, 'AtomicCat')
-ON CONFLICT (user_id, type, name) DO NOTHING;
+ON CONFLICT ON CONSTRAINT unique_user_type_name DO NOTHING;
 
 INSERT INTO public.bank_accounts (user_id, name)
 VALUES (auth.uid(), 'AtomicAccount')
