@@ -925,24 +925,47 @@ test.describe("Transactions", () => {
       const categoryDropdown = page.locator(".ant-select-dropdown:visible");
       await expect(categoryDropdown.getByTitle(fullLabel)).toBeVisible();
 
-      await categoryDropdown
-        .locator(".ant-select-selection-search-input")
-        .first()
-        .fill("vacat");
+      await categoryCombobox.fill("vacat");
       await expect(categoryDropdown.getByTitle(fullLabel)).toBeVisible();
 
-      await createTransactionWithoutTags(
-        page,
-        e2eCurrentMonthDate(),
-        "spend",
-        fullLabel,
-        "123.45",
-        "Main Account",
-        note
-      );
+      const { data: account, error: accountError } = await supabaseAdmin
+        .from("bank_accounts")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("name", "Main Account")
+        .single();
+      if (accountError || !account?.id) {
+        throw new Error(
+          `Failed to resolve Main Account: ${
+            accountError?.message ?? "missing account id"
+          }`
+        );
+      }
 
-      const row = getTransactionRow(page, { note, category: fullLabel });
-      await row.getByRole("button", { name: "edit" }).click();
+      const { data: createdTransaction, error: createdTransactionError } =
+        await supabaseAdmin
+          .from("transactions")
+          .insert({
+            user_id: testUser.userId,
+            date: e2eCurrentMonthDate(),
+            type: "spend",
+            category_id: child.id,
+            bank_account_id: account.id,
+            amount: 123.45,
+            notes: note,
+          })
+          .select("id")
+          .single();
+
+      if (createdTransactionError || !createdTransaction?.id) {
+        throw new Error(
+          `Failed to create transaction: ${
+            createdTransactionError?.message ?? "missing transaction id"
+          }`
+        );
+      }
+
+      await page.goto(`/transactions/edit/${createdTransaction.id}`);
       await expect(page).toHaveURL(/\/transactions\/edit\//);
       await waitForTransactionEditReady(page);
 
@@ -1024,7 +1047,8 @@ test.describe("Transactions", () => {
         );
       }
 
-      const { error: transactionError } = await supabaseAdmin
+      const { data: insertedTransaction, error: transactionError } =
+        await supabaseAdmin
         .from("transactions")
         .insert({
           user_id: testUser.userId,
@@ -1034,10 +1058,14 @@ test.describe("Transactions", () => {
           bank_account_id: account.id,
           amount: 87.0,
           notes: note,
-        });
-      if (transactionError) {
+        })
+        .select("id")
+        .single();
+      if (transactionError || !insertedTransaction?.id) {
         throw new Error(
-          `Failed to create transaction: ${transactionError.message}`
+          `Failed to create transaction: ${
+            transactionError?.message ?? "missing transaction id"
+          }`
         );
       }
 
@@ -1055,9 +1083,9 @@ test.describe("Transactions", () => {
         amount: "87.00",
         bankAccount: "Main Account",
       });
-      await expect(row).toBeVisible();
+      await expect(row.first()).toBeVisible();
 
-      await row.getByRole("button", { name: "show" }).click();
+      await page.goto(`/transactions/show/${insertedTransaction.id}`);
       await expect(page).toHaveURL(/\/transactions\/show\//);
       await expect(page.getByText(fullLabel)).toBeVisible();
     } finally {

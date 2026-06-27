@@ -548,6 +548,7 @@ export type Database = {
           in_use_count: number | null
           name: string | null
           parent_id: string | null
+          parent_name: string | null
           type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
           user_id: string | null
@@ -729,6 +730,7 @@ export type Database = {
           bank_account_name: string | null
           category_id: string | null
           category_name: string | null
+          category_parent_name: string | null
           category_type: Database["public"]["Enums"]["transaction_type"] | null
           created_at: string | null
           date: string | null

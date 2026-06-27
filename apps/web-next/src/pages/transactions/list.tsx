@@ -66,9 +66,14 @@ export const TransactionList = () => {
 
   // Category select - filtered by current transaction type
   const { selectProps: categorySelectProps } = useSelect({
-    resource: "categories",
-    optionLabel: "name",
-    optionValue: "id",
+    resource: "categories_with_usage",
+    optionLabel: (item: BaseRecord) => {
+      const name = typeof item.name === "string" ? item.name : "";
+      const parentName =
+        typeof item.parent_name === "string" ? item.parent_name : null;
+      return parentName ? `${parentName} / ${name}` : name;
+    },
+    optionValue: (item: BaseRecord) => String(item.id),
     filters: [{ field: "type", operator: "eq", value: transactionType }],
     ...commonSelectOptions,
     defaultValue: getDefaultFilter("category_id", filters, "in"),
@@ -160,6 +165,13 @@ export const TransactionList = () => {
           dataIndex="category_name"
           title="Category"
           sorter
+          render={(_: unknown, record: BaseRecord) => {
+            const parentName = record.category_parent_name as string | null;
+            const childName = record.category_name as string | null;
+            return parentName && childName
+              ? `${parentName} / ${childName}`
+              : (childName ?? "—");
+          }}
           filterDropdown={(props) => (
             <FilterDropdown {...props}>
               <MultiSelectFilter
