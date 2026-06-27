@@ -25,7 +25,9 @@ const selectMonthRangeByKey = async (
 
 test.describe("Dashboard month range validation", () => {
   test("charts tab allows single-month range", async ({ page }) => {
-    const { email, password, userId } = await createTestUser("dashboard-month-range");
+    const { email, password, userId } = await createTestUser(
+      "dashboard-month-range"
+    );
 
     try {
       await loginUser(page, email, password);
@@ -37,14 +39,20 @@ test.describe("Dashboard month range validation", () => {
       await expect(
         page.getByText("End month must not be before start month")
       ).not.toBeVisible();
-      await expect(page.getByText("Income vs Spending vs Savings")).toBeVisible();
+      await expect(
+        page.getByText("Income vs Spending vs Savings")
+      ).toBeVisible();
     } finally {
       await deleteTestUser(userId);
     }
   });
 
-  test("charts tab blocks invalid month range and shows warning", async ({ page }) => {
-    const { email, password, userId } = await createTestUser("dashboard-month-range");
+  test("charts tab blocks invalid month range and shows warning", async ({
+    page,
+  }) => {
+    const { email, password, userId } = await createTestUser(
+      "dashboard-month-range"
+    );
 
     try {
       await loginUser(page, email, password);
@@ -74,7 +82,8 @@ test.describe("Dashboard month range validation", () => {
       const chartRequestCountAtInvalidRange = chartRequestCount;
       await expect
         .poll(() => chartRequestCount, {
-          message: "invalid chart range should suppress chart data network requests",
+          message:
+            "invalid chart range should suppress chart data network requests",
           timeout: 2000,
         })
         .toBe(chartRequestCountAtInvalidRange);

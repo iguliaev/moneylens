@@ -22,11 +22,11 @@
 - Modify: `apps/web-next/src/index.tsx`
 - Modify: `apps/web-next/index.html`
 
-- [ ] **Step 1: Audit the current theme inputs**
+- [x] **Step 1: Audit the current theme inputs**
 
 Read the current light/dark wiring in `apps/web-next/src/contexts/color-mode/index.tsx`, the Vite entry in `apps/web-next/src/index.tsx`, and the HTML shell in `apps/web-next/index.html`. Confirm that Ant Design is currently using `RefineThemes.Blue` and that there is no global stylesheet imported yet.
 
-- [ ] **Step 2: Create the shared token contract**
+- [x] **Step 2: Create the shared token contract**
 
 Add `apps/web-next/src/theme/tokens.ts` with semantic tokens for both themes. The module must expose:
 
@@ -40,15 +40,15 @@ Add `apps/web-next/src/theme/tokens.ts` with semantic tokens for both themes. Th
 
 Keep the palette conservative: reuse the current blue/status intent, but centralize values behind semantic names rather than page-specific literals.
 
-- [ ] **Step 3: Wire Ant Design to the shared token layer**
+- [x] **Step 3: Wire Ant Design to the shared token layer**
 
 Update `apps/web-next/src/contexts/color-mode/index.tsx` so `ConfigProvider` consumes `lightThemeConfig`/`darkThemeConfig` from `src/theme/tokens.ts` instead of `RefineThemes.Blue`. Preserve the current `mode` state and localStorage behavior; only swap the theme source of truth.
 
-- [ ] **Step 4: Add global typography and page baseline styles**
+- [x] **Step 4: Add global typography and page baseline styles**
 
 Create `apps/web-next/src/styles/global.css` and import it from `apps/web-next/src/index.tsx`. Set the base system font stack, color, and page background there so React/Refine pages inherit consistent typography. Update `apps/web-next/index.html` so the document theme-color metadata matches the active light/dark theme.
 
-- [ ] **Step 5: Verify the app still compiles**
+- [x] **Step 5: Verify the app still compiles**
 
 Run:
 
@@ -59,7 +59,7 @@ npm run check-types
 
 Expected: `tsc --noEmit` passes with no errors.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 ```bash
 git add apps/web-next/src/theme/tokens.ts apps/web-next/src/styles/global.css apps/web-next/src/index.tsx apps/web-next/src/contexts/color-mode/index.tsx apps/web-next/index.html
@@ -76,19 +76,19 @@ git commit -m "feat(theme): add shared token layer and typography baseline"
 - Modify: `apps/web-next/src/pages/dashboard/components/TrendBadge.tsx`
 - Modify: `apps/web-next/src/pages/dashboard/components/TypeSummaryCards.tsx`
 
-- [ ] **Step 1: Replace hardcoded transaction colors at the constant layer**
+- [x] **Step 1: Replace hardcoded transaction colors at the constant layer**
 
 Update `TYPE_VALUE_COLORS` in `apps/web-next/src/constants/transactionTypes.ts` to derive from the shared token module instead of the current hex literals. Keep `TRANSACTION_TYPES`, `TRANSACTION_TYPE_OPTIONS`, and `TRANSACTION_TYPE_LABELS` unchanged.
 
-- [ ] **Step 2: Move chart grid and palette colors onto tokens**
+- [x] **Step 2: Move chart grid and palette colors onto tokens**
 
 Update the Recharts consumers so they pull from `chartPalette`, `borderSubtle`, or Ant Design token values instead of `#f0f0f0`, `#52c41a`, `#ff4d4f`, and `#1890ff`. The chart visuals should remain blue-first with the same meaning, just no raw hex literals.
 
-- [ ] **Step 3: Replace trend and statistic text colors**
+- [x] **Step 3: Replace trend and statistic text colors**
 
 Update `TrendBadge.tsx` and `TypeSummaryCards.tsx` to use semantic success/error/text-muted token values via `theme.useToken()` or token exports, so net income and trend indicators no longer embed hex strings.
 
-- [ ] **Step 4: Verify the dashboard files lint and type-check**
+- [x] **Step 4: Verify the dashboard files lint and type-check**
 
 Run:
 
@@ -106,7 +106,7 @@ npm run check-types
 
 Expected: ESLint and TypeScript both pass.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```bash
 git add apps/web-next/src/constants/transactionTypes.ts apps/web-next/src/pages/dashboard/components/TrendChart.tsx apps/web-next/src/pages/dashboard/components/SpendingTrendlineChart.tsx apps/web-next/src/pages/dashboard/components/TagBar.tsx apps/web-next/src/pages/dashboard/components/TrendBadge.tsx apps/web-next/src/pages/dashboard/components/TypeSummaryCards.tsx
@@ -121,15 +121,15 @@ git commit -m "feat(theme): tokenise dashboard colours"
 - Modify: `apps/web-next/src/pages/settings/index.tsx`
 - Modify: `apps/web-next/src/utility/budgetAlerts.ts`
 
-- [ ] **Step 1: Remove remaining literal colors from shared UI surfaces**
+- [x] **Step 1: Remove remaining literal colors from shared UI surfaces**
 
 Update the reusable empty state, environment banner, settings danger zone, and budget progress helpers so they use the shared token layer for text, borders, warning, and danger colors. Preserve the current behavior and wording; only replace the color plumbing.
 
-- [ ] **Step 2: Keep Ant Design component semantics intact**
+- [x] **Step 2: Keep Ant Design component semantics intact**
 
 Do not replace Ant Design `Alert`, `Card`, `Empty`, `Button`, or `Progress` with custom wrappers. The point of this task is to feed those existing components token values so the Refine/AntD stack stays idiomatic.
 
-- [ ] **Step 3: Verify the shared surfaces**
+- [x] **Step 3: Verify the shared surfaces**
 
 Run:
 
@@ -145,7 +145,7 @@ npm run check-types
 
 Expected: no lint errors and no type regressions.
 
-- [ ] **Step 4: Commit Task 3**
+- [x] **Step 4: Commit Task 3**
 
 ```bash
 git add apps/web-next/src/components/EmptyState.tsx apps/web-next/src/components/environment-banner/index.tsx apps/web-next/src/pages/settings/index.tsx apps/web-next/src/utility/budgetAlerts.ts
@@ -157,7 +157,7 @@ git commit -m "feat(theme): route shared surfaces through tokens"
 **Files:**
 - Create: `apps/web-next/e2e/tests/theme-tokens.spec.ts`
 
-- [ ] **Step 1: Write a focused token regression spec**
+- [x] **Step 1: Write a focused token regression spec**
 
 Use the existing helpers from `apps/web-next/e2e/utils/test-helpers.ts` and cover three cases in one new file:
 
@@ -165,7 +165,7 @@ Use the existing helpers from `apps/web-next/e2e/utils/test-helpers.ts` and cove
 2. the dashboard renders tokenized cards/charts/table surfaces in light mode
 3. the theme toggle or dark-mode path still renders the same surfaces with the dark token set
 
-- [ ] **Step 2: Run the new smoke test by itself**
+- [x] **Step 2: Run the new smoke test by itself**
 
 Run:
 
@@ -176,7 +176,7 @@ npm run test:e2e:ci -- e2e/tests/theme-tokens.spec.ts
 
 Expected: the new spec passes before broader verification begins.
 
-- [ ] **Step 3: Run the full validation suite**
+- [x] **Step 3: Run the full validation suite**
 
 Run:
 
@@ -189,7 +189,7 @@ npm run test:e2e:ci
 
 Expected: typecheck passes, production build succeeds, and the Playwright suite passes.
 
-- [ ] **Step 4: Commit Task 4**
+- [x] **Step 4: Commit Task 4**
 
 ```bash
 git add apps/web-next/e2e/tests/theme-tokens.spec.ts

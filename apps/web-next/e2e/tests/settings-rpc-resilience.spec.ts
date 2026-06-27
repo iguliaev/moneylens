@@ -44,7 +44,10 @@ test.describe("Settings RPC resilience", () => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: /import.*export/i }).click();
 
-    const fixturePath = path.join(__dirname, "../fixtures/valid-bulk-upload.json");
+    const fixturePath = path.join(
+      __dirname,
+      "../fixtures/valid-bulk-upload.json"
+    );
     await page.locator("input[type='file']").setInputFiles(fixturePath);
     await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
 
@@ -53,7 +56,9 @@ test.describe("Settings RPC resilience", () => {
       .getByRole("alert")
       .filter({ hasText: /error/i });
     await expect(errorAlert).toBeVisible();
-    await expect(errorAlert).toContainText(/simulated bulk upload rpc failure/i);
+    await expect(errorAlert).toContainText(
+      /simulated bulk upload rpc failure/i
+    );
   });
 
   test("data reset closes modal and shows standardized reset error notification", async ({
@@ -79,7 +84,9 @@ test.describe("Settings RPC resilience", () => {
       .getByRole("button", { name: /yes.*delete.*everything/i })
       .click();
 
-    await expect(page.getByRole("dialog", { name: /reset all data/i })).not.toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: /reset all data/i })
+    ).not.toBeVisible();
 
     const errorAlert = page
       .getByRole("tabpanel", { name: /danger zone/i })

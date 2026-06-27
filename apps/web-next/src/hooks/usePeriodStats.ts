@@ -111,13 +111,11 @@ export function usePeriodStats({
     pagination: { mode: "off" },
   });
 
-  const { query: prevTypeQuery } = useList<MonthlyTotalsRow | YearlyTotalsRow>(
-    {
-      resource: typesResource,
-      filters: prevFilters,
-      pagination: { mode: "off" },
-    }
-  );
+  const { query: prevTypeQuery } = useList<MonthlyTotalsRow | YearlyTotalsRow>({
+    resource: typesResource,
+    filters: prevFilters,
+    pagination: { mode: "off" },
+  });
 
   const typeSummary = mapTypeSummary(typeQuery.data?.data ?? []);
   const categorySummary = mapCategorySummary(categoryQuery.data?.data ?? []);

@@ -26,12 +26,21 @@ export const MonthRangePicker = ({
   const value = { startYear, startMonth, endYear, endMonth };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        flexWrap: "wrap",
+      }}
+    >
       <Text strong>{singleMonth ? "Year:" : "From:"}</Text>
       <Select
         aria-label={singleMonth ? "Year" : "From year"}
         value={startYear}
-        onChange={(nextStartYear) => onChange({ ...value, startYear: nextStartYear })}
+        onChange={(nextStartYear) =>
+          onChange({ ...value, startYear: nextStartYear })
+        }
         options={yearOptions}
         style={{ width: 100 }}
       />
@@ -50,14 +59,18 @@ export const MonthRangePicker = ({
           <Select
             aria-label="To year"
             value={endYear}
-            onChange={(nextEndYear) => onChange({ ...value, endYear: nextEndYear })}
+            onChange={(nextEndYear) =>
+              onChange({ ...value, endYear: nextEndYear })
+            }
             options={yearOptions}
             style={{ width: 100 }}
           />
           <Select
             aria-label="To month"
             value={endMonth}
-            onChange={(nextEndMonth) => onChange({ ...value, endMonth: nextEndMonth })}
+            onChange={(nextEndMonth) =>
+              onChange({ ...value, endMonth: nextEndMonth })
+            }
             options={monthOptions}
             style={{ width: 130 }}
           />

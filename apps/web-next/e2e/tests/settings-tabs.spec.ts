@@ -45,7 +45,9 @@ test.describe("Settings Tabs", () => {
 
     // Should see currency section
     await expect(page.getByText(/choose the currency/i)).toBeVisible();
-    const currencyCard = page.locator(".ant-card").filter({ hasText: /choose the currency/i });
+    const currencyCard = page
+      .locator(".ant-card")
+      .filter({ hasText: /choose the currency/i });
     await expect(currencyCard.getByRole("combobox")).toBeVisible();
   });
 
@@ -62,7 +64,9 @@ test.describe("Settings Tabs", () => {
     // Should see bulk upload section
     await expect(page.getByText(/bulk upload/i)).toBeVisible();
     await expect(page.getByText(/upload a json file/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: /select json file/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /select json file/i })
+    ).toBeVisible();
   });
 
   test("danger zone tab shows reset data section", async ({ page }) => {
@@ -76,8 +80,12 @@ test.describe("Settings Tabs", () => {
     await expect(dangerZoneTab).toHaveAttribute("aria-selected", "true");
 
     // Should see danger zone section
-    await expect(page.getByText(/permanently delete all your data/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: /reset.*all.*data/i })).toBeVisible();
+    await expect(
+      page.getByText(/permanently delete all your data/i)
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /reset.*all.*data/i })
+    ).toBeVisible();
   });
 
   test("can switch between tabs", async ({ page }) => {
@@ -99,7 +107,9 @@ test.describe("Settings Tabs", () => {
     const dangerZoneTab = page.getByRole("tab", { name: dangerZoneTabName });
     await dangerZoneTab.click();
     await expect(dangerZoneTab).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText(/permanently delete all your data/i)).toBeVisible();
+    await expect(
+      page.getByText(/permanently delete all your data/i)
+    ).toBeVisible();
     await expect(page.getByText(/choose the currency/i)).not.toBeVisible();
 
     // Switch back to General

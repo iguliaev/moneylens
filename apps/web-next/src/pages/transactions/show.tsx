@@ -3,6 +3,8 @@ import { Show, TextField, DateField } from "@refinedev/antd";
 import { Typography, Skeleton } from "antd";
 import { formatCurrency } from "../../utility";
 import { useCurrency } from "../../contexts/currency";
+import type { Category } from "../../utility/categoryHierarchy";
+import { categoryLabel } from "../../utility/categoryHierarchy";
 
 const { Title } = Typography;
 
@@ -14,6 +16,9 @@ export const TransactionShow = () => {
   const categoryQuery = useOne({
     resource: "categories",
     id: record?.category_id ?? "",
+    meta: {
+      select: "id,name,parent:parent_id(id,name)",
+    },
     queryOptions: {
       enabled: !!record?.category_id,
     },
@@ -41,7 +46,7 @@ export const TransactionShow = () => {
       {categoryIsLoading ? (
         <Skeleton.Input active size="small" style={{ width: 120 }} />
       ) : (
-        <>{categoryData?.name}</>
+        <>{categoryData ? categoryLabel(categoryData as Category) : "—"}</>
       )}
       <Title level={5}>Amount</Title>
       <TextField value={formatCurrency(record?.amount ?? 0, currency)} />

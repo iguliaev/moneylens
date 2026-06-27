@@ -43,7 +43,8 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
       const transactionFields = {
         ...rawFields,
         date:
-          rawFields.date && typeof (rawFields.date as Dayjs).format === "function"
+          rawFields.date &&
+          typeof (rawFields.date as Dayjs).format === "function"
             ? (rawFields.date as Dayjs).format("YYYY-MM-DD")
             : String(rawFields.date),
       } satisfies TransactionWithTagsInput;
@@ -51,7 +52,10 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
       let error: { message: string } | null = null;
 
       if (mode === "create") {
-        const result = await createTransactionWithTags(transactionFields, tagIds);
+        const result = await createTransactionWithTags(
+          transactionFields,
+          tagIds
+        );
         error = result.error;
       } else {
         if (!id) throw new Error("id is required for edit mode");

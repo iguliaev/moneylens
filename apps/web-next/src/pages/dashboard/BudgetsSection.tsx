@@ -88,13 +88,13 @@ export const BudgetsSection = () => {
             const { percent, alertLevel } = getBudgetAlertState(
               budget.current_amount,
               budget.target_amount,
-              budget.type,
+              budget.type
             );
 
             const progressStatus = getProgressStatus(
               alertLevel,
               percent,
-              budget.type,
+              budget.type
             );
 
             return (

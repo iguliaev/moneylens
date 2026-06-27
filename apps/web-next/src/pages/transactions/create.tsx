@@ -5,7 +5,11 @@ import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
 import type { Category } from "../../utility/categoryHierarchy";
-import { isLeafCategory } from "../../utility/categoryHierarchy";
+import {
+  categoryLabel,
+  categorySearchText,
+  isLeafCategory,
+} from "../../utility/categoryHierarchy";
 
 export const TransactionCreate = () => {
   const { formProps, saveButtonProps } = useForm({
@@ -25,7 +29,11 @@ export const TransactionCreate = () => {
 
   const leafCategoryOptions = (categoriesResult?.data ?? [])
     .filter(isLeafCategory)
-    .map((c: Category) => ({ label: c.name, value: c.id }));
+    .map((c: Category) => ({
+      label: categoryLabel(c),
+      value: c.id,
+      searchText: categorySearchText(c),
+    }));
 
   const { options: tagOptions, query: tagsQuery } = useCoreSelect({
     resource: "tags",
@@ -71,11 +79,20 @@ export const TransactionCreate = () => {
           <Select
             options={leafCategoryOptions}
             showSearch
-            filterOption={(input, option) =>
-              (option?.label as string)
-                ?.toLowerCase()
-                .includes(input.toLowerCase())
-            }
+            filterOption={(input, option) => {
+              const normalized = input.toLowerCase();
+              const label = String(option?.label ?? "").toLowerCase();
+              const searchText =
+                option &&
+                typeof option === "object" &&
+                "searchText" in option &&
+                typeof option.searchText === "string"
+                  ? option.searchText
+                  : "";
+              return (
+                label.includes(normalized) || searchText.includes(normalized)
+              );
+            }}
           />
         </Form.Item>
         <Form.Item

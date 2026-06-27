@@ -45,7 +45,9 @@ test.describe("Theme tokens", () => {
         "background-color",
         scenario.bodyColor
       );
-      await expect(page.locator('meta[name="theme-color"]').first()).toHaveAttribute(
+      await expect(
+        page.locator('meta[name="theme-color"]').first()
+      ).toHaveAttribute(
         "content",
         scenario.bodyColor === "rgb(245, 247, 251)" ? "#f5f7fb" : "#0f172a"
       );

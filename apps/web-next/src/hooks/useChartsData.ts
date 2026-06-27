@@ -6,10 +6,7 @@ import {
   TRANSACTION_TYPES,
   type TransactionType,
 } from "../constants/transactionTypes";
-import {
-  getMonthKeysInRange,
-  formatMonthLabel,
-} from "../utility/monthHelpers";
+import { getMonthKeysInRange, formatMonthLabel } from "../utility/monthHelpers";
 import { toError } from "../utility/errors";
 
 export interface TrendPoint {
@@ -53,7 +50,11 @@ type MonthlyTaggedTypeTotalsRow = Pick<
 const isTransactionType = (v: string | null): v is TransactionType =>
   v !== null && Object.values(TRANSACTION_TYPES).includes(v as TransactionType);
 
-export function useChartsData(startDate: string, endDate: string, enabled = true) {
+export function useChartsData(
+  startDate: string,
+  endDate: string,
+  enabled = true
+) {
   const filters = [
     { field: "month", operator: "gte" as const, value: startDate },
     { field: "month", operator: "lt" as const, value: endDate },
@@ -97,7 +98,12 @@ export function useChartsData(startDate: string, endDate: string, enabled = true
     const trendMap: Record<string, TrendPoint> = Object.fromEntries(
       trendMonthKeys.map((monthKey) => [
         monthKey,
-        { month: formatMonthLabel(`${monthKey}-01`), earn: 0, spend: 0, save: 0 },
+        {
+          month: formatMonthLabel(`${monthKey}-01`),
+          earn: 0,
+          spend: 0,
+          save: 0,
+        },
       ])
     );
     for (const row of trendQuery.data?.data ?? []) {
@@ -145,7 +151,10 @@ export function useChartsData(startDate: string, endDate: string, enabled = true
         }
       }
     }
-    return { tags: Object.values(tagMap).sort((a, b) => b.total - a.total), tagSpendByMonth };
+    return {
+      tags: Object.values(tagMap).sort((a, b) => b.total - a.total),
+      tagSpendByMonth,
+    };
   }, [tagQuery.data]);
 
   return { trend, tags, categorySpendByMonth, tagSpendByMonth, loading, error };

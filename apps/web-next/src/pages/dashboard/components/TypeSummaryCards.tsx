@@ -69,10 +69,7 @@ export const TypeSummaryCards = ({
             value={netIncome}
             precision={2}
             formatter={(value) =>
-              formatCurrency(
-                typeof value === "number" ? value : 0,
-                currency
-              )
+              formatCurrency(typeof value === "number" ? value : 0, currency)
             }
             loading={loading}
             valueStyle={{
