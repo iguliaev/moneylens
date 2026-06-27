@@ -14,7 +14,7 @@ select tests.authenticate_as('tx_user1@test.com');
 -- Prepare supporting data: category and bank_account
 INSERT INTO public.categories (user_id, type, name)
 VALUES (auth.uid(), 'spend'::public.transaction_type, 'TestCat')
-ON CONFLICT (user_id, type, name) DO NOTHING;
+ON CONFLICT ON CONSTRAINT unique_user_type_name DO NOTHING;
 
 INSERT INTO public.bank_accounts (user_id, name)
 VALUES (auth.uid(), 'TestAccount')

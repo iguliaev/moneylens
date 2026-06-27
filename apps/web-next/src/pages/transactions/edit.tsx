@@ -9,7 +9,11 @@ import {
 } from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
 import type { Category } from "../../utility/categoryHierarchy";
-import { isLeafCategory } from "../../utility/categoryHierarchy";
+import {
+  categoryLabel as formatCategoryLabel,
+  categorySearchText as getCategorySearchText,
+  isLeafCategory,
+} from "../../utility/categoryHierarchy";
 
 export const TransactionEdit = () => {
   const { formProps, saveButtonProps, query, id, formLoading } = useForm({
@@ -56,7 +60,11 @@ export const TransactionEdit = () => {
     const all = categoriesResult?.data ?? [];
     const leaves = all
       .filter(isLeafCategory)
-      .map((c: Category) => ({ label: c.name, value: c.id }));
+      .map((c: Category) => ({
+        label: formatCategoryLabel(c),
+        value: c.id,
+        searchText: getCategorySearchText(c),
+      }));
     // Always include the current category even if it has since become a parent,
     // so the form doesn't show a raw UUID or blank value.
     if (
@@ -65,7 +73,11 @@ export const TransactionEdit = () => {
     ) {
       const current = all.find((c: Category) => c.id === currentCategoryId);
       if (current) {
-        leaves.unshift({ label: current.name, value: current.id });
+        leaves.unshift({
+          label: formatCategoryLabel(current),
+          value: current.id,
+          searchText: getCategorySearchText(current),
+        });
       }
     }
     return leaves;
@@ -146,11 +158,20 @@ export const TransactionEdit = () => {
             options={leafCategoryOptions}
             loading={categoriesQuery.isLoading}
             showSearch
-            filterOption={(input, option) =>
-              (option?.label as string)
-                ?.toLowerCase()
-                .includes(input.toLowerCase())
-            }
+            filterOption={(input, option) => {
+              const normalized = input.toLowerCase();
+              const label = String(option?.label ?? "").toLowerCase();
+              const searchText =
+                option &&
+                typeof option === "object" &&
+                "searchText" in option &&
+                typeof option.searchText === "string"
+                  ? option.searchText
+                  : "";
+              return (
+                label.includes(normalized) || searchText.includes(normalized)
+              );
+            }}
           />
         </Form.Item>
         <Form.Item

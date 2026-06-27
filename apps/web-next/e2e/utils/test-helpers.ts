@@ -50,7 +50,9 @@ export async function createTestUser(seed?: string) {
     if (!error) {
       const userId = (data as { user?: { id?: string } } | null)?.user?.id;
       if (!userId) {
-        throw new Error("Supabase createUser succeeded without returning user id");
+        throw new Error(
+          "Supabase createUser succeeded without returning user id"
+        );
       }
       return { email, password, userId };
     }
@@ -142,9 +144,13 @@ export async function waitForFormReady(page: Page, testId: string) {
 
 export async function waitForTransactionEditReady(page: Page) {
   await waitForFormReady(page, "transaction-edit-form");
-  await expect(page.getByRole("heading", { name: "Edit Transaction" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Edit Transaction" })
+  ).toBeVisible();
   await expect(page.getByRole("combobox", { name: "* Type" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "* Category" })).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "* Category" })
+  ).toBeVisible();
 }
 
 export async function waitForChartsTabReady(page: Page) {
@@ -157,7 +163,9 @@ export async function selectFromVisibleAntdDropdown(
   optionTitle: string
 ) {
   const escapedTitle = optionTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  await page.getByRole("combobox", { name: comboboxName }).click({ force: true });
+  await page
+    .getByRole("combobox", { name: comboboxName })
+    .click({ force: true });
   const option = page
     .locator(".ant-select-dropdown:visible")
     .getByTitle(new RegExp(`^${escapedTitle}$`, "i"));
@@ -198,7 +206,7 @@ export async function seedReferenceDataForUser(userId: string) {
   ];
   const { error: categoriesError } = await supabaseAdmin
     .from("categories")
-    .upsert(categories, { onConflict: "user_id,type,name" });
+    .upsert(categories, { onConflict: "user_id,type,name,parent_id" });
   if (categoriesError)
     throw new Error(`Failed to seed categories: ${categoriesError.message}`);
 
@@ -689,7 +697,7 @@ export async function seedReferenceDataWithPrefix(
   ];
   const { error: catError } = await supabaseAdmin
     .from("categories")
-    .upsert(categories, { onConflict: "user_id,type,name" });
+    .upsert(categories, { onConflict: "user_id,type,name,parent_id" });
   if (catError)
     throw new Error(`Failed to seed categories: ${catError.message}`);
 

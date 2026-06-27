@@ -673,18 +673,20 @@ test.describe("Transactions", () => {
       }
       otherCategoryId = otherCategory.id;
 
-      const filteredTransactions = Array.from({ length: 11 }).map((_, index) => ({
-        user_id: testUser.userId,
-        date: e2eCurrentMonthDate(15),
-        type: "spend" as const,
-        amount: 10 + index,
-        category: "Groceries",
-        category_id: groceriesCategory.id,
-        bank_account_id: mainAccount.id,
-        notes: `persist-groceries-${ts}-${index + 1}`,
-        created_at: now,
-        updated_at: now,
-      }));
+      const filteredTransactions = Array.from({ length: 11 }).map(
+        (_, index) => ({
+          user_id: testUser.userId,
+          date: e2eCurrentMonthDate(15),
+          type: "spend" as const,
+          amount: 10 + index,
+          category: "Groceries",
+          category_id: groceriesCategory.id,
+          bank_account_id: mainAccount.id,
+          notes: `persist-groceries-${ts}-${index + 1}`,
+          created_at: now,
+          updated_at: now,
+        })
+      );
 
       const { error: transactionsError } = await supabaseAdmin
         .from("transactions")
@@ -704,7 +706,9 @@ test.describe("Transactions", () => {
           },
         ]);
       if (transactionsError) {
-        throw new Error(`Failed to seed transactions: ${transactionsError.message}`);
+        throw new Error(
+          `Failed to seed transactions: ${transactionsError.message}`
+        );
       }
 
       await page.goto(
@@ -743,12 +747,17 @@ test.describe("Transactions", () => {
         .eq("user_id", testUser.userId)
         .eq("notes", otherNote);
       if (otherCategoryId) {
-        await supabaseAdmin.from("categories").delete().eq("id", otherCategoryId);
+        await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", otherCategoryId);
       }
     }
   });
 
-  test("switching transaction type clears active list filters", async ({ page }) => {
+  test("switching transaction type clears active list filters", async ({
+    page,
+  }) => {
     let hasRange416 = false;
     page.on("response", (response) => {
       if (
@@ -776,13 +785,14 @@ test.describe("Transactions", () => {
       );
     }
 
-    const { data: savingsCategory, error: savingsCategoryError } = await supabaseAdmin
-      .from("categories")
-      .select("id")
-      .eq("user_id", testUser.userId)
-      .eq("type", "save")
-      .eq("name", "Savings")
-      .single();
+    const { data: savingsCategory, error: savingsCategoryError } =
+      await supabaseAdmin
+        .from("categories")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("type", "save")
+        .eq("name", "Savings")
+        .single();
 
     if (savingsCategoryError || !savingsCategory?.id) {
       throw new Error(
@@ -840,7 +850,9 @@ test.describe("Transactions", () => {
         },
       ]);
     if (transactionsError) {
-      throw new Error(`Failed to seed transactions: ${transactionsError.message}`);
+      throw new Error(
+        `Failed to seed transactions: ${transactionsError.message}`
+      );
     }
 
     await page.goto(
@@ -862,15 +874,309 @@ test.describe("Transactions", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page).toHaveURL(/currentPage=1/);
-    await expect(page).not.toHaveURL(/category_id|bank_account_id|tag_ids|amount/);
+    await expect(page).not.toHaveURL(
+      /category_id|bank_account_id|tag_ids|amount/
+    );
     await expect(page.getByText(new RegExp(`switch-save-${ts}`))).toBeVisible();
     expect(hasRange416).toBeFalsy();
+  });
+
+  test("category dropdown shows parent/child labels and supports parent-name search", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const parentName = `Vacations-${ts}`;
+    const childName = `Groceries-${ts}`;
+    const fullLabel = `${parentName} / ${childName}`;
+    const note = `txn-hierarchy-search-${ts}`;
+    let parentId: string | undefined;
+    let childId: string | undefined;
+    let transactionId: string | undefined;
+
+    try {
+      const { data: parent, error: parentError } = await supabaseAdmin
+        .from("categories")
+        .insert({ user_id: testUser.userId, type: "spend", name: parentName })
+        .select("id")
+        .single();
+
+      if (parentError || !parent?.id) {
+        throw new Error(
+          `Failed to create parent category: ${
+            parentError?.message ?? "missing parent id"
+          }`
+        );
+      }
+      parentId = parent.id;
+
+      const { data: child, error: childError } = await supabaseAdmin
+        .from("categories")
+        .insert({
+          user_id: testUser.userId,
+          type: "spend",
+          name: childName,
+          parent_id: parent.id,
+        })
+        .select("id")
+        .single();
+
+      if (childError || !child?.id) {
+        throw new Error(
+          `Failed to create child category: ${
+            childError?.message ?? "missing child id"
+          }`
+        );
+      }
+      childId = child.id;
+
+      await page.goto("/transactions/create");
+      await page.waitForLoadState("networkidle");
+
+      await selectFromVisibleAntdDropdown(page, "* Type", "spend");
+
+      const categoryCombobox = page.getByRole("combobox", {
+        name: "* Category",
+      });
+      await categoryCombobox.click();
+
+      const categoryDropdown = page.locator(".ant-select-dropdown:visible");
+      await expect(categoryDropdown.getByTitle(fullLabel)).toBeVisible();
+
+      await categoryCombobox.fill("vacat");
+      await expect(categoryDropdown.getByTitle(fullLabel)).toBeVisible();
+
+      const { data: account, error: accountError } = await supabaseAdmin
+        .from("bank_accounts")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("name", "Main Account")
+        .single();
+      if (accountError || !account?.id) {
+        throw new Error(
+          `Failed to resolve Main Account: ${
+            accountError?.message ?? "missing account id"
+          }`
+        );
+      }
+
+      const { data: createdTransaction, error: createdTransactionError } =
+        await supabaseAdmin
+          .from("transactions")
+          .insert({
+            user_id: testUser.userId,
+            date: e2eCurrentMonthDate(),
+            type: "spend",
+            category_id: child.id,
+            bank_account_id: account.id,
+            amount: 123.45,
+            notes: note,
+          })
+          .select("id")
+          .single();
+
+      if (createdTransactionError || !createdTransaction?.id) {
+        throw new Error(
+          `Failed to create transaction: ${
+            createdTransactionError?.message ?? "missing transaction id"
+          }`
+        );
+      }
+      transactionId = createdTransaction.id;
+
+      await page.goto(`/transactions/edit/${createdTransaction.id}`);
+      await expect(page).toHaveURL(/\/transactions\/edit\//);
+      await waitForTransactionEditReady(page);
+
+      await expect(
+        page
+          .locator(".ant-select-selection-item")
+          .filter({ hasText: new RegExp(`^${fullLabel}$`, "i") })
+      ).toBeVisible();
+    } finally {
+      if (transactionId) {
+        const { error: deleteTransactionError } = await supabaseAdmin
+          .from("transactions")
+          .delete()
+          .eq("id", transactionId);
+        if (deleteTransactionError) {
+          throw new Error(
+            `Failed to clean up transaction: ${deleteTransactionError.message}`
+          );
+        }
+      }
+      if (childId) {
+        const { error: deleteChildError } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", childId);
+        if (deleteChildError) {
+          throw new Error(
+            `Failed to clean up child category: ${deleteChildError.message}`
+          );
+        }
+      }
+      if (parentId) {
+        const { error: deleteParentError } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", parentId);
+        if (deleteParentError) {
+          throw new Error(
+            `Failed to clean up parent category: ${deleteParentError.message}`
+          );
+        }
+      }
+    }
+  });
+
+  test("transactions list and details show consistent hierarchy label including legacy slash names", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const date = e2eCurrentMonthDate();
+    const parentName = `Category/Subcategory-${ts}`;
+    const childName = `Groceries-${ts}`;
+    const fullLabel = `${parentName} / ${childName}`;
+    const note = `txn-hierarchy-details-${ts}`;
+    let parentId: string | undefined;
+    let childId: string | undefined;
+    let transactionId: string | undefined;
+
+    try {
+      const { data: parent, error: parentError } = await supabaseAdmin
+        .from("categories")
+        .insert({ user_id: testUser.userId, type: "spend", name: parentName })
+        .select("id")
+        .single();
+
+      if (parentError || !parent?.id) {
+        throw new Error(
+          `Failed to create parent category: ${
+            parentError?.message ?? "missing parent id"
+          }`
+        );
+      }
+      parentId = parent.id;
+
+      const { data: child, error: childError } = await supabaseAdmin
+        .from("categories")
+        .insert({
+          user_id: testUser.userId,
+          type: "spend",
+          name: childName,
+          parent_id: parent.id,
+        })
+        .select("id")
+        .single();
+
+      if (childError || !child?.id) {
+        throw new Error(
+          `Failed to create child category: ${
+            childError?.message ?? "missing child id"
+          }`
+        );
+      }
+      childId = child.id;
+
+      const { data: account, error: accountError } = await supabaseAdmin
+        .from("bank_accounts")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("name", "Main Account")
+        .single();
+
+      if (accountError || !account?.id) {
+        throw new Error(
+          `Failed to resolve Main Account: ${
+            accountError?.message ?? "missing account id"
+          }`
+        );
+      }
+
+      const { data: insertedTransaction, error: transactionError } =
+        await supabaseAdmin
+          .from("transactions")
+          .insert({
+            user_id: testUser.userId,
+            date,
+            type: "spend",
+            category_id: child.id,
+            bank_account_id: account.id,
+            amount: 87.0,
+            notes: note,
+          })
+          .select("id")
+          .single();
+      if (transactionError || !insertedTransaction?.id) {
+        throw new Error(
+          `Failed to create transaction: ${
+            transactionError?.message ?? "missing transaction id"
+          }`
+        );
+      }
+      transactionId = insertedTransaction.id;
+
+      await page.goto("/transactions");
+      await page.waitForLoadState("networkidle");
+      await page
+        .getByRole("radiogroup", { name: "segmented control" })
+        .getByText(/^spend$/i)
+        .click();
+
+      const row = getTransactionRow(page, {
+        note,
+        date,
+        category: fullLabel,
+        amount: "87.00",
+        bankAccount: "Main Account",
+      });
+      await expect(row.first()).toBeVisible();
+
+      await page.goto(`/transactions/show/${insertedTransaction.id}`);
+      await expect(page).toHaveURL(/\/transactions\/show\//);
+      await expect(page.getByText(fullLabel)).toBeVisible();
+    } finally {
+      if (transactionId) {
+        const { error: deleteTransactionError } = await supabaseAdmin
+          .from("transactions")
+          .delete()
+          .eq("id", transactionId);
+        if (deleteTransactionError) {
+          throw new Error(
+            `Failed to clean up transaction: ${deleteTransactionError.message}`
+          );
+        }
+      }
+      if (childId) {
+        const { error: deleteChildError } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", childId);
+        if (deleteChildError) {
+          throw new Error(
+            `Failed to clean up child category: ${deleteChildError.message}`
+          );
+        }
+      }
+      if (parentId) {
+        const { error: deleteParentError } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", parentId);
+        if (deleteParentError) {
+          throw new Error(
+            `Failed to clean up parent category: ${deleteParentError.message}`
+          );
+        }
+      }
+    }
   });
 
   test("transaction form shows leaf categories only", async ({ page }) => {
     const ts = Date.now();
     const parentName = `e2e-leaf-parent-${ts}`;
     const childName = `e2e-leaf-child-${ts}`;
+    const fullLabel = `${parentName} / ${childName}`;
 
     // Seed parent + child category via admin client
     const { data: parent } = await supabaseAdmin
@@ -901,12 +1207,14 @@ test.describe("Transactions", () => {
 
     // Leaf child should be selectable
     await expect(
-      page.locator(".ant-select-dropdown:visible").getByTitle(childName)
+      page.locator(".ant-select-dropdown:visible").getByTitle(fullLabel)
     ).toBeVisible();
 
     // Parent (which has a child) should NOT appear in the options
     await expect(
-      page.locator(".ant-select-dropdown:visible").getByTitle(parentName)
+      page
+        .locator(".ant-select-dropdown:visible")
+        .getByTitle(new RegExp(`^${parentName}$`, "i"))
     ).not.toBeVisible();
   });
 });

@@ -81,7 +81,7 @@ select tests.authenticate_as('cat_user1@test.com');
 select throws_like(
     $$ insert into public.categories (type, name) values ('spend', 'Food') $$,
     '%unique_user_type_name%',
-    'Unique constraint on (user_id, type, name) is enforced'
+    'Unique constraint on (user_id, type, name, parent_id) is enforced'
 );
 
 select * from finish();

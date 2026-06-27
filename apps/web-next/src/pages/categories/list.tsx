@@ -23,6 +23,9 @@ export const CategoryList = () => {
   const { tableProps, setCurrentPage } = useTable({
     syncWithLocation: true,
     resource: "categories_with_usage",
+    sorters: {
+      initial: [{ field: "sort_label", order: "asc" }],
+    },
     filters: {
       permanent: [
         {
@@ -64,13 +67,8 @@ export const CategoryList = () => {
           <Table.Column
             dataIndex="name"
             title="Name"
-            sorter
-            render={(value, record: BaseRecord) =>
-              record.parent_id ? (
-                <span style={{ paddingLeft: 16 }}>↳ {value}</span>
-              ) : (
-                value
-              )
+            render={(value: string, record: BaseRecord) =>
+              record.parent_name ? `${record.parent_name} / ${value}` : value
             }
           />
           <Table.Column dataIndex="description" title="Description" sorter />
