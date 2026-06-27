@@ -66,6 +66,9 @@ SELECT
   c.description,
   c.parent_id,
   p.name AS parent_name,
+  -- Sort key: root categories sort by own name; children sort under their parent.
+  -- chr(1) is below any printable character so "Food" < "Food\x01Groceries".
+  COALESCE(p.name || chr(1) || c.name, c.name) AS sort_label,
   COALESCE(ch_kids.child_count, 0)::bigint AS child_count,
   c.created_at,
   c.updated_at,

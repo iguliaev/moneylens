@@ -549,6 +549,7 @@ export type Database = {
           name: string | null
           parent_id: string | null
           parent_name: string | null
+          sort_label: string | null
           type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
           user_id: string | null

@@ -1,3 +1,6 @@
+WARN: environment variable is unset: SITE_URL
+WARN: environment variable is unset: SITE_URL
+Connecting to db 5432
 export type Json =
   | string
   | number
@@ -549,6 +552,7 @@ export type Database = {
           name: string | null
           parent_id: string | null
           parent_name: string | null
+          sort_label: string | null
           type: Database["public"]["Enums"]["transaction_type"] | null
           updated_at: string | null
           user_id: string | null
@@ -1108,3 +1112,5 @@ export const Constants = {
   },
 } as const
 
+A new version of Supabase CLI is available: v2.108.0 (currently installed v2.105.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
