@@ -1102,6 +1102,7 @@ test.describe("Transactions", () => {
     const ts = Date.now();
     const parentName = `e2e-leaf-parent-${ts}`;
     const childName = `e2e-leaf-child-${ts}`;
+    const fullLabel = `${parentName} / ${childName}`;
 
     // Seed parent + child category via admin client
     const { data: parent } = await supabaseAdmin
@@ -1132,12 +1133,14 @@ test.describe("Transactions", () => {
 
     // Leaf child should be selectable
     await expect(
-      page.locator(".ant-select-dropdown:visible").getByTitle(childName)
+      page.locator(".ant-select-dropdown:visible").getByTitle(fullLabel)
     ).toBeVisible();
 
     // Parent (which has a child) should NOT appear in the options
     await expect(
-      page.locator(".ant-select-dropdown:visible").getByTitle(parentName)
+      page
+        .locator(".ant-select-dropdown:visible")
+        .getByTitle(new RegExp(`^${parentName}$`, "i"))
     ).not.toBeVisible();
   });
 });
