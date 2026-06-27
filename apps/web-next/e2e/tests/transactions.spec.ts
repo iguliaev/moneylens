@@ -673,18 +673,20 @@ test.describe("Transactions", () => {
       }
       otherCategoryId = otherCategory.id;
 
-      const filteredTransactions = Array.from({ length: 11 }).map((_, index) => ({
-        user_id: testUser.userId,
-        date: e2eCurrentMonthDate(15),
-        type: "spend" as const,
-        amount: 10 + index,
-        category: "Groceries",
-        category_id: groceriesCategory.id,
-        bank_account_id: mainAccount.id,
-        notes: `persist-groceries-${ts}-${index + 1}`,
-        created_at: now,
-        updated_at: now,
-      }));
+      const filteredTransactions = Array.from({ length: 11 }).map(
+        (_, index) => ({
+          user_id: testUser.userId,
+          date: e2eCurrentMonthDate(15),
+          type: "spend" as const,
+          amount: 10 + index,
+          category: "Groceries",
+          category_id: groceriesCategory.id,
+          bank_account_id: mainAccount.id,
+          notes: `persist-groceries-${ts}-${index + 1}`,
+          created_at: now,
+          updated_at: now,
+        })
+      );
 
       const { error: transactionsError } = await supabaseAdmin
         .from("transactions")
@@ -704,7 +706,9 @@ test.describe("Transactions", () => {
           },
         ]);
       if (transactionsError) {
-        throw new Error(`Failed to seed transactions: ${transactionsError.message}`);
+        throw new Error(
+          `Failed to seed transactions: ${transactionsError.message}`
+        );
       }
 
       await page.goto(
@@ -743,12 +747,17 @@ test.describe("Transactions", () => {
         .eq("user_id", testUser.userId)
         .eq("notes", otherNote);
       if (otherCategoryId) {
-        await supabaseAdmin.from("categories").delete().eq("id", otherCategoryId);
+        await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", otherCategoryId);
       }
     }
   });
 
-  test("switching transaction type clears active list filters", async ({ page }) => {
+  test("switching transaction type clears active list filters", async ({
+    page,
+  }) => {
     let hasRange416 = false;
     page.on("response", (response) => {
       if (
@@ -776,13 +785,14 @@ test.describe("Transactions", () => {
       );
     }
 
-    const { data: savingsCategory, error: savingsCategoryError } = await supabaseAdmin
-      .from("categories")
-      .select("id")
-      .eq("user_id", testUser.userId)
-      .eq("type", "save")
-      .eq("name", "Savings")
-      .single();
+    const { data: savingsCategory, error: savingsCategoryError } =
+      await supabaseAdmin
+        .from("categories")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("type", "save")
+        .eq("name", "Savings")
+        .single();
 
     if (savingsCategoryError || !savingsCategory?.id) {
       throw new Error(
@@ -840,7 +850,9 @@ test.describe("Transactions", () => {
         },
       ]);
     if (transactionsError) {
-      throw new Error(`Failed to seed transactions: ${transactionsError.message}`);
+      throw new Error(
+        `Failed to seed transactions: ${transactionsError.message}`
+      );
     }
 
     await page.goto(
@@ -862,7 +874,9 @@ test.describe("Transactions", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page).toHaveURL(/currentPage=1/);
-    await expect(page).not.toHaveURL(/category_id|bank_account_id|tag_ids|amount/);
+    await expect(page).not.toHaveURL(
+      /category_id|bank_account_id|tag_ids|amount/
+    );
     await expect(page.getByText(new RegExp(`switch-save-${ts}`))).toBeVisible();
     expect(hasRange416).toBeFalsy();
   });
@@ -877,6 +891,7 @@ test.describe("Transactions", () => {
     const note = `txn-hierarchy-search-${ts}`;
     let parentId: string | undefined;
     let childId: string | undefined;
+    let transactionId: string | undefined;
 
     try {
       const { data: parent, error: parentError } = await supabaseAdmin
@@ -919,7 +934,9 @@ test.describe("Transactions", () => {
 
       await selectFromVisibleAntdDropdown(page, "* Type", "spend");
 
-      const categoryCombobox = page.getByRole("combobox", { name: "* Category" });
+      const categoryCombobox = page.getByRole("combobox", {
+        name: "* Category",
+      });
       await categoryCombobox.click();
 
       const categoryDropdown = page.locator(".ant-select-dropdown:visible");
@@ -964,6 +981,7 @@ test.describe("Transactions", () => {
           }`
         );
       }
+      transactionId = createdTransaction.id;
 
       await page.goto(`/transactions/edit/${createdTransaction.id}`);
       await expect(page).toHaveURL(/\/transactions\/edit\//);
@@ -975,11 +993,38 @@ test.describe("Transactions", () => {
           .filter({ hasText: new RegExp(`^${fullLabel}$`, "i") })
       ).toBeVisible();
     } finally {
+      if (transactionId) {
+        const { error: deleteTransactionError } = await supabaseAdmin
+          .from("transactions")
+          .delete()
+          .eq("id", transactionId);
+        if (deleteTransactionError) {
+          throw new Error(
+            `Failed to clean up transaction: ${deleteTransactionError.message}`
+          );
+        }
+      }
       if (childId) {
-        await supabaseAdmin.from("categories").delete().eq("id", childId);
+        const { error: deleteChildError } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", childId);
+        if (deleteChildError) {
+          throw new Error(
+            `Failed to clean up child category: ${deleteChildError.message}`
+          );
+        }
       }
       if (parentId) {
-        await supabaseAdmin.from("categories").delete().eq("id", parentId);
+        const { error: deleteParentError } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", parentId);
+        if (deleteParentError) {
+          throw new Error(
+            `Failed to clean up parent category: ${deleteParentError.message}`
+          );
+        }
       }
     }
   });
@@ -995,6 +1040,7 @@ test.describe("Transactions", () => {
     const note = `txn-hierarchy-details-${ts}`;
     let parentId: string | undefined;
     let childId: string | undefined;
+    let transactionId: string | undefined;
 
     try {
       const { data: parent, error: parentError } = await supabaseAdmin
@@ -1049,18 +1095,18 @@ test.describe("Transactions", () => {
 
       const { data: insertedTransaction, error: transactionError } =
         await supabaseAdmin
-        .from("transactions")
-        .insert({
-          user_id: testUser.userId,
-          date,
-          type: "spend",
-          category_id: child.id,
-          bank_account_id: account.id,
-          amount: 87.0,
-          notes: note,
-        })
-        .select("id")
-        .single();
+          .from("transactions")
+          .insert({
+            user_id: testUser.userId,
+            date,
+            type: "spend",
+            category_id: child.id,
+            bank_account_id: account.id,
+            amount: 87.0,
+            notes: note,
+          })
+          .select("id")
+          .single();
       if (transactionError || !insertedTransaction?.id) {
         throw new Error(
           `Failed to create transaction: ${
@@ -1068,6 +1114,7 @@ test.describe("Transactions", () => {
           }`
         );
       }
+      transactionId = insertedTransaction.id;
 
       await page.goto("/transactions");
       await page.waitForLoadState("networkidle");
@@ -1089,11 +1136,38 @@ test.describe("Transactions", () => {
       await expect(page).toHaveURL(/\/transactions\/show\//);
       await expect(page.getByText(fullLabel)).toBeVisible();
     } finally {
+      if (transactionId) {
+        const { error: deleteTransactionError } = await supabaseAdmin
+          .from("transactions")
+          .delete()
+          .eq("id", transactionId);
+        if (deleteTransactionError) {
+          throw new Error(
+            `Failed to clean up transaction: ${deleteTransactionError.message}`
+          );
+        }
+      }
       if (childId) {
-        await supabaseAdmin.from("categories").delete().eq("id", childId);
+        const { error: deleteChildError } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", childId);
+        if (deleteChildError) {
+          throw new Error(
+            `Failed to clean up child category: ${deleteChildError.message}`
+          );
+        }
       }
       if (parentId) {
-        await supabaseAdmin.from("categories").delete().eq("id", parentId);
+        const { error: deleteParentError } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", parentId);
+        if (deleteParentError) {
+          throw new Error(
+            `Failed to clean up parent category: ${deleteParentError.message}`
+          );
+        }
       }
     }
   });
