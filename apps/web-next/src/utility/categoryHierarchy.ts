@@ -19,7 +19,7 @@ export const leafCategoriesOnly = (categories: Category[]): Category[] =>
 
 /**
  * Format a category display label, optionally prefixed with parent name.
- * e.g. "Utilities > Electricity"
+ * e.g. "Utilities / Electricity"
  */
 export const categoryLabel = (category: Category): string =>
   (category.parent?.name ?? category.parent_name)
