@@ -368,7 +368,10 @@ test.describe("Categories", () => {
 
     // Child row should be visible as "Parent / Child" hierarchy label
     await expect(
-      page.getByRole("cell", { name: `${parentName} / ${childName}`, exact: true })
+      page.getByRole("cell", {
+        name: `${parentName} / ${childName}`,
+        exact: true,
+      })
     ).toBeVisible();
   });
 

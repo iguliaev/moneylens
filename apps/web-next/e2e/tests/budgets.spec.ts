@@ -218,7 +218,8 @@ test.describe("Budget alert states", () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    if (!testUser) throw new Error("Budget alert test user was not initialized");
+    if (!testUser)
+      throw new Error("Budget alert test user was not initialized");
     await loginUser(page, testUser.email, testUser.password);
   });
 
@@ -241,7 +242,8 @@ test.describe("Budget alert states", () => {
       })
       .select("id, name")
       .single();
-    if (budgetError) throw new Error(`Budget insert failed: ${budgetError.message}`);
+    if (budgetError)
+      throw new Error(`Budget insert failed: ${budgetError.message}`);
 
     // Get the seeded Groceries (spend) category
     const { data: catData, error: catError } = await supabaseAdmin
@@ -257,7 +259,8 @@ test.describe("Budget alert states", () => {
     const { error: linkError } = await supabaseAdmin
       .from("budget_categories")
       .insert({ budget_id: budgetData.id, category_id: catData.id });
-    if (linkError) throw new Error(`Budget-category link failed: ${linkError.message}`);
+    if (linkError)
+      throw new Error(`Budget-category link failed: ${linkError.message}`);
 
     // Insert a transaction that pushes the budget to the target percent
     const { error: txError } = await supabaseAdmin.from("transactions").insert({
@@ -270,13 +273,15 @@ test.describe("Budget alert states", () => {
       created_at: now,
       updated_at: now,
     });
-    if (txError) throw new Error(`Transaction insert failed: ${txError.message}`);
+    if (txError)
+      throw new Error(`Transaction insert failed: ${txError.message}`);
 
     return budgetData.name;
   }
 
   test("spend budget at 85% shows Near limit tag in list", async ({ page }) => {
-    if (!testUser) throw new Error("Budget alert test user was not initialized");
+    if (!testUser)
+      throw new Error("Budget alert test user was not initialized");
     const budgetName = await seedBudgetAtPercent(testUser.userId, 85);
 
     await page.goto("/budgets");
@@ -287,8 +292,11 @@ test.describe("Budget alert states", () => {
     await expect(row.getByText("⚠ Near limit")).toBeVisible();
   });
 
-  test("spend budget at 100% shows Over budget tag in list", async ({ page }) => {
-    if (!testUser) throw new Error("Budget alert test user was not initialized");
+  test("spend budget at 100% shows Over budget tag in list", async ({
+    page,
+  }) => {
+    if (!testUser)
+      throw new Error("Budget alert test user was not initialized");
     const budgetName = await seedBudgetAtPercent(testUser.userId, 100);
 
     await page.goto("/budgets");
@@ -302,11 +310,14 @@ test.describe("Budget alert states", () => {
   test("spend budget at 100% shows Over budget tag on dashboard", async ({
     page,
   }) => {
-    if (!testUser) throw new Error("Budget alert test user was not initialized");
+    if (!testUser)
+      throw new Error("Budget alert test user was not initialized");
     const budgetName = await seedBudgetAtPercent(testUser.userId, 100);
 
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Dashboard" })
+    ).toBeVisible();
 
     // Use .ant-card as the boundary so we scope to a single budget card
     // and avoid matching ancestor divs that contain multiple cards.

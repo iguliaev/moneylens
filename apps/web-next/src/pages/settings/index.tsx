@@ -28,10 +28,7 @@ import {
 } from "../../utility";
 import { Show } from "@refinedev/antd";
 import { useCurrency, SUPPORTED_CURRENCIES } from "../../contexts/currency";
-import {
-  DANGER_BORDER_COLOR,
-  DANGER_TEXT_COLOR,
-} from "../../theme/tokens";
+import { DANGER_BORDER_COLOR, DANGER_TEXT_COLOR } from "../../theme/tokens";
 
 const { Paragraph } = Typography;
 
@@ -332,7 +329,10 @@ const DataResetSection = () => {
         title="Danger Zone"
         extra={<DeleteOutlined style={{ color: DANGER_TEXT_COLOR }} />}
         styles={{
-          header: { borderColor: DANGER_BORDER_COLOR, color: DANGER_TEXT_COLOR },
+          header: {
+            borderColor: DANGER_BORDER_COLOR,
+            color: DANGER_TEXT_COLOR,
+          },
           body: { borderColor: DANGER_BORDER_COLOR, color: DANGER_TEXT_COLOR },
         }}
       >

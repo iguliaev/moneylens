@@ -38,96 +38,100 @@ export const BudgetList = () => {
       {tableProps.loading && !tableProps.dataSource?.length ? (
         <TableSkeleton columns={9} />
       ) : (
-      <Table {...tableProps} rowKey="id" locale={{ emptyText: budgetEmptyState }}>
-        <Table.Column dataIndex="name" title="Name" sorter />
-        <Table.Column
-          dataIndex="type"
-          title="Type"
-          render={(value: TransactionType) => (
-            <Tag color={TYPE_COLORS[value]}>
-              {TRANSACTION_TYPE_LABELS[value]}
-            </Tag>
-          )}
-        />
-        <Table.Column
-          dataIndex="target_amount"
-          title="Target"
-          render={(value: number) => formatCurrency(value, currency)}
-          align="right"
-        />
-        <Table.Column dataIndex="start_date" title="Start Date" />
-        <Table.Column dataIndex="end_date" title="End Date" />
-        <Table.Column
-          dataIndex="category_count"
-          title="Categories"
-          align="center"
-        />
-        <Table.Column dataIndex="tag_count" title="Tags" align="center" />
-        <Table.Column
-          title="Progress"
-          key="progress"
-          align="center"
-          width={160}
-          render={(_: unknown, record: BaseRecord) => {
-            const currentAmount = Number(record.current_amount ?? 0);
-            const targetAmount = Number(record.target_amount ?? 0);
-            const { percent, alertLevel } = getBudgetAlertState(
-              currentAmount,
-              targetAmount,
-              record.type as TransactionType,
-            );
-            return (
-              <Space direction="vertical" size={2} style={{ width: "100%" }}>
-                <Progress
-                  percent={percent}
-                  size="small"
-                  status={getProgressStatus(
-                    alertLevel,
-                    percent,
-                    record.type as TransactionType,
+        <Table
+          {...tableProps}
+          rowKey="id"
+          locale={{ emptyText: budgetEmptyState }}
+        >
+          <Table.Column dataIndex="name" title="Name" sorter />
+          <Table.Column
+            dataIndex="type"
+            title="Type"
+            render={(value: TransactionType) => (
+              <Tag color={TYPE_COLORS[value]}>
+                {TRANSACTION_TYPE_LABELS[value]}
+              </Tag>
+            )}
+          />
+          <Table.Column
+            dataIndex="target_amount"
+            title="Target"
+            render={(value: number) => formatCurrency(value, currency)}
+            align="right"
+          />
+          <Table.Column dataIndex="start_date" title="Start Date" />
+          <Table.Column dataIndex="end_date" title="End Date" />
+          <Table.Column
+            dataIndex="category_count"
+            title="Categories"
+            align="center"
+          />
+          <Table.Column dataIndex="tag_count" title="Tags" align="center" />
+          <Table.Column
+            title="Progress"
+            key="progress"
+            align="center"
+            width={160}
+            render={(_: unknown, record: BaseRecord) => {
+              const currentAmount = Number(record.current_amount ?? 0);
+              const targetAmount = Number(record.target_amount ?? 0);
+              const { percent, alertLevel } = getBudgetAlertState(
+                currentAmount,
+                targetAmount,
+                record.type as TransactionType
+              );
+              return (
+                <Space direction="vertical" size={2} style={{ width: "100%" }}>
+                  <Progress
+                    percent={percent}
+                    size="small"
+                    status={getProgressStatus(
+                      alertLevel,
+                      percent,
+                      record.type as TransactionType
+                    )}
+                    strokeColor={
+                      alertLevel === "warn" ? WARN_STROKE_COLOR : undefined
+                    }
+                    format={() => `${percent}%`}
+                  />
+                  {alertLevel === "warn" && (
+                    <Tag color="warning" style={{ fontSize: 11 }}>
+                      ⚠ Near limit
+                    </Tag>
                   )}
-                  strokeColor={
-                    alertLevel === "warn" ? WARN_STROKE_COLOR : undefined
-                  }
-                  format={() => `${percent}%`}
+                  {alertLevel === "over" && (
+                    <Tag color="error" style={{ fontSize: 11 }}>
+                      Over budget
+                    </Tag>
+                  )}
+                </Space>
+              );
+            }}
+          />
+          <Table.Column
+            title="Actions"
+            dataIndex="actions"
+            render={(_, record: BaseRecord) => (
+              <Space>
+                <EditButton hideText size="small" recordItemId={record.id} />
+                <ShowButton hideText size="small" recordItemId={record.id} />
+                <DeleteButton
+                  hideText
+                  size="small"
+                  recordItemId={record.id}
+                  resource="budgets"
+                  onSuccess={() => {
+                    invalidate({
+                      resource: "budgets_with_linked",
+                      invalidates: ["list"],
+                    });
+                  }}
                 />
-                {alertLevel === "warn" && (
-                  <Tag color="warning" style={{ fontSize: 11 }}>
-                    ⚠ Near limit
-                  </Tag>
-                )}
-                {alertLevel === "over" && (
-                  <Tag color="error" style={{ fontSize: 11 }}>
-                    Over budget
-                  </Tag>
-                )}
               </Space>
-            );
-          }}
-        />
-        <Table.Column
-          title="Actions"
-          dataIndex="actions"
-          render={(_, record: BaseRecord) => (
-            <Space>
-              <EditButton hideText size="small" recordItemId={record.id} />
-              <ShowButton hideText size="small" recordItemId={record.id} />
-              <DeleteButton
-                hideText
-                size="small"
-                recordItemId={record.id}
-                resource="budgets"
-                onSuccess={() => {
-                  invalidate({
-                    resource: "budgets_with_linked",
-                    invalidates: ["list"],
-                  });
-                }}
-              />
-            </Space>
-          )}
-        />
-      </Table>
+            )}
+          />
+        </Table>
       )}
     </List>
   );

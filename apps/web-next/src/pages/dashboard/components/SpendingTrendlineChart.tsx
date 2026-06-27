@@ -10,13 +10,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { getMonthKeysInRange, formatMonthLabel } from "../../../utility/monthHelpers";
+import {
+  getMonthKeysInRange,
+  formatMonthLabel,
+} from "../../../utility/monthHelpers";
 import { makeCurrencyFormatter } from "../../../utility/currency";
 import type { CategorySpendPoint, TagSpendPoint } from "../../../hooks";
-import {
-  CHART_GRID_COLOR,
-  CHART_SERIES_COLORS,
-} from "../../../theme/tokens";
+import { CHART_GRID_COLOR, CHART_SERIES_COLORS } from "../../../theme/tokens";
 
 const { Text } = Typography;
 

@@ -25,7 +25,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     description={
       <Space direction="vertical" size="small">
         <div style={{ fontWeight: 600, fontSize: 16 }}>{title}</div>
-        <div style={{ fontSize: 14, color: TEXT_MUTED_COLOR }}>{description}</div>
+        <div style={{ fontSize: 14, color: TEXT_MUTED_COLOR }}>
+          {description}
+        </div>
       </Space>
     }
   >
