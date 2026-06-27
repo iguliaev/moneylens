@@ -1,9 +1,7 @@
 -- Add parent category names to transaction/category views used by web UI.
 -- This enables consistent Parent / Child rendering without extra per-row fetches.
 
-DROP VIEW IF EXISTS public.transactions_with_details;
-
-CREATE VIEW public.transactions_with_details
+CREATE OR REPLACE VIEW public.transactions_with_details
 WITH (security_invoker = true) AS
 SELECT
   t.id,
@@ -54,9 +52,7 @@ GROUP BY
 COMMENT ON VIEW public.transactions_with_details IS
   'Transactions with resolved category, parent category, bank account, and tag names for UI display';
 
-DROP VIEW IF EXISTS public.categories_with_usage;
-
-CREATE VIEW public.categories_with_usage
+CREATE OR REPLACE VIEW public.categories_with_usage
 WITH (security_invoker = true) AS
 SELECT
   c.id,

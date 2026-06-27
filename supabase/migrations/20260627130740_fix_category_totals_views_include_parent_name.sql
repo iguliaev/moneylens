@@ -22,12 +22,8 @@ GROUP BY
   t.user_id,
   DATE_TRUNC('month', t.date),
   COALESCE(p.name || ' / ' || c.name, c.name),
-  t.type
-ORDER BY
-  t.user_id,
-  month DESC,
-  category,
   t.type;
+
 
 CREATE OR REPLACE VIEW
   public.view_yearly_category_totals
@@ -49,9 +45,5 @@ GROUP BY
   t.user_id,
   DATE_TRUNC('year', t.date),
   COALESCE(p.name || ' / ' || c.name, c.name),
-  t.type
-ORDER BY
-  t.user_id,
-  year DESC,
-  category,
   t.type;
+
