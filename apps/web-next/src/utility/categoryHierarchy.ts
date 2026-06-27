@@ -2,6 +2,7 @@ import type { Tables } from "../types/database.types";
 
 export type Category = Tables<"categories"> & {
   parent?: Pick<Tables<"categories">, "id" | "name"> | null;
+  parent_name?: string | null;
   child_count?: number | null;
 };
 
@@ -21,7 +22,12 @@ export const leafCategoriesOnly = (categories: Category[]): Category[] =>
  * e.g. "Utilities > Electricity"
  */
 export const categoryLabel = (category: Category): string =>
-  category.parent?.name
-    ? `${category.parent.name} > ${category.name}`
+  (category.parent?.name ?? category.parent_name)
+    ? `${category.parent?.name ?? category.parent_name} / ${category.name}`
     : category.name;
 
+/** Normalized search text for matching both parent and child terms. */
+export const categorySearchText = (category: Category): string => {
+  const parent = category.parent?.name ?? category.parent_name ?? "";
+  return `${parent} ${category.name}`.trim().toLowerCase();
+};
