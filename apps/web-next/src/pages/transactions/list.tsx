@@ -81,6 +81,12 @@ export const TransactionList = () => {
     ...commonSelectOptions,
     defaultValue: getDefaultFilter("category_id", filters, "in"),
   });
+  const sortedCategoryOptions = [...(categorySelectProps.options ?? [])].sort(
+    (a, b) =>
+      String(a?.label ?? "").localeCompare(String(b?.label ?? ""), undefined, {
+        sensitivity: "base",
+      })
+  );
 
   // Bank account select
   const { selectProps: bankAccountSelectProps } = useSelect({
@@ -186,7 +192,10 @@ export const TransactionList = () => {
               <FilterDropdown {...props}>
                 <MultiSelectFilter
                   placeholder="Select categories"
-                  selectProps={categorySelectProps}
+                  selectProps={{
+                    ...categorySelectProps,
+                    options: sortedCategoryOptions,
+                  }}
                 />
               </FilterDropdown>
             )}

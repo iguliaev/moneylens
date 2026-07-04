@@ -11,6 +11,7 @@ export const CategoryCreate = () => {
     resource: "categories_with_usage",
     optionLabel: "name",
     optionValue: "id",
+    sorters: [{ field: "name", order: "asc" }],
     filters: selectedType
       ? [
           { field: "type", operator: "eq", value: selectedType },
