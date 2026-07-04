@@ -34,10 +34,13 @@ export const categorySearchText = (category: Category): string => {
 
 /** Stable key for sorting categories by user-visible hierarchy label. */
 export const categorySortKey = (category: Category): string =>
-  categoryLabel(category).toLocaleLowerCase();
+  categoryLabel(category);
 
 /** Comparator for alphabetical ordering by full hierarchy label. */
 export const compareCategoriesByHierarchyLabel = (
   a: Category,
   b: Category
-): number => categorySortKey(a).localeCompare(categorySortKey(b));
+): number =>
+  categorySortKey(a).localeCompare(categorySortKey(b), undefined, {
+    sensitivity: "base",
+  });

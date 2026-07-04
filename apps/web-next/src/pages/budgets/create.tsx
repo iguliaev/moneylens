@@ -46,7 +46,7 @@ export const BudgetCreate = () => {
 
   const categoryOptions = useMemo(
     () =>
-      (categoriesQuery.data?.data ?? [])
+      [...(categoriesQuery.data?.data ?? [])]
         .sort(compareCategoriesByHierarchyLabel)
         .map((c: Category) => ({
           label: `${categoryLabel(c)} (${c.type})`,
