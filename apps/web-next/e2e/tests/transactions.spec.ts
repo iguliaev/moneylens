@@ -1033,10 +1033,10 @@ test.describe("Transactions", () => {
     page,
   }) => {
     const ts = Date.now();
-    const parentName = `Utilities-${ts}`;
-    const childA = `Heating-${ts}`;
-    const childB = `Water-${ts}`;
-    const standalone = `Vacation-${ts}`;
+    const parentName = `A-Utilities-${ts}`;
+    const childA = `A-Heating-${ts}`;
+    const childB = `A-Water-${ts}`;
+    const standalone = `B-Vacation-${ts}`;
     let parentId: string | undefined;
     let childAId: string | undefined;
     let childBId: string | undefined;
@@ -1115,6 +1115,9 @@ test.describe("Transactions", () => {
       await page.getByRole("combobox", { name: "* Category" }).click();
 
       const categoryDropdown = page.locator(".ant-select-dropdown:visible");
+      await expect(
+        categoryDropdown.getByTitle(new RegExp(`^${parentName} / ${childA}$`))
+      ).toBeVisible();
       const titles = await categoryDropdown
         .locator(".ant-select-item-option-content")
         .allTextContents();
