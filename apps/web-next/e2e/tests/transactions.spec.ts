@@ -1029,6 +1029,156 @@ test.describe("Transactions", () => {
     }
   });
 
+  test("transaction form category dropdown sorts by full hierarchy label", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const parentName = `A-Utilities-${ts}`;
+    const childA = `A-Heating-${ts}`;
+    const childB = `A-Water-${ts}`;
+    const standalone = `B-Vacation-${ts}`;
+    let parentId: string | undefined;
+    let childAId: string | undefined;
+    let childBId: string | undefined;
+    let standaloneId: string | undefined;
+
+    try {
+      const { data: parent, error: parentError } = await supabaseAdmin
+        .from("categories")
+        .insert({ user_id: testUser.userId, type: "spend", name: parentName })
+        .select("id")
+        .single();
+      if (parentError || !parent?.id) {
+        throw new Error(
+          `Failed to create parent category: ${
+            parentError?.message ?? "missing parent id"
+          }`
+        );
+      }
+      parentId = parent.id;
+
+      const { data: childRowA, error: childErrorA } = await supabaseAdmin
+        .from("categories")
+        .insert({
+          user_id: testUser.userId,
+          type: "spend",
+          name: childA,
+          parent_id: parent.id,
+        })
+        .select("id")
+        .single();
+      if (childErrorA || !childRowA?.id) {
+        throw new Error(
+          `Failed to create first child category: ${
+            childErrorA?.message ?? "missing child id"
+          }`
+        );
+      }
+      childAId = childRowA.id;
+
+      const { data: standaloneRow, error: standaloneError } = await supabaseAdmin
+        .from("categories")
+        .insert({ user_id: testUser.userId, type: "spend", name: standalone })
+        .select("id")
+        .single();
+      if (standaloneError || !standaloneRow?.id) {
+        throw new Error(
+          `Failed to create standalone category: ${
+            standaloneError?.message ?? "missing standalone id"
+          }`
+        );
+      }
+      standaloneId = standaloneRow.id;
+
+      const { data: childRowB, error: childErrorB } = await supabaseAdmin
+        .from("categories")
+        .insert({
+          user_id: testUser.userId,
+          type: "spend",
+          name: childB,
+          parent_id: parent.id,
+        })
+        .select("id")
+        .single();
+      if (childErrorB || !childRowB?.id) {
+        throw new Error(
+          `Failed to create second child category: ${
+            childErrorB?.message ?? "missing child id"
+          }`
+        );
+      }
+      childBId = childRowB.id;
+
+      await page.goto("/transactions/create");
+      await page.waitForLoadState("networkidle");
+      await selectFromVisibleAntdDropdown(page, "* Type", "spend");
+      await page.getByRole("combobox", { name: "* Category" }).click();
+
+      const categoryDropdown = page.locator(".ant-select-dropdown:visible");
+      await expect(
+        categoryDropdown.getByTitle(new RegExp(`^${parentName} / ${childA}$`))
+      ).toBeVisible();
+      const titles = await categoryDropdown
+        .locator(".ant-select-item-option-content")
+        .allTextContents();
+      const filtered = titles.filter(
+        (text) =>
+          text === `${parentName} / ${childA}` ||
+          text === `${parentName} / ${childB}` ||
+          text === standalone
+      );
+
+      expect(filtered).toEqual([
+        `${parentName} / ${childA}`,
+        `${parentName} / ${childB}`,
+        standalone,
+      ]);
+    } finally {
+      if (childAId) {
+        const { error } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", childAId);
+        if (error) {
+          throw new Error(
+            `Failed to clean up first child category: ${error.message}`
+          );
+        }
+      }
+      if (childBId) {
+        const { error } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", childBId);
+        if (error) {
+          throw new Error(
+            `Failed to clean up second child category: ${error.message}`
+          );
+        }
+      }
+      if (standaloneId) {
+        const { error } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", standaloneId);
+        if (error) {
+          throw new Error(
+            `Failed to clean up standalone category: ${error.message}`
+          );
+        }
+      }
+      if (parentId) {
+        const { error } = await supabaseAdmin
+          .from("categories")
+          .delete()
+          .eq("id", parentId);
+        if (error) {
+          throw new Error(`Failed to clean up parent category: ${error.message}`);
+        }
+      }
+    }
+  });
+
   test("transactions list and details show consistent hierarchy label including legacy slash names", async ({
     page,
   }) => {

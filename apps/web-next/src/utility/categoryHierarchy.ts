@@ -31,3 +31,23 @@ export const categorySearchText = (category: Category): string => {
   const parent = category.parent?.name ?? category.parent_name ?? "";
   return `${parent} ${category.name}`.trim().toLowerCase();
 };
+
+/** Stable key for sorting categories by user-visible hierarchy label. */
+export const categorySortKey = (category: Category): string =>
+  categoryLabel(category);
+
+/** Comparator for alphabetical ordering by full hierarchy label. */
+export const compareCategoriesByHierarchyLabel = (
+  a: Category,
+  b: Category
+): number => {
+  const primary = categorySortKey(a).localeCompare(
+    categorySortKey(b),
+    undefined,
+    {
+      sensitivity: "base",
+    }
+  );
+  if (primary !== 0) return primary;
+  return String(a.id).localeCompare(String(b.id));
+};
