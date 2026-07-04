@@ -40,7 +40,14 @@ export const categorySortKey = (category: Category): string =>
 export const compareCategoriesByHierarchyLabel = (
   a: Category,
   b: Category
-): number =>
-  categorySortKey(a).localeCompare(categorySortKey(b), undefined, {
-    sensitivity: "base",
-  });
+): number => {
+  const primary = categorySortKey(a).localeCompare(
+    categorySortKey(b),
+    undefined,
+    {
+      sensitivity: "base",
+    }
+  );
+  if (primary !== 0) return primary;
+  return String(a.id).localeCompare(String(b.id));
+};
