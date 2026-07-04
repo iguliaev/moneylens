@@ -31,3 +31,13 @@ export const categorySearchText = (category: Category): string => {
   const parent = category.parent?.name ?? category.parent_name ?? "";
   return `${parent} ${category.name}`.trim().toLowerCase();
 };
+
+/** Stable key for sorting categories by user-visible hierarchy label. */
+export const categorySortKey = (category: Category): string =>
+  categoryLabel(category).toLocaleLowerCase();
+
+/** Comparator for alphabetical ordering by full hierarchy label. */
+export const compareCategoriesByHierarchyLabel = (
+  a: Category,
+  b: Category
+): number => categorySortKey(a).localeCompare(categorySortKey(b));

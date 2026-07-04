@@ -8,6 +8,7 @@ import type { Category } from "../../utility/categoryHierarchy";
 import {
   categoryLabel,
   categorySearchText,
+  compareCategoriesByHierarchyLabel,
   isLeafCategory,
 } from "../../utility/categoryHierarchy";
 
@@ -29,6 +30,7 @@ export const TransactionCreate = () => {
 
   const leafCategoryOptions = (categoriesResult?.data ?? [])
     .filter(isLeafCategory)
+    .sort(compareCategoriesByHierarchyLabel)
     .map((c: Category) => ({
       label: categoryLabel(c),
       value: c.id,
