@@ -619,6 +619,20 @@ test.describe("Transactions", () => {
     );
   });
 
+  test("invalid create query params do not preselect type", async ({ page }) => {
+    await page.goto("/transactions/create?source=transactions-list&type=invalid");
+    await expect(
+      page.getByRole("heading", { name: "Create Transaction" })
+    ).toBeVisible();
+
+    const typeFormItem = page
+      .locator(".ant-form-item")
+      .filter({ has: page.getByText("Type", { exact: true }) });
+    await expect(typeFormItem.locator(".ant-select-selection-item")).toHaveCount(
+      0
+    );
+  });
+
   test("amount range filter shows only transactions within range", async ({
     page,
   }) => {
