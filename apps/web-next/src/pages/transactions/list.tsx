@@ -11,8 +11,17 @@ import {
   FilterDropdown,
   getDefaultFilter,
 } from "@refinedev/antd";
-import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
+import {
+  Table,
+  Space,
+  Segmented,
+  Select,
+  DatePicker,
+  InputNumber,
+  Button,
+} from "antd";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router";
 import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
@@ -50,6 +59,7 @@ const MultiSelectFilter = ({
 
 export const TransactionList = () => {
   const invalidate = useInvalidate();
+  const navigate = useNavigate();
 
   const { tableProps, filters, setFilters, setCurrentPage } = useTable({
     syncWithLocation: true,
@@ -110,7 +120,20 @@ export const TransactionList = () => {
   const transactionEmptyState = getTransactionEmptyState();
 
   return (
-    <List>
+    <List
+      headerButtons={() => (
+        <Button
+          type="primary"
+          onClick={() =>
+            navigate(
+              `/transactions/create?source=transactions-list&type=${transactionType}`
+            )
+          }
+        >
+          Create
+        </Button>
+      )}
+    >
       <Segmented
         aria-label="segmented control"
         options={Object.values(TRANSACTION_TYPES).map((type) => ({

@@ -1,8 +1,14 @@
+import { useMemo } from "react";
 import { Create, useForm, useSelect as useAntSelect } from "@refinedev/antd";
 import { useSelect as useCoreSelect, useList } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
+import { useSearchParams } from "react-router";
 import dayjs from "dayjs";
-import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
+import {
+  TRANSACTION_TYPES,
+  TRANSACTION_TYPE_OPTIONS,
+  type TransactionType,
+} from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
@@ -13,6 +19,18 @@ import {
 } from "../../utility/categoryHierarchy";
 
 export const TransactionCreate = () => {
+  const [searchParams] = useSearchParams();
+  const initialType = useMemo(() => {
+    const source = searchParams.get("source");
+    const type = searchParams.get("type");
+    const validTypes = new Set<TransactionType>(Object.values(TRANSACTION_TYPES));
+
+    if (source !== "transactions-list") return undefined;
+    if (!type || !validTypes.has(type as TransactionType)) return undefined;
+
+    return type;
+  }, [searchParams]);
+
   const { formProps, saveButtonProps } = useForm({
     warnWhenUnsavedChanges: false,
   });
@@ -54,7 +72,12 @@ export const TransactionCreate = () => {
 
   return (
     <Create saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
-      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
+      <Form
+        {...formProps}
+        initialValues={initialType ? { type: initialType } : undefined}
+        layout="vertical"
+        onFinish={handleFinish}
+      >
         <Form.Item
           label="Date"
           name={["date"]}
