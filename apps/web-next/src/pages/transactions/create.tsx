@@ -18,19 +18,21 @@ import {
   isLeafCategory,
 } from "../../utility/categoryHierarchy";
 
+const VALID_TRANSACTION_TYPES = new Set<TransactionType>(
+  Object.values(TRANSACTION_TYPES) as TransactionType[]
+);
+
 export const TransactionCreate = () => {
   const [searchParams] = useSearchParams();
-  const initialType = useMemo(() => {
+  const initialType = useMemo<TransactionType | undefined>(() => {
     const source = searchParams.get("source");
-    const type = searchParams.get("type");
-    const validTypes = new Set<TransactionType>(
-      Object.values(TRANSACTION_TYPES)
-    );
+    const rawType = searchParams.get("type");
 
     if (source !== "transactions-list") return undefined;
-    if (!type || !validTypes.has(type as TransactionType)) return undefined;
+    if (!rawType || !VALID_TRANSACTION_TYPES.has(rawType as TransactionType))
+      return undefined;
 
-    return type;
+    return rawType as TransactionType;
   }, [searchParams]);
 
   const { formProps, saveButtonProps } = useForm({

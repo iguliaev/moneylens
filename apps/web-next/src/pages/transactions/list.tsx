@@ -124,11 +124,13 @@ export const TransactionList = () => {
       headerButtons={() => (
         <Button
           type="primary"
-          onClick={() =>
-            navigate(
-              `/transactions/create?source=transactions-list&type=${transactionType}`
-            )
-          }
+          onClick={() => {
+            const params = new URLSearchParams({
+              source: "transactions-list",
+              type: transactionType,
+            });
+            navigate(`/transactions/create?${params.toString()}`);
+          }}
         >
           Create
         </Button>
