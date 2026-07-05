@@ -614,13 +614,17 @@ test.describe("Transactions", () => {
     const typeFormItem = page
       .locator(".ant-form-item")
       .filter({ has: page.getByText("Type", { exact: true }) });
-    await expect(typeFormItem.locator(".ant-select-selection-item")).toHaveCount(
-      0
-    );
+    await expect(
+      typeFormItem.locator(".ant-select-selection-item")
+    ).toHaveCount(0);
   });
 
-  test("invalid create query params do not preselect type", async ({ page }) => {
-    await page.goto("/transactions/create?source=transactions-list&type=invalid");
+  test("invalid create query params do not preselect type", async ({
+    page,
+  }) => {
+    await page.goto(
+      "/transactions/create?source=transactions-list&type=invalid"
+    );
     await expect(
       page.getByRole("heading", { name: "Create Transaction" })
     ).toBeVisible();
@@ -628,9 +632,9 @@ test.describe("Transactions", () => {
     const typeFormItem = page
       .locator(".ant-form-item")
       .filter({ has: page.getByText("Type", { exact: true }) });
-    await expect(typeFormItem.locator(".ant-select-selection-item")).toHaveCount(
-      0
-    );
+    await expect(
+      typeFormItem.locator(".ant-select-selection-item")
+    ).toHaveCount(0);
   });
 
   test("amount range filter shows only transactions within range", async ({
@@ -1133,11 +1137,12 @@ test.describe("Transactions", () => {
       }
       childAId = childRowA.id;
 
-      const { data: standaloneRow, error: standaloneError } = await supabaseAdmin
-        .from("categories")
-        .insert({ user_id: testUser.userId, type: "spend", name: standalone })
-        .select("id")
-        .single();
+      const { data: standaloneRow, error: standaloneError } =
+        await supabaseAdmin
+          .from("categories")
+          .insert({ user_id: testUser.userId, type: "spend", name: standalone })
+          .select("id")
+          .single();
       if (standaloneError || !standaloneRow?.id) {
         throw new Error(
           `Failed to create standalone category: ${
@@ -1230,7 +1235,9 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", parentId);
         if (error) {
-          throw new Error(`Failed to clean up parent category: ${error.message}`);
+          throw new Error(
+            `Failed to clean up parent category: ${error.message}`
+          );
         }
       }
     }

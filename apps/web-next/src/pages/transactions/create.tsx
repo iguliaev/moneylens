@@ -23,7 +23,9 @@ export const TransactionCreate = () => {
   const initialType = useMemo(() => {
     const source = searchParams.get("source");
     const type = searchParams.get("type");
-    const validTypes = new Set<TransactionType>(Object.values(TRANSACTION_TYPES));
+    const validTypes = new Set<TransactionType>(
+      Object.values(TRANSACTION_TYPES)
+    );
 
     if (source !== "transactions-list") return undefined;
     if (!type || !validTypes.has(type as TransactionType)) return undefined;
