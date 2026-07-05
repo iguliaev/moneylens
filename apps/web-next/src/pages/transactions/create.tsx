@@ -39,6 +39,20 @@ export const TransactionCreate = () => {
     warnWhenUnsavedChanges: false,
   });
   const { handleFinish, isLoading } = useTransactionForm({ mode: "create" });
+  const mergedInitialValues = useMemo(() => {
+    const existingInitialValues = formProps.initialValues ?? {};
+
+    if (!initialType) {
+      return Object.keys(existingInitialValues).length
+        ? existingInitialValues
+        : undefined;
+    }
+
+    return {
+      ...existingInitialValues,
+      type: initialType,
+    };
+  }, [formProps.initialValues, initialType]);
 
   const type = Form.useWatch("type", formProps.form);
 
@@ -78,7 +92,7 @@ export const TransactionCreate = () => {
     <Create saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
       <Form
         {...formProps}
-        initialValues={initialType ? { type: initialType } : undefined}
+        initialValues={mergedInitialValues}
         layout="vertical"
         onFinish={handleFinish}
       >
