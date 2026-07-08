@@ -576,6 +576,67 @@ test.describe("Transactions", () => {
     await page.getByLabel("Amount").blur();
     await expect(page.getByText("Amount cannot be zero")).not.toBeVisible();
   });
+
+  test("create page preselects type from transactions list tab context", async ({
+    page,
+  }) => {
+    await page.goto("/transactions");
+    await expect(
+      page.getByRole("heading", { name: "Transactions" })
+    ).toBeVisible();
+
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(/^Earn$/i)
+      .click();
+
+    await page.getByRole("button", { name: /create/i }).click();
+    await expect(page).toHaveURL(
+      /\/transactions\/create\?source=transactions-list&type=earn/
+    );
+
+    const typeFormItem = page
+      .locator(".ant-form-item")
+      .filter({ has: page.getByText("Type", { exact: true }) });
+    await expect(
+      typeFormItem
+        .locator(".ant-select-selection-item")
+        .filter({ hasText: /^Earn$/i })
+    ).toBeVisible();
+  });
+
+  test("direct create page keeps type unselected", async ({ page }) => {
+    await page.goto("/transactions/create");
+    await expect(
+      page.getByRole("heading", { name: "Create Transaction" })
+    ).toBeVisible();
+
+    const typeFormItem = page
+      .locator(".ant-form-item")
+      .filter({ has: page.getByText("Type", { exact: true }) });
+    await expect(
+      typeFormItem.locator(".ant-select-selection-item")
+    ).toHaveCount(0);
+  });
+
+  test("invalid create query params do not preselect type", async ({
+    page,
+  }) => {
+    await page.goto(
+      "/transactions/create?source=transactions-list&type=invalid"
+    );
+    await expect(
+      page.getByRole("heading", { name: "Create Transaction" })
+    ).toBeVisible();
+
+    const typeFormItem = page
+      .locator(".ant-form-item")
+      .filter({ has: page.getByText("Type", { exact: true }) });
+    await expect(
+      typeFormItem.locator(".ant-select-selection-item")
+    ).toHaveCount(0);
+  });
+
   test("amount range filter shows only transactions within range", async ({
     page,
   }) => {
@@ -1076,11 +1137,12 @@ test.describe("Transactions", () => {
       }
       childAId = childRowA.id;
 
-      const { data: standaloneRow, error: standaloneError } = await supabaseAdmin
-        .from("categories")
-        .insert({ user_id: testUser.userId, type: "spend", name: standalone })
-        .select("id")
-        .single();
+      const { data: standaloneRow, error: standaloneError } =
+        await supabaseAdmin
+          .from("categories")
+          .insert({ user_id: testUser.userId, type: "spend", name: standalone })
+          .select("id")
+          .single();
       if (standaloneError || !standaloneRow?.id) {
         throw new Error(
           `Failed to create standalone category: ${
@@ -1173,7 +1235,9 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", parentId);
         if (error) {
-          throw new Error(`Failed to clean up parent category: ${error.message}`);
+          throw new Error(
+            `Failed to clean up parent category: ${error.message}`
+          );
         }
       }
     }
