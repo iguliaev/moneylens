@@ -1,5 +1,7 @@
 # Issue #209: Parent-aware alphabetical dropdown sorting
 
+**Status:** Done
+
 ## Context
 
 Transaction category dropdowns currently fetch categories sorted by raw `name`, then display hierarchical labels as `Parent / Child`. This causes visually incorrect ordering (for example, `Utilities / Heating`, `Vacation`, `Utilities / Water`) because sorting ignores the parent segment. Transaction edit also does not explicitly sort bank accounts.
