@@ -11,8 +11,17 @@ import {
   FilterDropdown,
   getDefaultFilter,
 } from "@refinedev/antd";
-import { Table, Space, Segmented, Select, DatePicker, InputNumber } from "antd";
+import {
+  Table,
+  Space,
+  Segmented,
+  Select,
+  DatePicker,
+  InputNumber,
+  Button,
+} from "antd";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router";
 import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
@@ -50,6 +59,7 @@ const MultiSelectFilter = ({
 
 export const TransactionList = () => {
   const invalidate = useInvalidate();
+  const navigate = useNavigate();
 
   const { tableProps, filters, setFilters, setCurrentPage } = useTable({
     syncWithLocation: true,
@@ -81,6 +91,12 @@ export const TransactionList = () => {
     ...commonSelectOptions,
     defaultValue: getDefaultFilter("category_id", filters, "in"),
   });
+  const sortedCategoryOptions = [...(categorySelectProps.options ?? [])].sort(
+    (a, b) =>
+      String(a?.label ?? "").localeCompare(String(b?.label ?? ""), undefined, {
+        sensitivity: "base",
+      })
+  );
 
   // Bank account select
   const { selectProps: bankAccountSelectProps } = useSelect({
@@ -104,7 +120,22 @@ export const TransactionList = () => {
   const transactionEmptyState = getTransactionEmptyState();
 
   return (
-    <List>
+    <List
+      headerButtons={() => (
+        <Button
+          type="primary"
+          onClick={() => {
+            const params = new URLSearchParams({
+              source: "transactions-list",
+              type: transactionType,
+            });
+            navigate(`/transactions/create?${params.toString()}`);
+          }}
+        >
+          Create
+        </Button>
+      )}
+    >
       <Segmented
         aria-label="segmented control"
         options={Object.values(TRANSACTION_TYPES).map((type) => ({
@@ -186,7 +217,10 @@ export const TransactionList = () => {
               <FilterDropdown {...props}>
                 <MultiSelectFilter
                   placeholder="Select categories"
-                  selectProps={categorySelectProps}
+                  selectProps={{
+                    ...categorySelectProps,
+                    options: sortedCategoryOptions,
+                  }}
                 />
               </FilterDropdown>
             )}

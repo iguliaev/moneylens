@@ -4,6 +4,11 @@ import { useList, useNotification } from "@refinedev/core";
 import { Form, Input, InputNumber, Select, DatePicker } from "antd";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { supabaseClient } from "../../utility";
+import type { Category } from "../../utility/categoryHierarchy";
+import {
+  categoryLabel,
+  compareCategoriesByHierarchyLabel,
+} from "../../utility/categoryHierarchy";
 
 const extractCreatedBudgetId = (result: unknown): string | null => {
   if (typeof result !== "object" || result === null || !("data" in result)) {
@@ -25,10 +30,12 @@ export const BudgetCreate = () => {
 
   const selectedType = Form.useWatch("type", formProps.form);
 
-  const { query: categoriesQuery } = useList({
-    resource: "categories",
+  const { query: categoriesQuery } = useList<Category>({
+    resource: "categories_with_usage",
     pagination: { mode: "off" },
-    sorters: [{ field: "name", order: "asc" }],
+    filters: selectedType
+      ? [{ field: "type", operator: "eq", value: selectedType }]
+      : [],
   });
 
   const { query: tagsQuery } = useList({
@@ -39,13 +46,13 @@ export const BudgetCreate = () => {
 
   const categoryOptions = useMemo(
     () =>
-      categoriesQuery.data?.data
-        ?.filter((c) => !selectedType || c.type === selectedType)
-        .map((c) => ({
-          label: `${c.name} (${c.type})`,
+      [...(categoriesQuery.data?.data ?? [])]
+        .sort(compareCategoriesByHierarchyLabel)
+        .map((c: Category) => ({
+          label: `${categoryLabel(c)} (${c.type})`,
           value: c.id as string,
         })) ?? [],
-    [categoriesQuery.data, selectedType]
+    [categoriesQuery.data]
   );
 
   const tagOptions = useMemo(

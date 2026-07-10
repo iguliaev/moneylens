@@ -1,5 +1,7 @@
 # Category Hierarchy Display Implementation Plan
 
+> **Status: Done**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Show transaction categories as `Parent / Child` (or just `Name` for roots) consistently in transactions list, create/edit category selectors, and transaction details.

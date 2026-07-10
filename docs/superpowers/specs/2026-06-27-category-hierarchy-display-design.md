@@ -1,5 +1,7 @@
 # Category Hierarchy Display Design
 
+**Status:** Done
+
 ## Context
 
 Transaction UI currently shows only child category names in key places (transactions list, transaction create/edit category picker, transaction details). This becomes ambiguous when multiple leaves share the same child name under different parents (for example, `Food / Groceries` vs `Vacations / Groceries`).

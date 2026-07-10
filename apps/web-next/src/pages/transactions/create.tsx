@@ -1,21 +1,58 @@
+import { useMemo } from "react";
 import { Create, useForm, useSelect as useAntSelect } from "@refinedev/antd";
 import { useSelect as useCoreSelect, useList } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
+import { useSearchParams } from "react-router";
 import dayjs from "dayjs";
-import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
+import {
+  TRANSACTION_TYPES,
+  TRANSACTION_TYPE_OPTIONS,
+  type TransactionType,
+} from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
   categoryLabel,
   categorySearchText,
+  compareCategoriesByHierarchyLabel,
   isLeafCategory,
 } from "../../utility/categoryHierarchy";
 
+const VALID_TRANSACTION_TYPES = new Set<TransactionType>(
+  Object.values(TRANSACTION_TYPES) as TransactionType[]
+);
+
 export const TransactionCreate = () => {
+  const [searchParams] = useSearchParams();
+  const initialType = useMemo<TransactionType | undefined>(() => {
+    const source = searchParams.get("source");
+    const rawType = searchParams.get("type");
+
+    if (source !== "transactions-list") return undefined;
+    if (!rawType || !VALID_TRANSACTION_TYPES.has(rawType as TransactionType))
+      return undefined;
+
+    return rawType as TransactionType;
+  }, [searchParams]);
+
   const { formProps, saveButtonProps } = useForm({
     warnWhenUnsavedChanges: false,
   });
   const { handleFinish, isLoading } = useTransactionForm({ mode: "create" });
+  const mergedInitialValues = useMemo(() => {
+    const existingInitialValues = formProps.initialValues ?? {};
+
+    if (!initialType) {
+      return Object.keys(existingInitialValues).length
+        ? existingInitialValues
+        : undefined;
+    }
+
+    return {
+      ...existingInitialValues,
+      type: initialType,
+    };
+  }, [formProps.initialValues, initialType]);
 
   const type = Form.useWatch("type", formProps.form);
 
@@ -29,6 +66,7 @@ export const TransactionCreate = () => {
 
   const leafCategoryOptions = (categoriesResult?.data ?? [])
     .filter(isLeafCategory)
+    .sort(compareCategoriesByHierarchyLabel)
     .map((c: Category) => ({
       label: categoryLabel(c),
       value: c.id,
@@ -52,7 +90,12 @@ export const TransactionCreate = () => {
 
   return (
     <Create saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
-      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
+      <Form
+        {...formProps}
+        initialValues={mergedInitialValues}
+        layout="vertical"
+        onFinish={handleFinish}
+      >
         <Form.Item
           label="Date"
           name={["date"]}
