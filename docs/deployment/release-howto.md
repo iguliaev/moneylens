@@ -13,12 +13,15 @@ This guide describes the step-by-step process for creating a production release.
 ## Step 1 — Review what will be released
 
 ```bash
+export RELEASE_VERSION="vX.Y.Z"
+
 git checkout main && git pull origin main
 git fetch origin release:release
 git log release..main --oneline
 ```
 
 Review the list of commits. If anything looks unexpected, resolve it before proceeding.
+Keep `RELEASE_VERSION` in your shell session and reuse it in the commands below.
 
 ---
 
@@ -27,13 +30,13 @@ Review the list of commits. If anything looks unexpected, resolve it before proc
 Since direct pushes to `release` are restricted, create a PR via `gh`:
 
 ```bash
-gh pr create --base release --head main --title "release: vX.Y.Z" --body "Production release vX.Y.Z"
+gh pr create --base release --head main --title "release: $RELEASE_VERSION" --body "Production release $RELEASE_VERSION"
 ```
 
 Have the PR reviewed and approved, then merge it:
 
 ```bash
-gh pr merge --merge --subject "release: vX.Y.Z"
+gh pr merge --merge --subject "release: $RELEASE_VERSION"
 ```
 
 > Use `--merge` (not `--squash`) to preserve individual commit history.  
@@ -47,8 +50,8 @@ Pull the updated `release` branch locally first:
 
 ```bash
 git checkout release && git pull origin release
-git tag vX.Y.Z
-git push origin vX.Y.Z
+git tag $RELEASE_VERSION
+git push origin $RELEASE_VERSION
 ```
 
 Use [semantic versioning](https://semver.org/):
@@ -61,7 +64,7 @@ Use [semantic versioning](https://semver.org/):
 ## Step 4 — Create a GitHub Release
 
 ```bash
-gh release create vX.Y.Z --title "vX.Y.Z" --generate-notes --target release
+gh release create $RELEASE_VERSION --title "$RELEASE_VERSION" --generate-notes --target release
 ```
 
 `--generate-notes` automatically generates a changelog from merged PRs since the last release.
@@ -95,14 +98,14 @@ git push origin hotfix/describe-fix
 
 # Open PR into release
 gh pr create --base release --head hotfix/describe-fix \
-  --title "hotfix: describe the fix" --body "Hotfix for vX.Y.Z"
+  --title "hotfix: describe the fix" --body "Hotfix for $RELEASE_VERSION"
 gh pr merge --merge
 
 # Tag and release
 git checkout release && git pull origin release
-git tag vX.Y.Z
-git push origin vX.Y.Z
-gh release create vX.Y.Z --title "vX.Y.Z (hotfix)" --notes "Fix: describe the fix"
+git tag $RELEASE_VERSION
+git push origin $RELEASE_VERSION
+gh release create $RELEASE_VERSION --title "$RELEASE_VERSION (hotfix)" --notes "Fix: describe the fix"
 
 # Backport to main via PR
 gh pr create --base main --head release --title "chore: backport hotfix to main"
@@ -118,5 +121,5 @@ gh pr merge --merge
 | `git log release..main --oneline` | Preview commits going into release |
 | `gh pr create --base release --head main` | Open release PR (required by branch rules) |
 | `gh pr merge --merge` | Merge with merge commit (preserves history) |
-| `git tag vX.Y.Z && git push origin vX.Y.Z` | Create and push a tag |
-| `gh release create vX.Y.Z --generate-notes` | Create GitHub Release with auto changelog |
+| `git tag $RELEASE_VERSION && git push origin $RELEASE_VERSION` | Create and push a tag |
+| `gh release create $RELEASE_VERSION --generate-notes` | Create GitHub Release with auto changelog |
