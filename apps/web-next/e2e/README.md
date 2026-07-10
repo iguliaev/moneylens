@@ -13,7 +13,7 @@ This directory contains Playwright end-to-end tests for the web-next application
 
 2. Configure environment variables:
    - Copy `.env.local.example` to `.env.local` and fill in your Supabase credentials
-   - Or copy from the main web app: `cp ../web/.env.local .env.local`
+   - Or copy the frontend app's env file if you already have one: `cp ../.env.local .env.local`
 
 ### Environment Variables
 
@@ -22,7 +22,6 @@ Create a `.env.local` file with the following variables:
 ```bash
 # Supabase Configuration
 VITE_SUPABASE_URL=your_supabase_url_here
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
 # Playwright Configuration
@@ -41,6 +40,9 @@ npx playwright install
 ```bash
 # Run all tests
 npm run test:e2e
+
+# Run all tests with CI-friendly output
+npm run test:e2e:ci
 
 # Run tests in headed mode (see browser)
 npm run test:e2e:headed
@@ -112,7 +114,7 @@ When porting tests from `../web/e2e/tests/`, key differences to consider:
 
 ## Notes
 
-- Tests run sequentially to ensure data isolation
+- Playwright uses limited CI parallelism via the web app config (2 workers), while tests still rely on isolated users and cleanup.
 - Each test creates its own test user and cleans up after itself
 - Shared Supabase backend means test data setup is identical to web app
 - See the main project README for more information

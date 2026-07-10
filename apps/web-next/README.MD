@@ -39,7 +39,8 @@ Refine's hooks and components simplifies the development process and eliminates 
 
 - Playwright is configured to auto-start the dev server via `webServer` when `BASE_URL` is not set, so `npm run test:e2e` is usually all you need.
 - If you already have a server running, set `BASE_URL` to skip auto-start (e.g. `BASE_URL=http://localhost:5173 npm run test:e2e`).
-- In CI, start the server in a separate step and pass `BASE_URL` to reuse it; otherwise Playwright will launch `npm run dev` with a 120s timeout.
+- Use `npm run test:e2e:ci` for CI-friendly terminal output (`PLAYWRIGHT_HTML_OPEN=never` + list reporter).
+- In CI, Playwright uses 2 workers by default in `playwright.config.ts`, so the suite is no longer fully serial.
 
 ## Environment Visual Indicator
 
