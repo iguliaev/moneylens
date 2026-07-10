@@ -14,7 +14,7 @@
 ## Tech Stack
 
 - **Backend:** [Supabase](https://supabase.com/) (PostgreSQL, Auth, Storage, Realtime)
-- **Frontend:** [Refine](https://refine.dev/) (coming soon)
+- **Frontend:** [apps/web-next](apps/web-next/) (Vite + React + Refine + Ant Design)
 
 ## Database
 
@@ -134,7 +134,7 @@ if (error) {
 ### Prerequisites
 
 - [Supabase CLI](https://supabase.com/docs/guides/cli)
-- [Node.js](https://nodejs.org/) (for frontend, coming soon)
+- [Node.js](https://nodejs.org/) (for the frontend app and tooling)
 - [Deno](https://deno.com/) (if using edge functions)
 
 ### Supabase CLI Commands
