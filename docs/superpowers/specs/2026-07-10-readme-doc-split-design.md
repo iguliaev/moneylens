@@ -1,6 +1,6 @@
 # README Docs Split Design
 
-**Status:** Draft
+**Status:** Done
 
 ## Context
 

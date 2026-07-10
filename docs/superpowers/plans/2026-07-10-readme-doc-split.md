@@ -1,5 +1,7 @@
 # README Docs Split Implementation Plan
 
+> **Status: Done**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn the root README into a short entry point, move setup guidance into `docs/getting-started.md`, and remove the stale RPC section from the top-level docs.
