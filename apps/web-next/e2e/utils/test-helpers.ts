@@ -360,16 +360,19 @@ export async function createCategoryForType(
   description?: string
 ) {
   await page.goto("/categories");
-
   // Open create category modal
   await page.getByRole("button", { name: /create/i }).click();
-  await expect(
-    page.getByRole("heading", { name: "Create Category" })
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/categories\/create/);
+  await expect(page.getByRole("combobox", { name: /type/i })).toBeVisible();
 
   // Select category type
-  await page.getByRole("combobox", { name: "* Type" }).click();
-  await page.getByTitle(new RegExp(type, "i")).click();
+  const escapedType = type.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
+  const typeOption = page
+    .locator(".ant-select-dropdown:visible")
+    .getByTitle(new RegExp(`^${escapedType}$`, "i"));
+  await typeOption.waitFor({ state: "visible" });
+  await typeOption.click();
   await expect(
     page.locator("#root").getByTitle(new RegExp(type, "i"))
   ).toBeVisible();
