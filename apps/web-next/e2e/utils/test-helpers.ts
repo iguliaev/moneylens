@@ -14,6 +14,11 @@ const slugify = (text: string): string => {
     .replace(/--+/g, "-");
 };
 
+const formatDatePickerDisplayValue = (isoDate: string): string => {
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
+};
+
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -657,13 +662,17 @@ export async function createBudget(
   if (startDate !== undefined) {
     await page.getByLabel("Start Date").fill(startDate);
     await page.keyboard.press("Enter");
-    await expect(page.getByLabel("Start Date")).toHaveValue(startDate);
+    await expect(page.getByLabel("Start Date")).toHaveValue(
+      formatDatePickerDisplayValue(startDate)
+    );
   }
 
   if (endDate !== undefined) {
     await page.getByLabel("End Date").fill(endDate);
     await page.keyboard.press("Enter");
-    await expect(page.getByLabel("End Date")).toHaveValue(endDate);
+    await expect(page.getByLabel("End Date")).toHaveValue(
+      formatDatePickerDisplayValue(endDate)
+    );
   }
 
   await page.getByRole("button", { name: /save/i }).click();
