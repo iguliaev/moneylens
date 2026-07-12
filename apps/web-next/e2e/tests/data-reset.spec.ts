@@ -4,6 +4,7 @@ import {
   deleteTestUser,
   loginUser,
   cleanupReferenceDataForUser,
+  createCategoryForType,
   seedReferenceDataForUser,
   createBudget,
   createTransactionWithoutTags,
@@ -134,12 +135,7 @@ test.describe("Data Reset", () => {
 
   test("data reset removes all categories", async ({ page }) => {
     // Create a category
-    await page.goto("/categories");
-    await page.getByRole("button", { name: /create/i }).click();
-    await page.getByRole("combobox", { name: "* Type" }).click();
-    await page.getByTitle(/spend/i).click();
-    await page.getByRole("textbox", { name: "* Name" }).fill("Test Category");
-    await page.getByRole("button", { name: /save/i }).click();
+    await createCategoryForType(page, "spend", "Test Category");
 
     // Verify redirected to categories list
     await expect(page).toHaveURL(/\/categories/);

@@ -31,6 +31,7 @@ import { ColorModeContext } from "../../contexts/color-mode";
 import { useCurrency } from "../../contexts/currency";
 import { useQuickActions } from "../../hooks/useQuickActions";
 import { formatCurrency } from "../../utility/currency";
+import { formatDisplayDate } from "../../utility/dateDisplay";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -91,14 +92,11 @@ const renderTransactionItem = (
   currency: string
 ): IOption => {
   const note = t.notes ?? `Transaction #${t.id}`;
-  const formattedDate = t.date
-    ? new Date(t.date).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : null;
-  const meta = [t.category_name, formattedDate].filter(Boolean).join(" · ");
+  const metaParts = [t.category_name];
+  if (t.date) {
+    metaParts.push(formatDisplayDate(t.date));
+  }
+  const meta = metaParts.filter(Boolean).join(" · ");
 
   return {
     value: `/transactions/show/${t.id}`,

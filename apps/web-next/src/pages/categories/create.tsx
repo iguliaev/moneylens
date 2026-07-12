@@ -1,24 +1,57 @@
 import { Create, useForm, useSelect } from "@refinedev/antd";
 import { Form, Input, Select } from "antd";
-import { useState } from "react";
-import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router";
+import {
+  TRANSACTION_TYPES,
+  TRANSACTION_TYPE_OPTIONS,
+} from "../../constants/transactionTypes";
 
 export const CategoryCreate = () => {
+  const [searchParams] = useSearchParams();
   const { formProps, saveButtonProps } = useForm();
-  const [selectedType, setSelectedType] = useState<string | undefined>();
+  const initialType = useMemo<string | undefined>(() => {
+    const validTypes = new Set<string>(Object.values(TRANSACTION_TYPES));
+    const source = searchParams.get("source");
+    const rawType = searchParams.get("type");
+
+    if (source !== "categories-list") return undefined;
+    if (!rawType || !validTypes.has(rawType)) {
+      return undefined;
+    }
+
+    return rawType;
+  }, [searchParams]);
+
+  const mergedInitialValues = useMemo(() => {
+    const existingInitialValues = formProps.initialValues ?? {};
+
+    if (!initialType) {
+      return Object.keys(existingInitialValues).length
+        ? existingInitialValues
+        : undefined;
+    }
+
+    return {
+      ...existingInitialValues,
+      type: initialType,
+    };
+  }, [formProps.initialValues, initialType]);
+
+  const currentType = Form.useWatch("type", formProps.form) ?? initialType;
 
   const { selectProps: parentSelectProps } = useSelect({
     resource: "categories_with_usage",
     optionLabel: "name",
     optionValue: "id",
     sorters: [{ field: "name", order: "asc" }],
-    filters: selectedType
+    filters: currentType
       ? [
-          { field: "type", operator: "eq", value: selectedType },
+          { field: "type", operator: "eq", value: currentType },
           { field: "parent_id", operator: "null", value: null },
         ]
       : [],
-    queryOptions: { enabled: !!selectedType },
+    queryOptions: { enabled: !!currentType },
     pagination: { pageSize: 200 },
   });
 
@@ -26,10 +59,10 @@ export const CategoryCreate = () => {
     <Create saveButtonProps={saveButtonProps}>
       <Form
         {...formProps}
+        initialValues={mergedInitialValues}
         layout="vertical"
         onValuesChange={(changed) => {
           if (changed.type !== undefined) {
-            setSelectedType(changed.type);
             formProps.form?.setFieldValue("parent_id", undefined);
           }
         }}
@@ -48,7 +81,7 @@ export const CategoryCreate = () => {
             {...parentSelectProps}
             allowClear
             placeholder="No parent (top-level category)"
-            disabled={!selectedType}
+            disabled={!currentType}
           />
         </Form.Item>
       </Form>
