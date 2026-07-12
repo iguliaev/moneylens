@@ -10,6 +10,7 @@ import {
   type TransactionType,
 } from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
+import { DATE_PICKER_INPUT_FORMATS } from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
   categoryLabel,
@@ -104,7 +105,7 @@ export const TransactionCreate = () => {
             value: value ? dayjs(value) : undefined,
           })}
         >
-          <DatePicker format="YYYY-MM-DD" />
+          <DatePicker format={DATE_PICKER_INPUT_FORMATS} />
         </Form.Item>
         <Form.Item label="Type" name={["type"]} rules={[{ required: true }]}>
           <Select

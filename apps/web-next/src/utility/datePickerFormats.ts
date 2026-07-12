@@ -1,0 +1,1 @@
+export const DATE_PICKER_INPUT_FORMATS = ["DD/MM/YYYY", "YYYY-MM-DD"];
