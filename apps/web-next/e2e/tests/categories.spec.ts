@@ -41,6 +41,57 @@ test.describe("Categories", () => {
     });
   });
 
+  test("create from selected category tab preselects type", async ({
+    page,
+  }) => {
+    const type = "earn";
+    const ts = Date.now();
+    const parentName = `e2e-category-prefill-parent-${ts}`;
+
+    await createCategoryForType(page, type, parentName);
+
+    await page.goto("/categories");
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(new RegExp(type, "i"))
+      .click();
+
+    await page.getByRole("button", { name: "Create" }).click();
+
+    await expect(page).toHaveURL(
+      new RegExp(`/categories/create\\?source=categories-list&type=${type}$`)
+    );
+    await expect(
+      page.locator(".ant-select-selection-item").filter({ hasText: /^earn$/i })
+    ).toBeVisible();
+
+    await page
+      .getByRole("combobox", { name: /parent category/i })
+      .click({ force: true });
+    await expect(
+      page.locator(".ant-select-dropdown:visible").getByTitle(
+        new RegExp(`^${parentName}$`, "i")
+      )
+    ).toBeVisible();
+  });
+
+  test("direct create stays blank", async ({ page }) => {
+    await page.goto("/categories/create");
+
+    await expect(page).toHaveURL("/categories/create");
+    await expect(
+      page.locator(".ant-select-selection-item").filter({ hasText: /^(earn|spend|save)$/i })
+    ).toHaveCount(0);
+  });
+
+  test("invalid query params stay blank", async ({ page }) => {
+    await page.goto("/categories/create?source=categories-list&type=invalid");
+
+    await expect(
+      page.locator(".ant-select-selection-item").filter({ hasText: /^(earn|spend|save)$/i })
+    ).toHaveCount(0);
+  });
+
   test("user can edit a category", async ({ page }) => {
     const ts = Date.now();
     const categoryType = "earn";

@@ -6,8 +6,9 @@ import {
   ShowButton,
   DeleteButton,
 } from "@refinedev/antd";
-import { Table, Space, Segmented } from "antd";
+import { Table, Space, Segmented, Button } from "antd";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
@@ -16,6 +17,7 @@ import { getCategoryEmptyState, TableSkeleton } from "../../components";
 
 export const CategoryList = () => {
   const invalidate = useInvalidate();
+  const navigate = useNavigate();
   const [categoryType, setCategoryType] = useState<string>(
     TRANSACTION_TYPES.EARN
   );
@@ -41,7 +43,22 @@ export const CategoryList = () => {
   const categoryEmptyState = getCategoryEmptyState();
 
   return (
-    <List>
+    <List
+      headerButtons={() => (
+        <Button
+          type="primary"
+          onClick={() => {
+            const params = new URLSearchParams({
+              source: "categories-list",
+              type: categoryType,
+            });
+            navigate(`/categories/create?${params.toString()}`);
+          }}
+        >
+          Create
+        </Button>
+      )}
+    >
       <Segmented
         aria-label="segmented control"
         options={Object.values(TRANSACTION_TYPES).map((type) => ({
