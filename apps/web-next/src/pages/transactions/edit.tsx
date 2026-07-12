@@ -130,7 +130,7 @@ export const TransactionEdit = () => {
             value: value ? dayjs(value) : undefined,
           })}
         >
-          <DatePicker format="YYYY-MM-DD" />
+          <DatePicker format="DD/MM/YYYY" />
         </Form.Item>
         <Form.Item
           label="Type"

@@ -135,10 +135,10 @@ export const BudgetCreate = () => {
           <InputNumber min={0.01} precision={2} style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item label="Start Date" name="start_date">
-          <DatePicker style={{ width: "100%" }} />
+          <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item label="End Date" name="end_date">
-          <DatePicker style={{ width: "100%" }} />
+          <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item label="Categories" name="category_ids">
           <Select

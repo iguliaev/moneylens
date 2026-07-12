@@ -174,7 +174,7 @@ export const BudgetEdit = () => {
             value: value ? dayjs(value) : undefined,
           })}
         >
-          <DatePicker style={{ width: "100%" }} />
+          <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item
           label="End Date"
@@ -183,7 +183,7 @@ export const BudgetEdit = () => {
             value: value ? dayjs(value) : undefined,
           })}
         >
-          <DatePicker style={{ width: "100%" }} />
+          <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item label="Categories" name="category_ids">
           <Select

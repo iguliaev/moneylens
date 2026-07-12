@@ -1,4 +1,5 @@
 import { ConfigProvider } from "antd";
+import enGB from "antd/locale/en_GB";
 import {
   type PropsWithChildren,
   createContext,
@@ -60,6 +61,7 @@ export const ColorModeContextProvider: React.FC<PropsWithChildren> = ({
       }}
     >
       <ConfigProvider
+        locale={enGB}
         theme={{
           ...(mode === "light" ? lightThemeConfig : darkThemeConfig),
         }}

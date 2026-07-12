@@ -104,7 +104,7 @@ export const TransactionCreate = () => {
             value: value ? dayjs(value) : undefined,
           })}
         >
-          <DatePicker format="YYYY-MM-DD" />
+          <DatePicker format="DD/MM/YYYY" />
         </Form.Item>
         <Form.Item label="Type" name={["type"]} rules={[{ required: true }]}>
           <Select
