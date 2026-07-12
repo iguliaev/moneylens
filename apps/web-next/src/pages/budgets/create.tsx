@@ -143,7 +143,10 @@ export const BudgetCreate = () => {
           })}
           getValueFromEvent={(date) => date?.format("YYYY-MM-DD")}
         >
-          <DatePicker format={DATE_PICKER_INPUT_FORMATS} style={{ width: "100%" }} />
+          <DatePicker
+            format={DATE_PICKER_INPUT_FORMATS}
+            style={{ width: "100%" }}
+          />
         </Form.Item>
         <Form.Item
           label="End Date"
@@ -153,7 +156,10 @@ export const BudgetCreate = () => {
           })}
           getValueFromEvent={(date) => date?.format("YYYY-MM-DD")}
         >
-          <DatePicker format={DATE_PICKER_INPUT_FORMATS} style={{ width: "100%" }} />
+          <DatePicker
+            format={DATE_PICKER_INPUT_FORMATS}
+            style={{ width: "100%" }}
+          />
         </Form.Item>
         <Form.Item label="Categories" name="category_ids">
           <Select
