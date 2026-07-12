@@ -25,7 +25,7 @@ import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
 } from "../../constants/transactionTypes";
-import { formatAmount } from "../../utility";
+import { formatAmount, DATE_PICKER_INPUT_FORMATS } from "../../utility";
 import { formatDisplayDate } from "../../utility/dateDisplay";
 import { getTransactionEmptyState, TableSkeleton } from "../../components";
 
@@ -179,7 +179,7 @@ export const TransactionList = () => {
               return (
                 <div style={{ padding: 8 }}>
                   <DatePicker.RangePicker
-                    format="DD/MM/YYYY"
+                    format={DATE_PICKER_INPUT_FORMATS}
                     value={value}
                     onChange={(dates) => {
                       setFilters([

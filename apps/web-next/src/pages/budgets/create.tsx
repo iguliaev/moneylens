@@ -3,7 +3,7 @@ import { Create, useForm } from "@refinedev/antd";
 import { useList, useNotification } from "@refinedev/core";
 import { Form, Input, InputNumber, Select, DatePicker } from "antd";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
-import { supabaseClient } from "../../utility";
+import { DATE_PICKER_INPUT_FORMATS, supabaseClient } from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
   categoryLabel,
@@ -135,10 +135,16 @@ export const BudgetCreate = () => {
           <InputNumber min={0.01} precision={2} style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item label="Start Date" name="start_date">
-          <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+          <DatePicker
+            format={DATE_PICKER_INPUT_FORMATS}
+            style={{ width: "100%" }}
+          />
         </Form.Item>
         <Form.Item label="End Date" name="end_date">
-          <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+          <DatePicker
+            format={DATE_PICKER_INPUT_FORMATS}
+            style={{ width: "100%" }}
+          />
         </Form.Item>
         <Form.Item label="Categories" name="category_ids">
           <Select

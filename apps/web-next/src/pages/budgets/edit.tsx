@@ -4,7 +4,7 @@ import { useList, useNotification } from "@refinedev/core";
 import { Form, Input, InputNumber, Select, DatePicker } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
-import { supabaseClient } from "../../utility";
+import { DATE_PICKER_INPUT_FORMATS, supabaseClient } from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
   categoryLabel,
@@ -174,7 +174,10 @@ export const BudgetEdit = () => {
             value: value ? dayjs(value) : undefined,
           })}
         >
-          <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+          <DatePicker
+            format={DATE_PICKER_INPUT_FORMATS}
+            style={{ width: "100%" }}
+          />
         </Form.Item>
         <Form.Item
           label="End Date"
@@ -183,7 +186,10 @@ export const BudgetEdit = () => {
             value: value ? dayjs(value) : undefined,
           })}
         >
-          <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+          <DatePicker
+            format={DATE_PICKER_INPUT_FORMATS}
+            style={{ width: "100%" }}
+          />
         </Form.Item>
         <Form.Item label="Categories" name="category_ids">
           <Select
