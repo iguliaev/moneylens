@@ -69,9 +69,9 @@ test.describe("Categories", () => {
       .getByRole("combobox", { name: /parent category/i })
       .click({ force: true });
     await expect(
-      page.locator(".ant-select-dropdown:visible").getByTitle(
-        new RegExp(`^${parentName}$`, "i")
-      )
+      page
+        .locator(".ant-select-dropdown:visible")
+        .getByTitle(new RegExp(`^${parentName}$`, "i"))
     ).toBeVisible();
   });
 
@@ -80,7 +80,9 @@ test.describe("Categories", () => {
 
     await expect(page).toHaveURL("/categories/create");
     await expect(
-      page.locator(".ant-select-selection-item").filter({ hasText: /^(earn|spend|save)$/i })
+      page
+        .locator(".ant-select-selection-item")
+        .filter({ hasText: /^(earn|spend|save)$/i })
     ).toHaveCount(0);
   });
 
@@ -88,7 +90,9 @@ test.describe("Categories", () => {
     await page.goto("/categories/create?source=categories-list&type=invalid");
 
     await expect(
-      page.locator(".ant-select-selection-item").filter({ hasText: /^(earn|spend|save)$/i })
+      page
+        .locator(".ant-select-selection-item")
+        .filter({ hasText: /^(earn|spend|save)$/i })
     ).toHaveCount(0);
   });
 

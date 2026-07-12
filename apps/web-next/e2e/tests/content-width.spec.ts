@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { createTestUser, deleteTestUser, loginUser } from "../utils/test-helpers";
+import {
+  createTestUser,
+  deleteTestUser,
+  loginUser,
+} from "../utils/test-helpers";
 
 test.describe("Content width shell", () => {
   test("selected authenticated pages use the shared width shell", async ({
