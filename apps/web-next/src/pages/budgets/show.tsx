@@ -1,5 +1,5 @@
 import { useShow } from "@refinedev/core";
-import { Show, TextField, DateField, NumberField } from "@refinedev/antd";
+import { Show, TextField, NumberField } from "@refinedev/antd";
 import { Tag, Typography } from "antd";
 import {
   TRANSACTION_TYPE_LABELS,
@@ -7,6 +7,7 @@ import {
   TYPE_COLORS,
 } from "../../constants/transactionTypes";
 import { useCurrency } from "../../contexts/currency";
+import { formatDisplayDate } from "../../utility/dateDisplay";
 
 const { Title } = Typography;
 
@@ -33,9 +34,9 @@ export const BudgetShow = () => {
         options={{ style: "currency", currency }}
       />
       <Title level={5}>Start Date</Title>
-      <DateField value={record?.start_date} />
+      <TextField value={formatDisplayDate(record?.start_date)} />
       <Title level={5}>End Date</Title>
-      <DateField value={record?.end_date} />
+      <TextField value={formatDisplayDate(record?.end_date)} />
     </Show>
   );
 };

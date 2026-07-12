@@ -13,6 +13,7 @@ import {
   TYPE_COLORS,
 } from "../../constants/transactionTypes";
 import { formatCurrency } from "../../utility/currency";
+import { formatDisplayDate } from "../../utility/dateDisplay";
 import { useCurrency } from "../../contexts/currency";
 import {
   getBudgetAlertState,
@@ -59,8 +60,16 @@ export const BudgetList = () => {
             render={(value: number) => formatCurrency(value, currency)}
             align="right"
           />
-          <Table.Column dataIndex="start_date" title="Start Date" />
-          <Table.Column dataIndex="end_date" title="End Date" />
+          <Table.Column
+            dataIndex="start_date"
+            title="Start Date"
+            render={(value: string) => formatDisplayDate(value)}
+          />
+          <Table.Column
+            dataIndex="end_date"
+            title="End Date"
+            render={(value: string) => formatDisplayDate(value)}
+          />
           <Table.Column
             dataIndex="category_count"
             title="Categories"

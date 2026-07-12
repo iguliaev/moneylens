@@ -1,6 +1,7 @@
 import { useShow } from "@refinedev/core";
-import { Show, TextField, DateField } from "@refinedev/antd";
+import { Show, TextField } from "@refinedev/antd";
 import { Typography } from "antd";
+import { formatDisplayDate } from "../../utility/dateDisplay";
 
 const { Title } = Typography;
 
@@ -23,9 +24,9 @@ export const CategoryShow = () => {
       <Title level={5}>Parent Category</Title>
       <TextField value={record?.parent?.name ?? "—"} />
       <Title level={5}>Created At</Title>
-      <DateField value={record?.created_at} />
+      <TextField value={formatDisplayDate(record?.created_at)} />
       <Title level={5}>Updated At</Title>
-      <DateField value={record?.updated_at} />
+      <TextField value={formatDisplayDate(record?.updated_at)} />
     </Show>
   );
 };

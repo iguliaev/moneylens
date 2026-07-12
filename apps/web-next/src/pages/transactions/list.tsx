@@ -6,7 +6,6 @@ import {
   EditButton,
   ShowButton,
   DeleteButton,
-  DateField,
   TagField,
   FilterDropdown,
   getDefaultFilter,
@@ -26,7 +25,8 @@ import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_TYPES,
 } from "../../constants/transactionTypes";
-import { formatAmount } from "../../utility";
+import { formatAmount, DATE_PICKER_INPUT_FORMATS } from "../../utility";
+import { formatDisplayDate } from "../../utility/dateDisplay";
 import { getTransactionEmptyState, TableSkeleton } from "../../components";
 
 const commonSelectOptions = {
@@ -165,7 +165,7 @@ export const TransactionList = () => {
             dataIndex={["date"]}
             title="Date"
             sorter
-            render={(value: string) => <DateField value={value} />}
+            render={(value: string) => formatDisplayDate(value)}
             filteredValue={getDefaultFilter("date", filters, "between") ?? null}
             filterDropdown={({ confirm }) => {
               const activeVal = getDefaultFilter("date", filters, "between");
@@ -179,6 +179,7 @@ export const TransactionList = () => {
               return (
                 <div style={{ padding: 8 }}>
                   <DatePicker.RangePicker
+                    format={DATE_PICKER_INPUT_FORMATS}
                     value={value}
                     onChange={(dates) => {
                       setFilters([

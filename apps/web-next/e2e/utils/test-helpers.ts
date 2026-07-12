@@ -360,18 +360,21 @@ export async function createCategoryForType(
   description?: string
 ) {
   await page.goto("/categories");
-
-  // Open create category modal
+  // Open create category page
   await page.getByRole("button", { name: /create/i }).click();
-  await expect(
-    page.getByRole("heading", { name: "Create Category" })
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/categories\/create/);
+  await expect(page.getByRole("combobox", { name: /type/i })).toBeVisible();
 
   // Select category type
-  await page.getByRole("combobox", { name: "* Type" }).click();
-  await page.getByTitle(new RegExp(type, "i")).click();
+  const escapedType = type.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await page.getByRole("combobox", { name: "* Type" }).click({ force: true });
+  const typeOption = page
+    .locator(".ant-select-dropdown:visible")
+    .getByTitle(new RegExp(`^${escapedType}$`, "i"));
+  await typeOption.waitFor({ state: "visible" });
+  await typeOption.click();
   await expect(
-    page.locator("#root").getByTitle(new RegExp(type, "i"))
+    page.locator("#root").getByTitle(new RegExp(escapedType, "i"))
   ).toBeVisible();
 
   // Fill in name and description
@@ -485,7 +488,7 @@ export async function createTransactionWithoutTags(
  * @param page - Playwright Page object
  * @param criteria - Object containing fields to match:
  *   - note: unique note text
- *   - date: date in YYYY-MM-DD format (will be converted to MM/DD/YYYY for display)
+ *   - date: date in YYYY-MM-DD format (will be converted to DD/MM/YYYY for display)
  *   - category: category name (case-insensitive regex match)
  *   - amount: amount string (will be formatted to 2 decimal places)
  *   - bankAccount: bank account name (case-insensitive regex match)
@@ -501,9 +504,9 @@ export function getTransactionRow(
     bankAccount: string;
   }
 ) {
-  // Date is displayed as MM/DD/YYYY, convert from YYYY-MM-DD
+  // Date is displayed as DD/MM/YYYY, convert from YYYY-MM-DD
   const [y, m, d] = criteria.date.split("-");
-  const displayDate = `${m}/${d}/${y}`;
+  const displayDate = `${d}/${m}/${y}`;
   // Amount is displayed with 2 decimal places (e.g., 100.00, 1.01)
   const displayAmount = parseFloat(criteria.amount).toFixed(2);
 
