@@ -485,7 +485,7 @@ export async function createTransactionWithoutTags(
  * @param page - Playwright Page object
  * @param criteria - Object containing fields to match:
  *   - note: unique note text
- *   - date: date in YYYY-MM-DD format (will be converted to MM/DD/YYYY for display)
+ *   - date: date in YYYY-MM-DD format (will be converted to DD/MM/YYYY for display)
  *   - category: category name (case-insensitive regex match)
  *   - amount: amount string (will be formatted to 2 decimal places)
  *   - bankAccount: bank account name (case-insensitive regex match)
@@ -501,9 +501,9 @@ export function getTransactionRow(
     bankAccount: string;
   }
 ) {
-  // Date is displayed as MM/DD/YYYY, convert from YYYY-MM-DD
+  // Date is displayed as DD/MM/YYYY, convert from YYYY-MM-DD
   const [y, m, d] = criteria.date.split("-");
-  const displayDate = `${m}/${d}/${y}`;
+  const displayDate = `${d}/${m}/${y}`;
   // Amount is displayed with 2 decimal places (e.g., 100.00, 1.01)
   const displayAmount = parseFloat(criteria.amount).toFixed(2);
 

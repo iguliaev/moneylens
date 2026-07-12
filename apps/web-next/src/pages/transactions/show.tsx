@@ -1,8 +1,9 @@
 import { useShow, useOne } from "@refinedev/core";
-import { Show, TextField, DateField } from "@refinedev/antd";
+import { Show, TextField } from "@refinedev/antd";
 import { Typography, Skeleton } from "antd";
 import { formatCurrency } from "../../utility";
 import { useCurrency } from "../../contexts/currency";
+import { formatDisplayDate } from "../../utility/dateDisplay";
 import type { Category } from "../../utility/categoryHierarchy";
 import { categoryLabel } from "../../utility/categoryHierarchy";
 
@@ -39,7 +40,7 @@ export const TransactionShow = () => {
   return (
     <Show isLoading={isLoading}>
       <Title level={5}>Date</Title>
-      <DateField value={record?.date} />
+      <TextField value={formatDisplayDate(record?.date)} />
       <Title level={5}>Type</Title>
       <TextField value={record?.type} />
       <Title level={5}>Category</Title>
