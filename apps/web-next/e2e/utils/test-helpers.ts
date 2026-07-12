@@ -360,7 +360,7 @@ export async function createCategoryForType(
   description?: string
 ) {
   await page.goto("/categories");
-  // Open create category modal
+  // Open create category page
   await page.getByRole("button", { name: /create/i }).click();
   await expect(page).toHaveURL(/\/categories\/create/);
   await expect(page.getByRole("combobox", { name: /type/i })).toBeVisible();
