@@ -4,6 +4,7 @@ import {
   deleteTestUser,
   loginUser,
   createBudget,
+  e2eCurrentMonthDate,
   seedReferenceDataForUser,
   cleanupReferenceDataForUser,
   waitForFormReady,
@@ -36,6 +37,15 @@ test.describe("Budgets", () => {
     const desc = `vacation budget ${ts}`;
 
     await createBudget(page, name, "Spend", "1000", desc);
+  });
+
+  test("user can create a budget with dates", async ({ page }) => {
+    const ts = Date.now();
+    const name = `e2e-budget-create-dates-${ts}`;
+    const startDate = e2eCurrentMonthDate(10);
+    const endDate = e2eCurrentMonthDate(20);
+
+    await createBudget(page, name, "Spend", "1200", undefined, startDate, endDate);
   });
 
   test("user can edit a budget", async ({ page }) => {

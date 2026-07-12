@@ -632,7 +632,9 @@ export async function createBudget(
   name: string,
   type: string,
   targetAmount: string,
-  description?: string
+  description?: string,
+  startDate?: string,
+  endDate?: string
 ) {
   await page.goto("/budgets");
   await page.getByRole("button", { name: /create/i }).click();
@@ -651,6 +653,18 @@ export async function createBudget(
   await page
     .getByRole("spinbutton", { name: "* Target Amount" })
     .fill(targetAmount);
+
+  if (startDate !== undefined) {
+    await page.getByLabel("Start Date").fill(startDate);
+    await page.keyboard.press("Enter");
+    await expect(page.getByLabel("Start Date")).toHaveValue(startDate);
+  }
+
+  if (endDate !== undefined) {
+    await page.getByLabel("End Date").fill(endDate);
+    await page.keyboard.press("Enter");
+    await expect(page.getByLabel("End Date")).toHaveValue(endDate);
+  }
 
   await page.getByRole("button", { name: /save/i }).click();
   await expect(page).toHaveURL(/\/budgets/);
