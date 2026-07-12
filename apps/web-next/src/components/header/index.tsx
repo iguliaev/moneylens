@@ -92,8 +92,11 @@ const renderTransactionItem = (
   currency: string
 ): IOption => {
   const note = t.notes ?? `Transaction #${t.id}`;
-  const formattedDate = formatDisplayDate(t.date);
-  const meta = [t.category_name, formattedDate].filter(Boolean).join(" · ");
+  const metaParts = [t.category_name];
+  if (t.date) {
+    metaParts.push(formatDisplayDate(t.date));
+  }
+  const meta = metaParts.filter(Boolean).join(" · ");
 
   return {
     value: `/transactions/show/${t.id}`,

@@ -134,17 +134,19 @@ export const BudgetCreate = () => {
         >
           <InputNumber min={0.01} precision={2} style={{ width: "100%" }} />
         </Form.Item>
-        <Form.Item label="Start Date" name="start_date">
-          <DatePicker
-            format={DATE_PICKER_INPUT_FORMATS}
-            style={{ width: "100%" }}
-          />
+        <Form.Item
+          label="Start Date"
+          name="start_date"
+          getValueFromEvent={(date) => date?.format("YYYY-MM-DD")}
+        >
+          <DatePicker format={DATE_PICKER_INPUT_FORMATS} style={{ width: "100%" }} />
         </Form.Item>
-        <Form.Item label="End Date" name="end_date">
-          <DatePicker
-            format={DATE_PICKER_INPUT_FORMATS}
-            style={{ width: "100%" }}
-          />
+        <Form.Item
+          label="End Date"
+          name="end_date"
+          getValueFromEvent={(date) => date?.format("YYYY-MM-DD")}
+        >
+          <DatePicker format={DATE_PICKER_INPUT_FORMATS} style={{ width: "100%" }} />
         </Form.Item>
         <Form.Item label="Categories" name="category_ids">
           <Select
