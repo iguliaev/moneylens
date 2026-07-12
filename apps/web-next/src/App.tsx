@@ -61,7 +61,12 @@ import {
 } from "./pages/categories";
 import { SettingsPage } from "./pages/settings";
 import { ProjectTitle } from "./components/title";
-import { Header, EnvironmentBanner, ErrorBoundary } from "./components";
+import {
+  Header,
+  EnvironmentBanner,
+  ErrorBoundary,
+  PageWidthShell,
+} from "./components";
 
 const I18N_TRANSLATIONS: Record<string, string> = {
   "documentTitle.default": "MoneyLens",
@@ -196,41 +201,88 @@ function App() {
                   >
                     <Route index element={<DashboardPage />} />
                     <Route path="transactions">
-                      <Route index element={<TransactionList />} />
-                      <Route path="create" element={<TransactionCreate />} />
-                      <Route path="edit/:id" element={<TransactionEdit />} />
-                      <Route path="show/:id" element={<TransactionShow />} />
+                      <Route
+                        element={
+                          <PageWidthShell>
+                            <Outlet />
+                          </PageWidthShell>
+                        }
+                      >
+                        <Route index element={<TransactionList />} />
+                        <Route path="create" element={<TransactionCreate />} />
+                        <Route path="edit/:id" element={<TransactionEdit />} />
+                        <Route path="show/:id" element={<TransactionShow />} />
+                      </Route>
                     </Route>
 
                     <Route path="categories">
-                      <Route index element={<CategoryList />} />
-                      <Route path="create" element={<CategoryCreate />} />
-                      <Route path="edit/:id" element={<CategoryEdit />} />
-                      <Route path="show/:id" element={<CategoryShow />} />
+                      <Route
+                        element={
+                          <PageWidthShell>
+                            <Outlet />
+                          </PageWidthShell>
+                        }
+                      >
+                        <Route index element={<CategoryList />} />
+                        <Route path="create" element={<CategoryCreate />} />
+                        <Route path="edit/:id" element={<CategoryEdit />} />
+                        <Route path="show/:id" element={<CategoryShow />} />
+                      </Route>
                     </Route>
 
                     <Route path="bank-accounts">
-                      <Route index element={<BankAccountList />} />
-                      <Route path="create" element={<BankAccountCreate />} />
-                      <Route path="edit/:id" element={<BankAccountEdit />} />
-                      <Route path="show/:id" element={<BankAccountShow />} />
+                      <Route
+                        element={
+                          <PageWidthShell>
+                            <Outlet />
+                          </PageWidthShell>
+                        }
+                      >
+                        <Route index element={<BankAccountList />} />
+                        <Route path="create" element={<BankAccountCreate />} />
+                        <Route path="edit/:id" element={<BankAccountEdit />} />
+                        <Route path="show/:id" element={<BankAccountShow />} />
+                      </Route>
                     </Route>
 
                     <Route path="tags">
-                      <Route index element={<TagList />} />
-                      <Route path="create" element={<TagCreate />} />
-                      <Route path="edit/:id" element={<TagEdit />} />
-                      <Route path="show/:id" element={<TagShow />} />
+                      <Route
+                        element={
+                          <PageWidthShell>
+                            <Outlet />
+                          </PageWidthShell>
+                        }
+                      >
+                        <Route index element={<TagList />} />
+                        <Route path="create" element={<TagCreate />} />
+                        <Route path="edit/:id" element={<TagEdit />} />
+                        <Route path="show/:id" element={<TagShow />} />
+                      </Route>
                     </Route>
 
                     <Route path="budgets">
-                      <Route index element={<BudgetList />} />
-                      <Route path="create" element={<BudgetCreate />} />
-                      <Route path="edit/:id" element={<BudgetEdit />} />
-                      <Route path="show/:id" element={<BudgetShow />} />
+                      <Route
+                        element={
+                          <PageWidthShell>
+                            <Outlet />
+                          </PageWidthShell>
+                        }
+                      >
+                        <Route index element={<BudgetList />} />
+                        <Route path="create" element={<BudgetCreate />} />
+                        <Route path="edit/:id" element={<BudgetEdit />} />
+                        <Route path="show/:id" element={<BudgetShow />} />
+                      </Route>
                     </Route>
 
-                    <Route path="settings" element={<SettingsPage />} />
+                    <Route
+                      path="settings"
+                      element={
+                        <PageWidthShell>
+                          <SettingsPage />
+                        </PageWidthShell>
+                      }
+                    />
                   </Route>
 
                   <Route
