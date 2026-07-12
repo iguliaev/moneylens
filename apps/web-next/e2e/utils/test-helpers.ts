@@ -374,7 +374,7 @@ export async function createCategoryForType(
   await typeOption.waitFor({ state: "visible" });
   await typeOption.click();
   await expect(
-    page.locator("#root").getByTitle(new RegExp(type, "i"))
+    page.locator("#root").getByTitle(new RegExp(escapedType, "i"))
   ).toBeVisible();
 
   // Fill in name and description
