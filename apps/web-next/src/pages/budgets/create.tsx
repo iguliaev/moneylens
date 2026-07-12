@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Create, useForm } from "@refinedev/antd";
 import { useList, useNotification } from "@refinedev/core";
 import { Form, Input, InputNumber, Select, DatePicker } from "antd";
+import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { DATE_PICKER_INPUT_FORMATS, supabaseClient } from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
@@ -137,6 +138,9 @@ export const BudgetCreate = () => {
         <Form.Item
           label="Start Date"
           name="start_date"
+          getValueProps={(value) => ({
+            value: value ? dayjs(value) : undefined,
+          })}
           getValueFromEvent={(date) => date?.format("YYYY-MM-DD")}
         >
           <DatePicker format={DATE_PICKER_INPUT_FORMATS} style={{ width: "100%" }} />
@@ -144,6 +148,9 @@ export const BudgetCreate = () => {
         <Form.Item
           label="End Date"
           name="end_date"
+          getValueProps={(value) => ({
+            value: value ? dayjs(value) : undefined,
+          })}
           getValueFromEvent={(date) => date?.format("YYYY-MM-DD")}
         >
           <DatePicker format={DATE_PICKER_INPUT_FORMATS} style={{ width: "100%" }} />
