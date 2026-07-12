@@ -14,6 +14,7 @@ test.describe("Content width shell", () => {
         "/transactions",
         "/categories",
         "/budgets",
+        "/bank-accounts",
         "/tags",
         "/settings",
       ]) {

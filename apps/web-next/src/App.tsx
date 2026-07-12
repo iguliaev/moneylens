@@ -231,10 +231,18 @@ function App() {
                     </Route>
 
                     <Route path="bank-accounts">
-                      <Route index element={<BankAccountList />} />
-                      <Route path="create" element={<BankAccountCreate />} />
-                      <Route path="edit/:id" element={<BankAccountEdit />} />
-                      <Route path="show/:id" element={<BankAccountShow />} />
+                      <Route
+                        element={
+                          <PageWidthShell>
+                            <Outlet />
+                          </PageWidthShell>
+                        }
+                      >
+                        <Route index element={<BankAccountList />} />
+                        <Route path="create" element={<BankAccountCreate />} />
+                        <Route path="edit/:id" element={<BankAccountEdit />} />
+                        <Route path="show/:id" element={<BankAccountShow />} />
+                      </Route>
                     </Route>
 
                     <Route path="tags">

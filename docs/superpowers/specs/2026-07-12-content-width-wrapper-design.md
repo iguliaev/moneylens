@@ -9,7 +9,7 @@ The web-next app currently lets several authenticated resource pages expand to t
 ## Goals
 
 1. Center the main content for selected MoneyLens pages with a finefoods-style width cap.
-2. Apply the change only to transactions, categories, budgets, tags, and settings pages.
+2. Apply the change only to transactions, categories, budgets, bank accounts, tags, and settings pages.
 3. Leave authentication pages and the dashboard unchanged.
 4. Keep the change shared and reusable instead of repeating page-specific width styles.
 
@@ -27,6 +27,7 @@ Add one shared page wrapper component that constrains width, centers content, an
 - `transactions`
 - `categories`
 - `budgets`
+- `bank-accounts`
 - `tags`
 - `settings`
 

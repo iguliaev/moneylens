@@ -4,7 +4,7 @@
 
 **Goal:** Center the selected MoneyLens authenticated pages inside a shared finefoods-style max-width wrapper without changing auth pages or the dashboard.
 
-**Architecture:** Add one reusable wrapper component that owns the width constraint and applies it at the route boundary. Wire that wrapper only around transactions, categories, budgets, tags, and settings so the page internals stay untouched and the layout decision stays centralized.
+**Architecture:** Add one reusable wrapper component that owns the width constraint and applies it at the route boundary. Wire that wrapper only around transactions, categories, budgets, bank accounts, tags, and settings so the page internals stay untouched and the layout decision stays centralized.
 
 **Tech Stack:** React 19, React Router, Refine, Ant Design, Playwright.
 
@@ -171,6 +171,7 @@ test.describe("Content width shell", () => {
         "/transactions",
         "/categories",
         "/budgets",
+        "/bank-accounts",
         "/tags",
         "/settings",
       ]) {
@@ -228,7 +229,7 @@ Expected: all pass
 
 - [ ] **Step 2: Confirm the visual scope matches the spec**
 
-Check that `/transactions`, `/categories`, `/budgets`, `/tags`, and `/settings` are centered, while `/login` and `/` are unchanged.
+Check that `/transactions`, `/categories`, `/budgets`, `/bank-accounts`, `/tags`, and `/settings` are centered, while `/login` and `/` are unchanged.
 
 - [ ] **Step 3: Commit any final adjustments**
 If validation finds a small follow-up fix, commit only the touched files with explicit paths and keep the commit message scoped to that fix.
