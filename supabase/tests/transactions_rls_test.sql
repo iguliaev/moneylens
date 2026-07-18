@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(12);
 
 -- Create test supabase users
 select tests.create_supabase_user('user1@test.com');
@@ -143,6 +143,35 @@ select lives_ok(
             'own category'
         )$$,
     'User 2 should be able to insert a transaction with their own category_id'
+);
+
+-- Test 11: user_id is NOT NULL (S4)
+-- Bypass RLS entirely (reset role + clear the JWT claim) so the insert fails on the
+-- NOT NULL constraint itself rather than on the RLS policy's NULL = NULL check.
+reset role;
+select set_config('request.jwt.claims', '', true);
+
+select throws_ok(
+        $$insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account)
+            values (gen_random_uuid(), null, current_date, 'spend', 'groceries', 50.00, null, 'no owner', 'test bank')$$,
+    '23502',
+    'null value in column "user_id" of relation "transactions" violates not-null constraint',
+    'Inserting a transaction with a null user_id should violate the NOT NULL constraint'
+);
+
+
+-- Test 12: deleting the owning auth user cascades to their transactions (S4)
+select tests.create_supabase_user('cascade_user@test.com');
+
+insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account)
+values (gen_random_uuid(), tests.get_supabase_uid('cascade_user@test.com'), current_date, 'spend', 'groceries', 25.00, null, 'will cascade', 'test bank');
+
+delete from auth.users where id = tests.get_supabase_uid('cascade_user@test.com');
+
+select results_eq(
+    $$select count(*) from transactions where notes = 'will cascade'$$,
+    array[0::bigint],
+    'Deleting the owning auth user should cascade-delete their transactions'
 );
 
 select * from finish();
