@@ -133,20 +133,6 @@ ALTER TABLE public.transactions
 
 ## Worth-doing items
 
-### S3 — Auth hardening (`supabase/config.toml` + Supabase Dashboard)
-
-Local config (`supabase/config.toml`, `[auth]` block, lines 143/146/177) is dev-only — it has **no effect on hosted staging/production**, which are configured separately via the Supabase Dashboard. Two-part fix:
-
-1. **Code change** — `supabase/config.toml`:
-   - Line 143: `minimum_password_length = 6` → `8`
-   - Line 146: `password_requirements = ""` → `"lower_upper_letters_digits_symbols"` (valid enum values per inline comment: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`)
-   - Line 177 (`[auth.email]`): `enable_confirmations = false` → `true` — **only do this once SMTP is confirmed working**; `docs/deployment/password-reset-deployment-checklist.md` already flags custom SMTP as a production prerequisite. Sequence this after confirming SMTP, or hold it as a follow-up if SMTP isn't set up yet.
-
-2. **Manual dashboard checklist (not a code change — this must be applied by hand, not silently skipped)**, for both the staging and production hosted projects:
-   - Authentication → Policies: password minimum length 8+, matching character requirements
-   - Authentication → Providers → Email: enable "Confirm email"
-   - Authentication → Policies (or Security): enable **leaked-password protection** (HaveIBeenPwned check) — this has no `config.toml` equivalent, dashboard-only
-
 ### Security headers — `apps/web-next/vercel.json`
 
 Current file (entire contents):
@@ -238,5 +224,4 @@ Also flag as a documentation-debt item (not part of this fix, just noted): `docs
    - Manually trigger a bulk delete (if any UI path exists or via a quick script) to confirm soft-delete still applies, or at minimum confirm via code review that the new `deleteMany` mirrors `deleteOne`'s tested behavior
    - After `vercel.json` header changes are deployed to a preview/staging deployment, check response headers (`curl -I`) and confirm CSP doesn't break antd styling, Supabase auth (login flow), or realtime — this can't be verified from local `vite dev` since Vercel headers only apply on Vercel's edge, so this step is a **post-deploy** check, not local
    - Bulk upload: trigger a deliberate failure (e.g. duplicate row) and confirm the UI shows the new generic message, not raw Postgres text
-3. **Manual/dashboard (S3):** since this plan can't change hosted dashboard settings, produce a short checklist for the user to apply by hand in both the staging and production Supabase projects (password policy, email confirmation, leaked-password protection) — confirm SMTP is production-ready before flipping `enable_confirmations`.
-4. **CI note (out of scope but worth flagging separately):** `.github/workflows/ci.yaml` runs `supabase db lint` but never `supabase test db` — the pgTAP suite (including these new regression tests) isn't gated in CI today. Not fixing this as part of the security plan, but worth knowing the new tests only protect against regressions if run locally/manually unless CI is updated.
+3. **CI note (out of scope but worth flagging separately):** `.github/workflows/ci.yaml` runs `supabase db lint` but never `supabase test db` — the pgTAP suite (including these new regression tests) isn't gated in CI today. Not fixing this as part of the security plan, but worth knowing the new tests only protect against regressions if run locally/manually unless CI is updated.
