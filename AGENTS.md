@@ -7,6 +7,7 @@ This file provides guidance to AI agents when working with code in this reposito
 - **NEVER commit directly to `main` or `release` branches.** Always create a feature branch for any code changes.
 - Only commit to `main` or `release` if the user explicitly instructs you to do so in that message.
 - Default workflow: create a branch → commit → open a PR.
+- **When opening a PR, use the `create-pull-request` skill** rather than running `git push` + `gh pr create` manually — invoke it whenever the user asks to create/open/submit a PR, ship, or send changes for review.
 
 ## Repository Structure
 
