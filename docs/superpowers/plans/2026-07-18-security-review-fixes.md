@@ -10,7 +10,7 @@ All findings below were re-verified directly against the current repo (not just 
 
 ## Should-fix items
 
-### S1 + S2 — one migration: `supabase/migrations/20260718000000_fix_transaction_tags_idor_and_category_ownership.sql`
+### ✅ Done — S1 + S2 — one migration: `supabase/migrations/20260718204224_fix_transaction_tags_idor_and_category_ownership.sql`
 
 **S1 — `get_transaction_tags` IDOR.**
 Current definition, `supabase/migrations/20260201164000_baseline_from_schemas.sql:1250-1267` (only definition anywhere — confirmed no later migration overrides it), is `LANGUAGE SQL SECURITY DEFINER` with no ownership check at all:
@@ -103,7 +103,7 @@ $$;
 
 ---
 
-### S4 — `supabase/migrations/20260718000100_transactions_user_id_not_null_cascade.sql`
+### ✅ Done — S4 — `supabase/migrations/20260718205739_transactions_user_id_not_null_cascade.sql`
 
 Current column definition, baseline file lines 130-145:
 ```sql

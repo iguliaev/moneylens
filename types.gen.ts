@@ -420,7 +420,7 @@ export type Database = {
           tags: string[] | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           amount: number
@@ -436,7 +436,7 @@ export type Database = {
           tags?: string[] | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           amount?: number
@@ -452,7 +452,7 @@ export type Database = {
           tags?: string[] | null
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -864,7 +864,7 @@ export type Database = {
           tags: string[] | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         SetofOptions: {
           from: "*"
@@ -962,7 +962,7 @@ export type Database = {
           tags: string[] | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         SetofOptions: {
           from: "*"
