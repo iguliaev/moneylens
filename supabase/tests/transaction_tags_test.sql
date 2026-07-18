@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(18);
 
 -- Create two test users
 select tests.create_supabase_user('tx_user1@test.com');
@@ -167,6 +167,15 @@ SELECT results_eq(
 SELECT is_empty(
   $$ UPDATE public.transaction_tags SET created_at = now() WHERE transaction_id IN (SELECT id FROM public.transactions WHERE user_id = tests.get_supabase_uid('tx_user1@test.com')) RETURNING 1 $$,
   'User2 cannot update User1 transaction_tags'
+);
+
+-- 11) IDOR: User2 cannot read User1's transaction tags via get_transaction_tags RPC
+SELECT results_eq(
+  $$ SELECT public.get_transaction_tags(
+      (SELECT id FROM public.transactions WHERE user_id = tests.get_supabase_uid('tx_user1@test.com') AND date = '2025-01-03' LIMIT 1)
+    ) $$,
+  $$ SELECT '[]'::jsonb $$,
+  'User2 cannot read User1 transaction tags via get_transaction_tags'
 );
 
 -- Finish
