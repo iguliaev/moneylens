@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(10);
 
 -- Create test supabase users
 select tests.create_supabase_user('user1@test.com');
@@ -16,6 +16,17 @@ values
     (tests.get_supabase_uid('user1@test.com'), 'stocks'),
     (tests.get_supabase_uid('user2@test.com'), 'salary'),
     (tests.get_supabase_uid('user2@test.com'), 'groceries');
+
+-- Seed a category per user for the category-ownership tests
+insert into public.categories (user_id, type, name)
+values
+    (tests.get_supabase_uid('user1@test.com'), 'spend', 'user1-cat'),
+    (tests.get_supabase_uid('user2@test.com'), 'spend', 'user2-cat');
+
+-- Capture user1's category id up front (as postgres, bypassing RLS) since User 2 can't
+-- see it once authenticated below.
+select id as user1_cat_id from public.categories
+    where user_id = tests.get_supabase_uid('user1@test.com') and name = 'user1-cat' \gset
 
 -- Create test transactions
 insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account) values
@@ -95,6 +106,43 @@ select throws_ok(
     '42501',
     'new row violates row-level security policy for table "transactions"',
     'User 2 should not be able to set user_id to another user on insert'
+);
+
+
+-- Test 9: User 2 cannot insert a transaction referencing User 1's category
+select throws_ok(
+        format(
+            $$insert into transactions (id, user_id, date, type, category_id, amount, notes)
+                values (
+                    gen_random_uuid(),
+                    tests.get_supabase_uid('user2@test.com'),
+                    current_date,
+                    'spend',
+                    %L,
+                    50.00,
+                    'category ownership check'
+                )$$,
+            :'user1_cat_id'
+        ),
+    '23514',
+    'Category does not belong to the user',
+    'User 2 should not be able to insert a transaction with User 1''s category_id'
+);
+
+
+-- Test 10: User 2 can insert a transaction referencing their own category
+select lives_ok(
+    $$insert into transactions (id, user_id, date, type, category_id, amount, notes)
+        values (
+            gen_random_uuid(),
+            tests.get_supabase_uid('user2@test.com'),
+            current_date,
+            'spend',
+            (select id from public.categories where user_id = tests.get_supabase_uid('user2@test.com') and name = 'user2-cat'),
+            50.00,
+            'own category'
+        )$$,
+    'User 2 should be able to insert a transaction with their own category_id'
 );
 
 select * from finish();
