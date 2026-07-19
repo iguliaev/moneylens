@@ -183,7 +183,7 @@ deleteMany: async ({ resource, ids, meta }) => {
 },
 ```
 
-### RPC error sanitization — bulk upload
+### ✅ Done — RPC error sanitization — bulk upload
 
 DB side, `supabase/migrations/20260201164000_baseline_from_schemas.sql`, four spots currently surface raw `SQLERRM` (a live Postgres error string, e.g. constraint names) straight to the client:
 - `bulk_insert_transactions` (line 1485) — per-row `'error', SQLERRM` collected into `v_errors`, then raised via `USING DETAIL = v_errors::text` (line 1495-1496)
