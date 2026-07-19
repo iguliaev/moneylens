@@ -39,7 +39,8 @@
     "prettier": "^3.8.1",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^4.1.10"
   },
   "scripts": {
     "dev": "refine dev",
@@ -50,6 +51,8 @@
     "test:e2e:ci": "PLAYWRIGHT_HTML_OPEN=never playwright test --reporter=list",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "lint": "eslint",
     "check-types": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,scss,md}\" \"e2e/**/*.{ts,tsx,js,jsx,json}\"",

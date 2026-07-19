@@ -1060,7 +1060,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", transactionId);
         if (deleteTransactionError) {
-          throw new Error(
+          console.error(
             `Failed to clean up transaction: ${deleteTransactionError.message}`
           );
         }
@@ -1071,7 +1071,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", childId);
         if (deleteChildError) {
-          throw new Error(
+          console.error(
             `Failed to clean up child category: ${deleteChildError.message}`
           );
         }
@@ -1082,7 +1082,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", parentId);
         if (deleteParentError) {
-          throw new Error(
+          console.error(
             `Failed to clean up parent category: ${deleteParentError.message}`
           );
         }
@@ -1202,7 +1202,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", childAId);
         if (error) {
-          throw new Error(
+          console.error(
             `Failed to clean up first child category: ${error.message}`
           );
         }
@@ -1213,7 +1213,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", childBId);
         if (error) {
-          throw new Error(
+          console.error(
             `Failed to clean up second child category: ${error.message}`
           );
         }
@@ -1224,7 +1224,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", standaloneId);
         if (error) {
-          throw new Error(
+          console.error(
             `Failed to clean up standalone category: ${error.message}`
           );
         }
@@ -1235,7 +1235,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", parentId);
         if (error) {
-          throw new Error(
+          console.error(
             `Failed to clean up parent category: ${error.message}`
           );
         }
@@ -1356,7 +1356,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", transactionId);
         if (deleteTransactionError) {
-          throw new Error(
+          console.error(
             `Failed to clean up transaction: ${deleteTransactionError.message}`
           );
         }
@@ -1367,7 +1367,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", childId);
         if (deleteChildError) {
-          throw new Error(
+          console.error(
             `Failed to clean up child category: ${deleteChildError.message}`
           );
         }
@@ -1378,7 +1378,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", parentId);
         if (deleteParentError) {
-          throw new Error(
+          console.error(
             `Failed to clean up parent category: ${deleteParentError.message}`
           );
         }

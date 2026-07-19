@@ -38,5 +38,22 @@ export function withSoftDelete(
 
       return { data };
     },
+    deleteMany: async ({ resource, ids, meta }) => {
+      if (!SOFT_DELETE_RESOURCES.has(resource)) {
+        return provider.deleteMany!({ resource, ids, meta });
+      }
+
+      const { data, error } = await supabaseClient
+        .from(resource)
+        .update({ deleted_at: new Date().toISOString() })
+        .in("id", ids)
+        .select();
+
+      if (error) {
+        return Promise.reject(error);
+      }
+
+      return { data: data ?? [] };
+    },
   };
 }

@@ -164,7 +164,7 @@ The real Supabase project domain isn't in the repo (only injected via Vercel env
 ```
 After deploying, verify nothing breaks (antd styling, Supabase auth/realtime, images) on both staging and production — a too-strict CSP fails silently in ways that are easy to miss (styling glitches, blocked XHR) rather than loud errors.
 
-### Soft delete: `deleteMany` hard-deletes — `apps/web-next/src/utility/softDeleteDataProvider.ts`
+### ✅ Done — Soft delete: `deleteMany` hard-deletes — `apps/web-next/src/utility/softDeleteDataProvider.ts`
 
 Current file only overrides `deleteOne` (spreads `...provider` for everything else, including `deleteMany`, which falls through to the base `@refinedev/supabase` provider's hard `.delete()`). Not currently exploited (`deleteMany`/`useDeleteMany` isn't called anywhere in `apps/web-next/src` today — confirmed via grep) but cheap to close now. Add, mirroring the existing `deleteOne` pattern and the base provider's `deleteMany` signature (`{ resource, ids, meta }`):
 

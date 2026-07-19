@@ -3,11 +3,12 @@ import { EmptyState } from "./EmptyState";
 import React from "react";
 
 /**
- * Empty state helpers for different resource types.
- * Each helper returns a component configured with appropriate title, description, and navigation.
+ * Empty state hooks for different resource types (named useX since each calls
+ * useNavigation() internally, per React's rules of hooks).
+ * Each returns a configured EmptyState element with title, description, and navigation.
  */
 
-export const getTransactionEmptyState = (): React.ReactNode => {
+export const useTransactionEmptyState = (): React.ReactNode => {
   const { create } = useNavigation();
   return (
     <EmptyState
@@ -19,7 +20,7 @@ export const getTransactionEmptyState = (): React.ReactNode => {
   );
 };
 
-export const getBudgetEmptyState = (): React.ReactNode => {
+export const useBudgetEmptyState = (): React.ReactNode => {
   const { create } = useNavigation();
   return (
     <EmptyState
@@ -31,7 +32,7 @@ export const getBudgetEmptyState = (): React.ReactNode => {
   );
 };
 
-export const getCategoryEmptyState = (): React.ReactNode => {
+export const useCategoryEmptyState = (): React.ReactNode => {
   const { create } = useNavigation();
   return (
     <EmptyState
@@ -43,7 +44,7 @@ export const getCategoryEmptyState = (): React.ReactNode => {
   );
 };
 
-export const getBankAccountEmptyState = (): React.ReactNode => {
+export const useBankAccountEmptyState = (): React.ReactNode => {
   const { create } = useNavigation();
   return (
     <EmptyState
@@ -55,7 +56,7 @@ export const getBankAccountEmptyState = (): React.ReactNode => {
   );
 };
 
-export const getTagEmptyState = (): React.ReactNode => {
+export const useTagEmptyState = (): React.ReactNode => {
   const { create } = useNavigation();
   return (
     <EmptyState
