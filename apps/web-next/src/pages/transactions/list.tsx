@@ -27,7 +27,7 @@ import {
 } from "../../constants/transactionTypes";
 import { formatAmount, DATE_PICKER_INPUT_FORMATS } from "../../utility";
 import { formatDisplayDate } from "../../utility/dateDisplay";
-import { getTransactionEmptyState, TableSkeleton } from "../../components";
+import { useTransactionEmptyState, TableSkeleton } from "../../components";
 
 const commonSelectOptions = {
   sorters: [{ field: "name", order: "asc" as const }],
@@ -117,7 +117,7 @@ export const TransactionList = () => {
   });
 
   // Always call to keep React hook call count consistent (internally calls useNavigation())
-  const transactionEmptyState = getTransactionEmptyState();
+  const transactionEmptyState = useTransactionEmptyState();
 
   return (
     <List

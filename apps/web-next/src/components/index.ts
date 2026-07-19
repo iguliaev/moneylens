@@ -4,10 +4,10 @@ export { ErrorBoundary } from "./error-boundary";
 export { EmptyState } from "./EmptyState";
 export { PageWidthShell } from "./page-width-shell";
 export {
-  getTransactionEmptyState,
-  getBudgetEmptyState,
-  getCategoryEmptyState,
-  getBankAccountEmptyState,
-  getTagEmptyState,
+  useTransactionEmptyState,
+  useBudgetEmptyState,
+  useCategoryEmptyState,
+  useBankAccountEmptyState,
+  useTagEmptyState,
 } from "./EmptyStates";
 export { TableSkeleton } from "./TableSkeleton";
