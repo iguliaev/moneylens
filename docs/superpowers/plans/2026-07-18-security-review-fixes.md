@@ -133,7 +133,7 @@ ALTER TABLE public.transactions
 
 ## Worth-doing items
 
-### Security headers — `apps/web-next/vercel.json`
+### ✅ Done — Security headers — `apps/web-next/vercel.json`
 
 Current file (entire contents):
 ```json
