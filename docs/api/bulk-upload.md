@@ -62,9 +62,13 @@ interface CategoryInput {
 - `description`: Optional, max 1000 characters
 
 **Validation:**
-- Both `type` and `name` are required
-- Missing required fields raises exception: `"Missing required field: type"` or `"Missing required field: name"`
-- Invalid enum value raises exception: `"Invalid transaction_type value"`
+- Both `type` and `name` are required for every element in the array
+- If any element is missing `name` or `type`, the **whole batch** is rejected with:
+  `insert_categories: one or more items are missing required fields "name" or "type"`
+- If any element has an invalid `type`, the whole batch is rejected with:
+  `insert_categories: invalid transaction_type: <value>`
+- These are validation errors (SQLSTATE `P0001`) and are surfaced to the client with this exact
+  message — see [Error Response](#error-response) below.
 
 ### Bank Account Input Schema
 
@@ -82,8 +86,9 @@ interface BankAccountInput {
 - `description`: Optional, max 1000 characters
 
 **Validation:**
-- `name` is required
-- Missing name raises exception: `"Missing required field: name"`
+- `name` is required for every element in the array
+- If any element is missing `name`, the **whole batch** is rejected with:
+  `insert_bank_accounts: one or more items are missing required field "name"` (SQLSTATE `P0001`)
 
 ### Tag Input Schema
 
@@ -101,8 +106,9 @@ interface TagInput {
 - `description`: Optional, max 1000 characters
 
 **Validation:**
-- `name` is required
-- Missing name raises exception: `"Missing required field: name"`
+- `name` is required for every element in the array
+- If any element is missing `name`, the **whole batch** is rejected with:
+  `insert_tags: one or more items are missing required field "name"` (SQLSTATE `P0001`)
 
 ### Transaction Input Schema
 
@@ -119,18 +125,28 @@ interface TransactionInput {
 ```
 
 **Constraints:**
-- `date`: ISO 8601 format `YYYY-MM-DD`
+- `date`: Cast directly to a Postgres `date` — use `YYYY-MM-DD` to avoid ambiguity. There's no
+  explicit format check; a malformed value surfaces as a sanitized per-row error (see below),
+  not a descriptive format message.
 - `type`: Must be `earn`, `spend`, or `save`
-- `amount`: Positive number
-- `category`: Must reference existing category or one in same upload
-- `bank_account`: Must reference existing bank account or one in same upload
-- `tags`: Array of strings, each must reference existing tag or one in same upload
+- `amount`: Numeric. There's no positivity check today — zero/negative values are accepted.
+- `category`: Must reference an existing **leaf** category (no sub-categories) of matching
+  `type` for the authenticated user, or one included in the same `categories` section
+- `bank_account`: Must reference an existing bank account for the authenticated user, or one
+  included in the same `bank_accounts` section
+- `tags`: Array of strings, each must reference an existing tag for the authenticated user, or
+  one included in the same `tags` section
 
-**Validation:**
-- `date`, `type`, and `amount` are required
-- Date format validation: Must match `YYYY-MM-DD` pattern
-- Amount validation: Must be > 0
-- Category/bank_account/tags validation: Must exist in user's data or upload
+**Validation (per row, 1-indexed, collected into `error.details` — see
+[Error Response](#error-response)):**
+- `date`, `type`, and `amount` presence: `Missing required field: <field>` or
+  `Missing required fields: <a>, <b>`
+- Invalid `type` value: `Invalid transaction type: "<value>"`
+- Category not found as a leaf for the row's type: `Category "<name>" not found as leaf for type "<type>"`
+- Bank account not found: `Bank account "<name>" not found`
+- Tag not found: `Tag "<name>" not found`
+- Any other unexpected DB error for the row (e.g. a malformed `date`) is sanitized rather than
+  passed through raw — see [Error Response](#error-response)
 
 ## Return Value
 
@@ -157,35 +173,46 @@ interface TransactionInput {
 
 ### Error Response
 
-On any validation error, the entire operation is rolled back (atomicity guaranteed).
+On any error, the entire operation is rolled back (atomicity guaranteed). Errors are **not**
+returned inside the JSONB return value — there is no `{success: false, ...}` shape. Instead the
+function raises a Postgres exception, so supabase-js resolves the call with `data: null` and a
+populated `error` (a `PostgrestError`):
 
-```json
-{
-  "success": false,
-  "error": "Invalid transaction_type value: invalid",
-  "details": {
-    "categories": null,
-    "bank_accounts": null,
-    "tags": null,
-    "transactions": [
-      {
-        "row": 1,
-        "field": "type",
-        "error": "Invalid transaction_type value: invalid"
-      }
-    ]
-  }
-}
+```typescript
+const { data, error } = await supabase.rpc('bulk_upload_data', { p_payload: payload });
+// on failure: data === null
+// error.message — see below
+// error.details — a JSON string, only populated for per-row transaction errors
+// error.code    — the Postgres SQLSTATE
 ```
 
-**Fields:**
-- `success`: Boolean, always `false` on error
-- `error`: High-level error message
-- `details` (optional): Detailed error information by section
-  - Each section contains array of errors with:
-    - `row`: 1-indexed row number (if applicable)
-    - `field`: Field name that caused error
-    - `error`: Descriptive error message
+**Validation errors** (missing required fields, invalid enum values, "not found" lookups) are
+raised with SQLSTATE `P0001` and pass through to the client with their exact message unchanged
+— see the per-section validation messages above. These are safe, intentional, user-facing
+strings.
+
+**Per-row transaction errors**: `bulk_insert_transactions` validates each transaction
+independently and, if any fail, raises a single exception for the whole call:
+- `error.message`: `"Bulk insert failed with N error(s)"`
+- `error.details`: a JSON **string** — call `JSON.parse(error.details)` to get an array of
+  `{ index, error, sqlstate? }`, one entry per failed row (`index` is 1-indexed). `sqlstate` is
+  present only when the row failed on an unexpected DB error rather than app-level validation.
+
+**Unexpected/internal errors**: any DB error not covered by the validation above (e.g. a
+constraint the app doesn't explicitly check for) is sanitized to a fixed message instead of the
+raw Postgres error text, so internals like constraint names are never leaked to the client:
+- For a failed transaction row, that row's `error` field in `error.details` becomes one of
+  `"Duplicate entry"`, `"Referenced record not found"`, `"Value violates a constraint"`, or
+  `"Row could not be inserted"` (fallback) — the real SQLSTATE is still in that row's `sqlstate`
+  field.
+- For anything else (the categories/bank_accounts/tags helpers, or `bulk_upload_data` itself),
+  `error.message` becomes a fixed string: `"insert_categories failed"`,
+  `"insert_bank_accounts failed"`, `"insert_tags failed"`, or `"bulk_upload_data failed"`. The
+  original SQLSTATE is preserved on `error.code`, but no free-text detail is exposed.
+- This also applies to auth failures: if `auth.uid()` is null inside `bulk_upload_data` itself,
+  the client does **not** see `"Not authenticated"` verbatim — it's folded into the generic
+  `"bulk_upload_data failed"` message with `error.code === '42501'`. Check `error.code` rather
+  than matching on `error.message` to detect this case.
 
 ## Examples
 
@@ -356,21 +383,12 @@ const { data, error } = await supabase.rpc('bulk_upload_data', {
 });
 ```
 
-**Response:**
-```json
-{
-  "success": false,
-  "error": "Invalid transaction_type value",
-  "details": {
-    "categories": [
-      {
-        "row": 1,
-        "field": "type",
-        "error": "Invalid transaction_type value: invalid"
-      }
-    ]
-  }
-}
+**Result:**
+```typescript
+data === null;
+error.message === 'insert_categories: invalid transaction_type: invalid';
+error.code === 'P0001';
+error.details === null;
 ```
 
 ### Example 6: Validation Error (Missing Required Field)
@@ -390,64 +408,101 @@ const { data, error } = await supabase.rpc('bulk_upload_data', {
 });
 ```
 
-**Response:**
-```json
-{
-  "success": false,
-  "error": "Missing required field: name",
-  "details": {
-    "categories": [
-      {
-        "row": 1,
-        "field": "name",
-        "error": "Missing required field: name"
-      }
-    ]
-  }
-}
+**Result:**
+```typescript
+data === null;
+error.message === 'insert_categories: one or more items are missing required fields "name" or "type"';
+error.code === 'P0001';
+error.details === null;
 ```
+
+### Example 7: Per-Row Transaction Validation Error
+
+**Request:**
+```typescript
+const payload = {
+  transactions: [
+    { type: "spend", amount: 45.67 } // missing `date`
+  ]
+};
+
+const { data, error } = await supabase.rpc('bulk_upload_data', {
+  p_payload: payload
+});
+```
+
+**Result:**
+```typescript
+data === null;
+error.message === 'Bulk insert failed with 1 error(s)';
+error.code === 'P0001';
+
+const rows = JSON.parse(error.details);
+// rows === [{ index: 1, error: 'Missing required field: date' }]
+```
+
+### Example 8: Sanitized Unexpected Error
+
+An unexpected DB error (anything not covered by the app's explicit validation) never surfaces
+raw Postgres text. For a failed transaction row this looks like:
+
+```typescript
+const rows = JSON.parse(error.details);
+// rows === [{ index: 3, error: 'Value violates a constraint', sqlstate: '23514' }]
+```
+
+For everything else, `error.message` is a fixed string (e.g. `'insert_categories failed'`) with
+the real SQLSTATE preserved on `error.code`.
 
 ## Error Codes & Messages
 
+`error.code` is the Postgres SQLSTATE. `P0001` is what Postgres assigns to a plain
+`RAISE EXCEPTION` with no explicit `ERRCODE` — that's what every validation message below uses,
+but generic/sanitized errors can also carry `P0001` in other parts of the schema, so match on
+the message text (or `error.details` for per-row transaction errors), not on `error.code` alone,
+except where noted.
+
 ### Authentication Errors
 
-| Error | Cause | Solution |
+| Code | Message | Cause |
 |---|---|---|
-| "Not authenticated" | `auth.uid()` returns NULL | Ensure user is logged in |
+| `42501` | `"bulk_upload_data failed"` | `auth.uid()` returned NULL. The underlying `"Not authenticated"` text is not exposed to the client — detect this case via `error.code`, not the message. |
 
-### Category Errors
+### Category Errors (whole batch, not per-row)
 
-| Error | Cause | Solution |
+| Code | Message | Cause |
 |---|---|---|
-| "Invalid transaction_type value: X" | Invalid category type | Use only: `earn`, `spend`, `save` |
-| "Missing required field: type" | Category type not provided | Add `type` field |
-| "Missing required field: name" | Category name not provided | Add `name` field |
+| `P0001` | `insert_categories: one or more items are missing required fields "name" or "type"` | Any element in `categories` is missing `name` and/or `type` |
+| `P0001` | `insert_categories: invalid transaction_type: <value>` | Any element's `type` isn't `earn`/`spend`/`save` |
+| *original code* | `"insert_categories failed"` | Any other DB error — sanitized; original SQLSTATE preserved on `error.code` |
 
-### Bank Account Errors
+### Bank Account Errors (whole batch, not per-row)
 
-| Error | Cause | Solution |
+| Code | Message | Cause |
 |---|---|---|
-| "Missing required field: name" | Account name not provided | Add `name` field |
+| `P0001` | `insert_bank_accounts: one or more items are missing required field "name"` | Any element in `bank_accounts` is missing `name` |
+| *original code* | `"insert_bank_accounts failed"` | Any other DB error — sanitized |
 
-### Tag Errors
+### Tag Errors (whole batch, not per-row)
 
-| Error | Cause | Solution |
+| Code | Message | Cause |
 |---|---|---|
-| "Missing required field: name" | Tag name not provided | Add `name` field |
+| `P0001` | `insert_tags: one or more items are missing required field "name"` | Any element in `tags` is missing `name` |
+| *original code* | `"insert_tags failed"` | Any other DB error — sanitized |
 
-### Transaction Errors
+### Transaction Errors (per row — read from `JSON.parse(error.details)`)
 
-| Error | Cause | Solution |
+| `error` value | `sqlstate` present? | Cause |
 |---|---|---|
-| "Invalid transaction_type value: X" | Invalid transaction type | Use only: `earn`, `spend`, `save` |
-| "Missing required field: date" | Transaction date not provided | Add `date` field in YYYY-MM-DD format |
-| "Missing required field: type" | Transaction type not provided | Add `type` field |
-| "Missing required field: amount" | Transaction amount not provided | Add `amount` field |
-| "Invalid date format" | Date not in YYYY-MM-DD | Use ISO 8601 format |
-| "Amount must be positive" | Amount is zero or negative | Use positive numbers only |
-| "Category 'X' not found" | Referenced category doesn't exist | Add to categories section or create manually |
-| "Bank account 'X' not found" | Referenced account doesn't exist | Add to bank_accounts section or create manually |
-| "Tag 'X' not found" | Referenced tag doesn't exist | Add to tags section or create manually |
+| `Missing required field: <field>` / `Missing required fields: <a>, <b>` | no | Row is missing `date`, `type`, and/or `amount` |
+| `Invalid transaction type: "<value>"` | no | Row's `type` isn't `earn`/`spend`/`save` |
+| `Category "<name>" not found as leaf for type "<type>"` | no | No matching leaf category for that user/type/name |
+| `Bank account "<name>" not found` | no | No matching bank account for that user/name |
+| `Tag "<name>" not found` | no | No matching tag for that user/name |
+| `Duplicate entry` | yes (`23505`) | Sanitized — an unhandled uniqueness conflict |
+| `Referenced record not found` | yes (`23503`) | Sanitized — an unhandled foreign-key violation |
+| `Value violates a constraint` | yes (`23514`) | Sanitized — e.g. the transaction's `type` doesn't match its category's `type` |
+| `Row could not be inserted` | yes (other) | Sanitized fallback for any other unexpected error, e.g. a malformed `date` |
 
 ## Security Considerations
 
@@ -599,4 +654,4 @@ A: This function only imports. Export functionality is not yet available.
 
 ---
 
-**Last Updated**: November 9, 2025
+**Last Updated**: July 19, 2026
