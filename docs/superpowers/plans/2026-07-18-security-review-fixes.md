@@ -206,7 +206,7 @@ and for the three `RAISE EXCEPTION '...failed: %', SQLERRM` catch-alls, drop the
 
 Also flag as a documentation-debt item (not part of this fix, just noted): `docs/api/bulk-upload.md` describes a different, more structured error shape than what the SQL actually returns — worth reconciling separately.
 
-### Service role key — process guard, not code
+### ✅ Done — Service role key — process guard, not code
 
 `SUPABASE_SERVICE_ROLE_KEY` is correctly gitignored and un-prefixed (won't be bundled by Vite); used only in `apps/web-next/e2e/utils/test-helpers.ts` for Playwright admin operations. `vercel.json` has no `env`/`build.env` block referencing it today, so there's no active leak — but `docs/deployment/environment-variables.md` currently documents only `SITE_URL` and doesn't mention this key at all. Add a short explicit warning there: this key must never be added as a Vercel project env var (only `VITE_SUPABASE_URL`/`VITE_SUPABASE_KEY` belong there), since it's a local/CI-only secret for e2e admin operations.
 
