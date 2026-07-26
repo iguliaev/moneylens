@@ -1,8 +1,17 @@
 # Deep code review fixes — implementation plan
 
 **Date:** 2026-07-25
+**Status:** Not started
 **Source:** `docs/superpowers/plans/2026-07-18-project-review-security-code-ux.md` §2 (Deep code review)
 **Scope:** C1-C5 and the smaller points from that section. The security findings (§1) from the same review were already fixed in an earlier batch (PRs #238-#240). UX findings (§3) are out of scope here.
+
+## Progress Log
+
+<!-- Newest entry first. One entry per session, even sessions with no code progress. -->
+
+- **2026-07-25** — Plan created (PR #242). Not started.
+
+---
 
 Every finding below was independently re-verified against the current repo (2026-07-25) via three parallel Explore agents plus direct reads of `node_modules/@refinedev/{core,antd,supabase}` source — not just trusted from the original review, which is a week stale and, in one case (C2), already resolved by an unrelated PR.
 
@@ -32,7 +41,7 @@ Swap `resource: "tags"` → `"tags_with_usage"` and `resource: "bank_accounts"` 
 
 **Out of scope, intentionally:** `transactions/show.tsx` (category/bank-account `useOne` lookups) — showing a soft-deleted entity's historical name on an already-created transaction is correct behavior, not a bug; switching it to the `_with_usage` view would break that.
 
-**Known follow-up, not fixed here:** `tags_with_usage.in_use_count` aggregates via the legacy `transactions.tags TEXT[]` column (`UNNEST`) rather than the `transaction_tags` junction table the actual RPCs write to — likely already inaccurate. Separate, pre-existing issue; flag but don't touch.
+**Known follow-up, not fixed here:** `tags_with_usage.in_use_count` aggregates via the legacy `transactions.tags TEXT[]` column (`UNNEST`) rather than the `transaction_tags` junction table the actual RPCs write to — likely already inaccurate. Folded into §6 below (legacy denormalized columns cleanup) rather than fixed in isolation.
 
 ---
 
@@ -137,14 +146,14 @@ Replace the `Table.Column key="tag_ids"` block's `filterDropdown` with a small l
 
 ## Implementation order
 
-1. **C5 migration first, in isolation** — write, apply locally (`supabase db reset`), write + run the new pgTAP tests until green, *before* touching frontend code.
-2. Regenerate types (`supabase gen types typescript --local`) and sync into `apps/web-next/src/types/database.types.ts`.
-3. **C5 frontend** — `rpc.ts` → `useBudgetForm.ts` → `budgets/create.tsx`/`edit.tsx` refactor. Run `apps/web-next/e2e/tests/budgets.spec.ts` to confirm the happy path still works end-to-end against the new RPC.
-4. **C1** — mechanical resource-name swaps across the six files + header search. Manually verify: soft-delete a tag/bank account, confirm it disappears from every affected dropdown/search.
-5. **C3** — install + wire the antd patch. Verify console warning gone, `npm run build` clean.
-6. **Tag filter fix** — write the new e2e test first (should currently fail/error against unfixed code, confirming the bug is real), then implement, confirm it goes green. Manually check the Network tab shows `.or(...)`/`cs` syntax, not `tag_ids=in.(...)`.
-7. **Cleanup points** — retry.ts deletion, ESLint dedup, Dockerfile deletion. Low risk, verify via `npm run lint` / `npm run build` / `npm run check-types`.
-8. **Final regression pass**: `npm run test:unit`, `npm run test:e2e:ci`, `npm run lint`, `npm run check-types`, plus the full pgTAP suite (`supabase test db`).
+- [ ] 1. **C5 migration first, in isolation** — write, apply locally (`supabase db reset`), write + run the new pgTAP tests until green, *before* touching frontend code.
+- [ ] 2. Regenerate types (`supabase gen types typescript --local`) and sync into `apps/web-next/src/types/database.types.ts`.
+- [ ] 3. **C5 frontend** — `rpc.ts` → `useBudgetForm.ts` → `budgets/create.tsx`/`edit.tsx` refactor. Run `apps/web-next/e2e/tests/budgets.spec.ts` to confirm the happy path still works end-to-end against the new RPC.
+- [ ] 4. **C1** — mechanical resource-name swaps across the six files + header search. Manually verify: soft-delete a tag/bank account, confirm it disappears from every affected dropdown/search.
+- [ ] 5. **C3** — install + wire the antd patch. Verify console warning gone, `npm run build` clean.
+- [ ] 6. **Tag filter fix** — write the new e2e test first (should currently fail/error against unfixed code, confirming the bug is real), then implement, confirm it goes green. Manually check the Network tab shows `.or(...)`/`cs` syntax, not `tag_ids=in.(...)`.
+- [ ] 7. **Cleanup points** — retry.ts deletion, ESLint dedup, Dockerfile deletion. Low risk, verify via `npm run lint` / `npm run build` / `npm run check-types`.
+- [ ] 8. **Final regression pass**: `npm run test:unit`, `npm run test:e2e:ci`, `npm run lint`, `npm run check-types`, plus the full pgTAP suite (`supabase test db`).
 
 ## Critical files
 
