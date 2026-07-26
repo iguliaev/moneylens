@@ -40,8 +40,8 @@ export const ProjectTitle: React.FC<ProjectTitleProps> = ({
         <img
           src={isDark ? logoMarkDarkUrl : logoMarkLightUrl}
           alt="MoneyLens"
-          width={32}
-          height={32}
+          width={54}
+          height={54}
         />
       </Link>
     );
@@ -52,7 +52,7 @@ export const ProjectTitle: React.FC<ProjectTitleProps> = ({
       <img
         src={isDark ? logoLockupDarkUrl : logoLockupLightUrl}
         alt="MoneyLens"
-        height={44}
+        height={48}
       />
     </Link>
   );
