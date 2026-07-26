@@ -1,7 +1,7 @@
 # Deep code review fixes — implementation plan
 
 **Date:** 2026-07-25
-**Status:** Not started
+**Status:** In progress
 **Source:** `docs/superpowers/plans/2026-07-18-project-review-security-code-ux.md` §2 (Deep code review)
 **Scope:** C1-C5 and the smaller points from that section. The security findings (§1) from the same review were already fixed in an earlier batch (PRs #238-#240). UX findings (§3) are out of scope here.
 
@@ -9,6 +9,10 @@
 
 <!-- Newest entry first. One entry per session, even sessions with no code progress. -->
 
+- **2026-07-26** — Step 3 (C5 frontend) done: `rpc.ts` gained `createBudgetWithLinks`/`updateBudgetWithLinks` wrappers (+ `BudgetWithLinksInput`) mirroring the transaction RPC convention; new `hooks/useBudgetForm.ts` mirrors `useTransactionForm.ts` (single `handleFinish` calling the RPC once, notifying on error, invalidating `budgets_with_linked` + navigating on success). `budgets/create.tsx` lost `extractCreatedBudgetId` and the manual `budget_categories`/`budget_tags` insert/delete calls; `budgets/edit.tsx` lost the 5-step update/delete/insert sequence — both now just wire `onFinish={handleFinish}` from `useBudgetForm`, keeping `useForm()` only for `formProps`/`saveButtonProps`/prefill (same split as transactions). `npm run check-types`/`lint`/`build` all clean. Full regression pass: `supabase test db` 233/233, `npm run test:unit` 7/7, `budgets.spec.ts` 11/11, `transactions.spec.ts` 25/26 (1 failure reproduced as flaky/pre-existing — passed in isolation on retry, unrelated to this change since transactions code wasn't touched). C5 is now fully complete (steps 1-3); ready for its own PR whenever you say go.
+- **2026-07-26** — C1 (step 4) split off and shipped separately, since it's fully independent of this C5 work: branch `fix/c1-soft-deleted-visibility`, [PR #244](https://github.com/iguliaev/moneylens/pull/244). See that branch/PR for details; not tracked further here.
+- **2026-07-26** — Step 2 done: ran `supabase gen types typescript --local`, manually synced the new `create_budget_with_links`/`update_budget_with_links` function signatures into `apps/web-next/src/types/database.types.ts` (alphabetical placement, matching existing style/casing of the transaction RPC entries). `npm run check-types` clean. Remaining diff between generated output and checked-in file is pre-existing, unrelated `transactions.user_id` nullability drift — left untouched, out of scope. Stopping here per instruction — not proceeding to step 3 (C5 frontend) until told to continue.
+- **2026-07-26** — Step 1 done (branch `fix/atomic-budget-with-links`): added `supabase/migrations/20260725120000_atomic_budget_with_links.sql` (`create_budget_with_links`/`update_budget_with_links`, mirroring the transaction RPC pattern) and `supabase/tests/atomic_budget_with_links_test.sql` (23 pgTAP cases). Applied locally via `supabase db reset`; full `supabase test db` suite green (233/233, all files). Stopping here per instruction — not proceeding to step 2 (type regen) until told to continue.
 - **2026-07-25** — Plan created (PR #242). Not started.
 
 ---
@@ -146,10 +150,10 @@ Replace the `Table.Column key="tag_ids"` block's `filterDropdown` with a small l
 
 ## Implementation order
 
-- [ ] 1. **C5 migration first, in isolation** — write, apply locally (`supabase db reset`), write + run the new pgTAP tests until green, *before* touching frontend code.
-- [ ] 2. Regenerate types (`supabase gen types typescript --local`) and sync into `apps/web-next/src/types/database.types.ts`.
-- [ ] 3. **C5 frontend** — `rpc.ts` → `useBudgetForm.ts` → `budgets/create.tsx`/`edit.tsx` refactor. Run `apps/web-next/e2e/tests/budgets.spec.ts` to confirm the happy path still works end-to-end against the new RPC.
-- [ ] 4. **C1** — mechanical resource-name swaps across the six files + header search. Manually verify: soft-delete a tag/bank account, confirm it disappears from every affected dropdown/search.
+- [x] 1. **C5 migration first, in isolation** — write, apply locally (`supabase db reset`), write + run the new pgTAP tests until green, *before* touching frontend code.
+- [x] 2. Regenerate types (`supabase gen types typescript --local`) and sync into `apps/web-next/src/types/database.types.ts`.
+- [x] 3. **C5 frontend** — `rpc.ts` → `useBudgetForm.ts` → `budgets/create.tsx`/`edit.tsx` refactor. Run `apps/web-next/e2e/tests/budgets.spec.ts` to confirm the happy path still works end-to-end against the new RPC.
+- [x] 4. **C1** — mechanical resource-name swaps across the six files + header search. Manually verify: soft-delete a tag/bank account, confirm it disappears from every affected dropdown/search. **Shipped separately: [PR #244](https://github.com/iguliaev/moneylens/pull/244).**
 - [ ] 5. **C3** — install + wire the antd patch. Verify console warning gone, `npm run build` clean.
 - [ ] 6. **Tag filter fix** — write the new e2e test first (should currently fail/error against unfixed code, confirming the bug is real), then implement, confirm it goes green. Manually check the Network tab shows `.or(...)`/`cs` syntax, not `tag_ids=in.(...)`.
 - [ ] 7. **Cleanup points** — retry.ts deletion, ESLint dedup, Dockerfile deletion. Low risk, verify via `npm run lint` / `npm run build` / `npm run check-types`.
