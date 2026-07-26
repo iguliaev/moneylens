@@ -1,6 +1,14 @@
 # Transactions CSV Export Implementation Plan
 
+**Date:** 2026-07-25
+**Status:** Not started
 **Goal:** Let a user export their own transactions for a date range they choose to a CSV file, from the Settings > Import & Export tab, with fields: date, transaction type, category (hierarchy joined with `/`), bank account, amount, tags (sorted, `;`-joined), notes.
+
+## Progress Log
+
+<!-- Newest entry first. One entry per session, even sessions with no code progress. -->
+
+- **2026-07-25** — Plan created (PR #241). Not started.
 
 **Architecture:** No new database objects are needed — the existing `transactions_with_details` view (added in `supabase/migrations/20260627120000_transaction_category_parent_labels.sql`) already resolves category parent/child names and pre-sorts/aggregates tag names (`ARRAY_AGG(... ORDER BY tg.name)`), scoped by RLS to the current user. The frontend adds:
 1. A pure CSV-serialization utility (escaping, row building, browser download).
