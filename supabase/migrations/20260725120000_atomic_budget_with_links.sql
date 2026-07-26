@@ -132,8 +132,16 @@ BEGIN
     target_amount = (p_budget->>'target_amount')::numeric,
     start_date    = (p_budget->>'start_date')::date,
     end_date      = (p_budget->>'end_date')::date
-  WHERE id = p_budget_id AND user_id = auth.uid()
+  WHERE id = p_budget_id AND user_id = auth.uid() AND deleted_at IS NULL
   RETURNING * INTO v_budget;
+
+  -- Guards against a TOCTOU race (e.g. a concurrent soft-delete between the
+  -- ownership check above and this UPDATE): without this, a zero-row UPDATE
+  -- would silently leave v_budget as an all-NULL composite and RETURN it as
+  -- if the save had succeeded.
+  IF v_budget.id IS NULL THEN
+    RAISE EXCEPTION 'Budget not found or access denied' USING ERRCODE = '42501';
+  END IF;
 
   -- Replace all category associations atomically
   DELETE FROM public.budget_categories WHERE budget_id = p_budget_id;

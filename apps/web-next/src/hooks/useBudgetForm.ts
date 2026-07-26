@@ -43,6 +43,8 @@ export function useBudgetForm({ mode, id }: UseBudgetFormOptions) {
   async function handleFinish(values: unknown) {
     const formValues = values as BudgetFormValues;
     setIsLoading(true);
+
+    let saved = false;
     try {
       const { category_ids, tag_ids, ...rawFields } = formValues;
       const categoryIds: string[] = category_ids ?? [];
@@ -57,49 +59,57 @@ export function useBudgetForm({ mode, id }: UseBudgetFormOptions) {
         end_date: toDateString(rawFields.end_date),
       } satisfies BudgetWithLinksInput;
 
-      let error: { message: string } | null = null;
-
+      let result;
       if (mode === "create") {
-        const result = await createBudgetWithLinks(
-          budgetFields,
-          categoryIds,
-          tagIds
-        );
-        error = result.error;
+        result = await createBudgetWithLinks(budgetFields, categoryIds, tagIds);
       } else {
         if (!id) throw new Error("id is required for edit mode");
-        const result = await updateBudgetWithLinks(
+        result = await updateBudgetWithLinks(
           id,
           budgetFields,
           categoryIds,
           tagIds
         );
-        error = result.error;
       }
 
-      if (error) {
+      // result.data can be null if the RPC's UPDATE matched zero rows
+      // (e.g. a concurrent delete) — treat that as a failure too, not a
+      // silent no-op success.
+      if (result.error || !result.data) {
         openNotification?.({
           type: "error",
           message: "Failed to save budget",
-          description: error.message,
+          description: result.error?.message ?? "Budget was not saved.",
         });
-        setIsLoading(false);
-        return;
+      } else {
+        saved = true;
       }
-
-      await invalidate({
-        resource: "budgets_with_linked",
-        invalidates: ["list"],
-      });
-      setIsLoading(false);
-      navigate("/budgets");
     } catch (err) {
       openNotification?.({
         type: "error",
         message: "Failed to save budget",
         description: err instanceof Error ? err.message : "Unknown error",
       });
-      setIsLoading(false);
+    }
+
+    setIsLoading(false);
+
+    // Cache invalidation is best-effort and must never be reported as a
+    // save failure — the RPC already committed by this point.
+    if (saved) {
+      try {
+        await invalidate({
+          resource: "budgets_with_linked",
+          invalidates: ["list"],
+        });
+        await invalidate({
+          resource: "budgets",
+          invalidates: ["list", "detail"],
+        });
+      } catch {
+        // ignore — navigation still proceeds below
+      }
+      navigate("/budgets");
     }
   }
 

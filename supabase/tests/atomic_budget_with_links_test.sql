@@ -3,7 +3,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(23);
+select plan(28);
 
 -- Setup two test users
 select tests.create_supabase_user('atomic_budget_user1@test.com');
@@ -19,6 +19,22 @@ ON CONFLICT ON CONSTRAINT unique_user_type_name DO NOTHING;
 INSERT INTO public.tags (user_id, name)
 VALUES (auth.uid(), 'BudgetUser2Tag')
 ON CONFLICT (user_id, name) DO NOTHING;
+
+-- Capture user2's ids while authenticated as their owner. Fetching these by
+-- name *after* switching to user1 would go through RLS and silently return
+-- NULL (user1 can't see user2's rows), which would make the "other user's
+-- category/tag" tests below pass vacuously against a NULL id instead of
+-- actually exercising the ownership check.
+select set_config(
+  'test.user2_cat_id',
+  (SELECT id::text FROM public.categories WHERE user_id = auth.uid() AND name = 'BudgetUser2Cat'),
+  false
+);
+select set_config(
+  'test.user2_tag_id',
+  (SELECT id::text FROM public.tags WHERE user_id = auth.uid() AND name = 'BudgetUser2Tag'),
+  false
+);
 
 select tests.authenticate_as('atomic_budget_user1@test.com');
 
@@ -88,6 +104,15 @@ SELECT ok(
    JOIN public.budgets b ON bt.budget_id = b.id
    WHERE b.user_id = auth.uid() AND b.name = 'WithLinksBudget') = 1,
   'Tag association created atomically with budget'
+);
+
+-- Capture user1's budget id for the cross-user test below (~test 14), which
+-- runs while authenticated as user2 — RLS would otherwise make the inline
+-- "WHERE name = 'WithLinksBudget'" subquery return NULL there.
+select set_config(
+  'test.budget1_id',
+  (SELECT id::text FROM public.budgets WHERE user_id = auth.uid() AND name = 'WithLinksBudget'),
+  false
 );
 
 -- 5) Atomicity: invalid category id raises 42501 — no orphan budget
@@ -208,13 +233,20 @@ SELECT ok(
   'All categories removed when updated with empty array'
 );
 
+SELECT ok(
+  (SELECT COUNT(*) FROM public.budget_tags bt
+   JOIN public.budgets b ON bt.budget_id = b.id
+   WHERE b.user_id = auth.uid() AND b.name = 'WithLinksBudget') = 0,
+  'All tags removed when updated with empty array'
+);
+
 -- 14) Cross-user: update_budget_with_links raises exception for other user's budget
 select tests.authenticate_as('atomic_budget_user2@test.com');
 
 SELECT throws_like(
   $$
     SELECT public.update_budget_with_links(
-      (SELECT id FROM public.budgets WHERE name = 'WithLinksBudget'),
+      current_setting('test.budget1_id')::uuid,
       jsonb_build_object('name', 'hijacked', 'type', 'spend', 'target_amount', 1),
       ARRAY[]::uuid[],
       ARRAY[]::uuid[]
@@ -227,12 +259,19 @@ SELECT throws_like(
 -- 15-16) Cross-user ownership validation: user1 cannot use user2's categories/tags
 select tests.authenticate_as('atomic_budget_user1@test.com');
 
+-- Atomicity: the rejected hijack attempt above must not have changed the
+-- budget's name — proves the failed cross-user update rolled back cleanly.
+SELECT ok(
+  (SELECT COUNT(*) FROM public.budgets WHERE id = current_setting('test.budget1_id')::uuid AND name = 'WithLinksBudget') = 1,
+  'Budget name unchanged after rejected cross-user update attempt'
+);
+
 -- 15) create with other user's category raises access denied
 SELECT throws_like(
   $$
     SELECT public.create_budget_with_links(
       jsonb_build_object('name', 'ShouldFail', 'type', 'spend', 'target_amount', 1),
-      ARRAY[(SELECT id FROM public.categories WHERE name = 'BudgetUser2Cat')],
+      ARRAY[current_setting('test.user2_cat_id')::uuid],
       ARRAY[]::uuid[]
     )
   $$,
@@ -246,7 +285,7 @@ SELECT throws_like(
     SELECT public.create_budget_with_links(
       jsonb_build_object('name', 'ShouldFail2', 'type', 'spend', 'target_amount', 1),
       ARRAY[]::uuid[],
-      ARRAY[(SELECT id FROM public.tags WHERE name = 'BudgetUser2Tag')]
+      ARRAY[current_setting('test.user2_tag_id')::uuid]
     )
   $$,
   '%access denied%',
@@ -257,9 +296,9 @@ SELECT throws_like(
 SELECT throws_like(
   $$
     SELECT public.update_budget_with_links(
-      (SELECT id FROM public.budgets WHERE user_id = auth.uid() AND name = 'WithLinksBudget'),
+      current_setting('test.budget1_id')::uuid,
       jsonb_build_object('name', 'WithLinksBudget', 'type', 'spend', 'target_amount', 1),
-      ARRAY[(SELECT id FROM public.categories WHERE name = 'BudgetUser2Cat')],
+      ARRAY[current_setting('test.user2_cat_id')::uuid],
       ARRAY[]::uuid[]
     )
   $$,
@@ -267,18 +306,37 @@ SELECT throws_like(
   'Cannot update budget with another user''s category'
 );
 
+-- Atomicity: the rejected category-link attempt above must not have
+-- changed target_amount or linked the rejected category.
+SELECT ok(
+  (SELECT COUNT(*) FROM public.budgets WHERE id = current_setting('test.budget1_id')::uuid AND target_amount = 999) = 1,
+  'target_amount unchanged after rejected update with another user''s category'
+);
+
+SELECT ok(
+  (SELECT COUNT(*) FROM public.budget_categories WHERE budget_id = current_setting('test.budget1_id')::uuid) = 0,
+  'No category linked after rejected update with another user''s category'
+);
+
 -- 18) update with other user's tag raises access denied
 SELECT throws_like(
   $$
     SELECT public.update_budget_with_links(
-      (SELECT id FROM public.budgets WHERE user_id = auth.uid() AND name = 'WithLinksBudget'),
+      current_setting('test.budget1_id')::uuid,
       jsonb_build_object('name', 'WithLinksBudget', 'type', 'spend', 'target_amount', 1),
       ARRAY[]::uuid[],
-      ARRAY[(SELECT id FROM public.tags WHERE name = 'BudgetUser2Tag')]
+      ARRAY[current_setting('test.user2_tag_id')::uuid]
     )
   $$,
   '%access denied%',
   'Cannot update budget with another user''s tag'
+);
+
+-- Atomicity: the rejected tag-link attempt above must not have linked the
+-- rejected tag.
+SELECT ok(
+  (SELECT COUNT(*) FROM public.budget_tags WHERE budget_id = current_setting('test.budget1_id')::uuid) = 0,
+  'No tag linked after rejected update with another user''s tag'
 );
 
 select * from finish();
