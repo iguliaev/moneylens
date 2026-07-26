@@ -100,7 +100,7 @@ export const TransactionList = () => {
 
   // Bank account select
   const { selectProps: bankAccountSelectProps } = useSelect({
-    resource: "bank_accounts",
+    resource: "bank_accounts_with_usage",
     optionLabel: "name",
     optionValue: "id",
     ...commonSelectOptions,
@@ -109,7 +109,7 @@ export const TransactionList = () => {
 
   // Tags select
   const { selectProps: tagSelectProps } = useSelect({
-    resource: "tags",
+    resource: "tags_with_usage",
     optionLabel: "name",
     optionValue: "id",
     ...commonSelectOptions,

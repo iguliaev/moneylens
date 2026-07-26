@@ -170,14 +170,14 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
   });
 
   const { query: catQuery } = useList({
-    resource: "categories",
+    resource: "categories_with_usage",
     filters: [{ field: "name", operator: "contains", value }],
     pagination: { pageSize: 5 },
     queryOptions: { enabled: false },
   });
 
   const { query: bankQuery } = useList({
-    resource: "bank_accounts",
+    resource: "bank_accounts_with_usage",
     filters: [{ field: "name", operator: "contains", value }],
     pagination: { pageSize: 5 },
     queryOptions: { enabled: false },

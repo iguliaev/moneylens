@@ -29,7 +29,7 @@ export const BudgetCreate = () => {
   });
 
   const { query: tagsQuery } = useList({
-    resource: "tags",
+    resource: "tags_with_usage",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
   });

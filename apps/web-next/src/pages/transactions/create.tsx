@@ -75,7 +75,7 @@ export const TransactionCreate = () => {
     }));
 
   const { options: tagOptions, query: tagsQuery } = useCoreSelect({
-    resource: "tags",
+    resource: "tags_with_usage",
     optionLabel: "name",
     optionValue: "id",
     pagination: { mode: "off" },
@@ -83,7 +83,7 @@ export const TransactionCreate = () => {
   });
 
   const { selectProps: bankAccountSelectProps } = useAntSelect({
-    resource: "bank_accounts",
+    resource: "bank_accounts_with_usage",
     optionLabel: "name",
     pagination: { mode: "off" },
     sorters: [{ field: "name", order: "asc" }],
