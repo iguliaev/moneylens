@@ -8,12 +8,9 @@ import logoMarkDarkUrl from "../../assets/logo-mark-dark.svg";
 interface ProjectTitleProps {
   // Unused, but kept so this satisfies Refine's `TitleProps` (Title={ProjectTitle}) shape.
   collapsed?: boolean;
-  showText?: boolean;
 }
 
-export const ProjectTitle: React.FC<ProjectTitleProps> = ({
-  showText = true,
-}) => {
+export const ProjectTitle: React.FC<ProjectTitleProps> = () => {
   const { token } = theme.useToken();
   const { mode } = useContext(ColorModeContext);
   const logoMarkUrl = mode === "dark" ? logoMarkDarkUrl : logoMarkLightUrl;
@@ -30,13 +27,9 @@ export const ProjectTitle: React.FC<ProjectTitleProps> = ({
       }}
     >
       <img src={logoMarkUrl} alt="" aria-hidden width={32} height={32} />
-      {showText && (
-        <span
-          style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.03em" }}
-        >
-          MoneyLens
-        </span>
-      )}
+      <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.03em" }}>
+        MoneyLens
+      </span>
     </Link>
   );
 };

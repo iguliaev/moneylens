@@ -32,7 +32,6 @@ import { useCurrency } from "../../contexts/currency";
 import { useQuickActions } from "../../hooks/useQuickActions";
 import { formatCurrency } from "../../utility/currency";
 import { formatDisplayDate } from "../../utility/dateDisplay";
-import { ProjectTitle } from "../title";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -275,10 +274,7 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = ({
 
   return (
     <AntdLayout.Header style={headerStyles}>
-      <Row align="middle" style={{ height: "100%" }} gutter={16}>
-        <Col flex="none">
-          <ProjectTitle showText={!!screens.md} />
-        </Col>
+      <Row align="middle" style={{ height: "100%" }}>
         {screens.sm && (
           <Col flex="auto">
             <AutoComplete
