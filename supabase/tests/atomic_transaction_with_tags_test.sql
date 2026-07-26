@@ -24,6 +24,27 @@ INSERT INTO public.tags (user_id, name)
 VALUES (auth.uid(), 'User2Tag')
 ON CONFLICT (user_id, name) DO NOTHING;
 
+-- Capture user2's ids while authenticated as their owner. Fetching these by
+-- name *after* switching to user1 would go through RLS and silently return
+-- NULL (user1 can't see user2's rows), which would make the "other user's
+-- category/account/tag" tests below pass vacuously against a NULL id
+-- instead of actually exercising the ownership check.
+select set_config(
+  'test.user2_cat_id',
+  (SELECT id::text FROM public.categories WHERE user_id = auth.uid() AND name = 'User2Cat'),
+  false
+);
+select set_config(
+  'test.user2_account_id',
+  (SELECT id::text FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'User2Account'),
+  false
+);
+select set_config(
+  'test.user2_tag_id',
+  (SELECT id::text FROM public.tags WHERE user_id = auth.uid() AND name = 'User2Tag'),
+  false
+);
+
 select tests.authenticate_as('atomic_user1@test.com');
 
 -- Seed reference data for user1
@@ -201,13 +222,22 @@ SELECT ok(
   'All tags removed when updated with empty array'
 );
 
+-- Capture user1's transaction id for the cross-user test below, which runs
+-- while authenticated as user2 — RLS would otherwise make the inline
+-- "WHERE notes = 'updated-notes'" subquery return NULL there.
+select set_config(
+  'test.user1_txn_id',
+  (SELECT id::text FROM public.transactions WHERE user_id = auth.uid() AND notes = 'updated-notes'),
+  false
+);
+
 -- 12) Cross-user: update_transaction_with_tags raises exception for other user's transaction
 select tests.authenticate_as('atomic_user2@test.com');
 
 SELECT throws_like(
   $$
     SELECT public.update_transaction_with_tags(
-      (SELECT id FROM public.transactions WHERE notes = 'updated-notes'),
+      current_setting('test.user1_txn_id')::uuid,
       jsonb_build_object(
         'date', '2026-01-10', 'type', 'spend', 'amount', 1,
         'category_id', '00000000-0000-0000-0000-000000000000'::uuid,
@@ -229,7 +259,7 @@ SELECT throws_like(
     SELECT public.create_transaction_with_tags(
       jsonb_build_object(
         'date', '2026-01-20', 'type', 'spend', 'amount', 1,
-        'category_id', (SELECT id FROM public.categories WHERE name = 'User2Cat'),
+        'category_id', current_setting('test.user2_cat_id')::uuid,
         'bank_account_id', (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'AtomicAccount')
       ),
       ARRAY[]::uuid[]
@@ -246,7 +276,7 @@ SELECT throws_like(
       jsonb_build_object(
         'date', '2026-01-20', 'type', 'spend', 'amount', 1,
         'category_id', (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'AtomicCat'),
-        'bank_account_id', (SELECT id FROM public.bank_accounts WHERE name = 'User2Account')
+        'bank_account_id', current_setting('test.user2_account_id')::uuid
       ),
       ARRAY[]::uuid[]
     )
@@ -264,7 +294,7 @@ SELECT throws_like(
         'category_id', (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'AtomicCat'),
         'bank_account_id', (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'AtomicAccount')
       ),
-      ARRAY[(SELECT id FROM public.tags WHERE name = 'User2Tag')]
+      ARRAY[current_setting('test.user2_tag_id')::uuid]
     )
   $$,
   '%access denied%',
@@ -278,7 +308,7 @@ SELECT throws_like(
       (SELECT id FROM public.transactions WHERE user_id = auth.uid() AND notes = 'updated-notes'),
       jsonb_build_object(
         'date', '2026-01-20', 'type', 'spend', 'amount', 1,
-        'category_id', (SELECT id FROM public.categories WHERE name = 'User2Cat'),
+        'category_id', current_setting('test.user2_cat_id')::uuid,
         'bank_account_id', (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'AtomicAccount')
       ),
       ARRAY[]::uuid[]
@@ -296,7 +326,7 @@ SELECT throws_like(
       jsonb_build_object(
         'date', '2026-01-20', 'type', 'spend', 'amount', 1,
         'category_id', (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'AtomicCat'),
-        'bank_account_id', (SELECT id FROM public.bank_accounts WHERE name = 'User2Account')
+        'bank_account_id', current_setting('test.user2_account_id')::uuid
       ),
       ARRAY[]::uuid[]
     )
@@ -315,7 +345,7 @@ SELECT throws_like(
         'category_id', (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'AtomicCat'),
         'bank_account_id', (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'AtomicAccount')
       ),
-      ARRAY[(SELECT id FROM public.tags WHERE name = 'User2Tag')]
+      ARRAY[current_setting('test.user2_tag_id')::uuid]
     )
   $$,
   '%access denied%',
