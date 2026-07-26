@@ -1,10 +1,11 @@
 import { useEffect, useMemo } from "react";
 import { Edit, useForm } from "@refinedev/antd";
-import { useList, useNotification } from "@refinedev/core";
+import { useList } from "@refinedev/core";
 import { Form, Input, InputNumber, Select, DatePicker } from "antd";
 import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
-import { DATE_PICKER_INPUT_FORMATS, supabaseClient } from "../../utility";
+import { useBudgetForm } from "../../hooks";
+import { DATE_PICKER_INPUT_FORMATS } from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
   categoryLabel,
@@ -16,8 +17,12 @@ export const BudgetEdit = () => {
     meta: {
       select: "*, budget_categories(category_id), budget_tags(tag_id)",
     },
+    warnWhenUnsavedChanges: false,
   });
-  const { open: openNotification } = useNotification();
+  const { handleFinish, isLoading } = useBudgetForm({
+    mode: "edit",
+    id: id?.toString(),
+  });
 
   const budgetData = query?.data?.data;
 
@@ -80,67 +85,8 @@ export const BudgetEdit = () => {
     formProps.form.setFieldValue("tag_ids", currentTagIds);
   }, [currentCategoryIds, currentTagIds, formProps.form]);
 
-  const handleFinish = async (values: Record<string, unknown>) => {
-    const { category_ids, tag_ids, ...budgetValues } = values;
-
-    await formProps.onFinish?.(budgetValues);
-
-    if (!id) {
-      const error = new Error(
-        "Budget ID is missing. Unable to update linked categories and tags."
-      );
-      openNotification?.({
-        type: "error",
-        message: "Failed to update budget categories and tags",
-        description: error.message,
-      });
-      throw error;
-    }
-
-    const errors: string[] = [];
-
-    // Replace categories
-    const { error: delCatError } = await supabaseClient
-      .from("budget_categories")
-      .delete()
-      .eq("budget_id", id);
-    if (delCatError) {
-      errors.push("categories (delete)");
-    } else if (Array.isArray(category_ids) && category_ids.length > 0) {
-      const { error } = await supabaseClient.from("budget_categories").insert(
-        category_ids.map((category_id: string) => ({
-          budget_id: id,
-          category_id,
-        }))
-      );
-      if (error) errors.push("categories (insert)");
-    }
-
-    // Replace tags
-    const { error: delTagError } = await supabaseClient
-      .from("budget_tags")
-      .delete()
-      .eq("budget_id", id);
-    if (delTagError) {
-      errors.push("tags (delete)");
-    } else if (Array.isArray(tag_ids) && tag_ids.length > 0) {
-      const { error } = await supabaseClient
-        .from("budget_tags")
-        .insert(tag_ids.map((tag_id: string) => ({ budget_id: id, tag_id })));
-      if (error) errors.push("tags (insert)");
-    }
-
-    if (errors.length > 0) {
-      openNotification?.({
-        type: "error",
-        message: "Failed to update budget categories and tags",
-        description: `Budget saved but failed to update: ${errors.join(", ")}`,
-      });
-    }
-  };
-
   return (
-    <Edit saveButtonProps={saveButtonProps}>
+    <Edit saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
       <Form
         {...formProps}
         layout="vertical"
