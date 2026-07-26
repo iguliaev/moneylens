@@ -52,7 +52,7 @@ export const ProjectTitle: React.FC<ProjectTitleProps> = ({
       <img
         src={isDark ? logoLockupDarkUrl : logoLockupLightUrl}
         alt="MoneyLens"
-        height={32}
+        height={44}
       />
     </Link>
   );
