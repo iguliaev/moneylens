@@ -1,7 +1,7 @@
 # Deep code review fixes — implementation plan
 
 **Date:** 2026-07-25
-**Status:** Not started
+**Status:** In progress
 **Source:** `docs/superpowers/plans/2026-07-18-project-review-security-code-ux.md` §2 (Deep code review)
 **Scope:** C1-C5 and the smaller points from that section. The security findings (§1) from the same review were already fixed in an earlier batch (PRs #238-#240). UX findings (§3) are out of scope here.
 
@@ -9,6 +9,7 @@
 
 <!-- Newest entry first. One entry per session, even sessions with no code progress. -->
 
+- **2026-07-26** — Step 4 (C1) done, shipped ahead of steps 1-3 (branch `fix/c1-soft-deleted-visibility`, split out of `fix/atomic-budget-with-links` since C1 is fully independent of the C5 work-in-progress on that branch): swapped `resource:` from raw tables to the `_with_usage` views in `transactions/create.tsx` (tags, bank accounts), `transactions/list.tsx` (bank account + tag filters), `transactions/edit.tsx` (bank accounts, tags), `budgets/create.tsx` and `budgets/edit.tsx` (tags), and `components/header/index.tsx` (categories, bank accounts — global search). `npm run check-types`/`lint`/`build` all clean. Manually verified via Playwright against the local dev server + local Supabase: soft-deleted the "movie" tag and "Chase" bank account, confirmed both vanish from the transaction-create tag/bank-account dropdowns and from the header global search, while an existing (non-deleted) account still shows up in search. Full e2e suites for `transactions.spec.ts` (26/26) and `budgets.spec.ts` (11/11) pass; `supabase test db` still 233/233 after a fresh `db reset` (to restore seed data touched during manual testing). `transactions/show.tsx` deliberately left alone (shows historical name on already-created transactions — correct, not a bug). PR opened for this branch; C5 (steps 1-3) continues separately on `fix/atomic-budget-with-links`.
 - **2026-07-25** — Plan created (PR #242). Not started.
 
 ---
@@ -149,7 +150,7 @@ Replace the `Table.Column key="tag_ids"` block's `filterDropdown` with a small l
 - [ ] 1. **C5 migration first, in isolation** — write, apply locally (`supabase db reset`), write + run the new pgTAP tests until green, *before* touching frontend code.
 - [ ] 2. Regenerate types (`supabase gen types typescript --local`) and sync into `apps/web-next/src/types/database.types.ts`.
 - [ ] 3. **C5 frontend** — `rpc.ts` → `useBudgetForm.ts` → `budgets/create.tsx`/`edit.tsx` refactor. Run `apps/web-next/e2e/tests/budgets.spec.ts` to confirm the happy path still works end-to-end against the new RPC.
-- [ ] 4. **C1** — mechanical resource-name swaps across the six files + header search. Manually verify: soft-delete a tag/bank account, confirm it disappears from every affected dropdown/search.
+- [x] 4. **C1** — mechanical resource-name swaps across the six files + header search. Manually verify: soft-delete a tag/bank account, confirm it disappears from every affected dropdown/search.
 - [ ] 5. **C3** — install + wire the antd patch. Verify console warning gone, `npm run build` clean.
 - [ ] 6. **Tag filter fix** — write the new e2e test first (should currently fail/error against unfixed code, confirming the bug is real), then implement, confirm it goes green. Manually check the Network tab shows `.or(...)`/`cs` syntax, not `tag_ids=in.(...)`.
 - [ ] 7. **Cleanup points** — retry.ts deletion, ESLint dedup, Dockerfile deletion. Low risk, verify via `npm run lint` / `npm run build` / `npm run check-types`.
