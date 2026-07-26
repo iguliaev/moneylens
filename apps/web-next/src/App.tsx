@@ -303,13 +303,13 @@ function App() {
                     <Route
                       path="/login"
                       element={
-                        <AuthPage type="login" title={<ProjectTitle />} />
+                        <AuthPage type="login" title={<ProjectTitle full />} />
                       }
                     />
                     <Route
                       path="/register"
                       element={
-                        <AuthPage type="register" title={<ProjectTitle />} />
+                        <AuthPage type="register" title={<ProjectTitle full />} />
                       }
                     />
                     <Route
@@ -317,7 +317,7 @@ function App() {
                       element={
                         <AuthPage
                           type="forgotPassword"
-                          title={<ProjectTitle />}
+                          title={<ProjectTitle full />}
                         />
                       }
                     />
@@ -326,7 +326,7 @@ function App() {
                       element={
                         <AuthPage
                           type="updatePassword"
-                          title={<ProjectTitle />}
+                          title={<ProjectTitle full />}
                         />
                       }
                     />
