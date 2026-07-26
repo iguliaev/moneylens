@@ -4,6 +4,7 @@ import {
   deleteTestUser,
   loginUser,
   createBudget,
+  createTag,
   e2eCurrentMonthDate,
   seedReferenceDataForUser,
   cleanupReferenceDataForUser,
@@ -180,6 +181,98 @@ test.describe("Budgets", () => {
         .getByRole("cell", { name: "1" })
         .first()
     ).toBeVisible();
+  });
+
+  test("user can edit a budget's categories and tags", async ({ page }) => {
+    const ts = Date.now();
+    const name = `e2e-budget-edit-links-${ts}`;
+    const tagA = `e2e-tag-a-${ts}`;
+    const tagB = `e2e-tag-b-${ts}`;
+
+    await createTag(page, tagA);
+    await createTag(page, tagB);
+
+    // Create a budget linked to the "Groceries" category and tagA
+    await page.goto("/budgets");
+    await page.getByRole("button", { name: /create/i }).click();
+    await expect(
+      page.getByRole("heading", { name: "Create Budget" })
+    ).toBeVisible();
+
+    await page.getByRole("textbox", { name: "* Name" }).fill(name);
+    await page.getByRole("combobox", { name: "* Type" }).click();
+    await page.getByTitle(/^Spend$/i).click();
+    await page.getByRole("spinbutton", { name: "* Target Amount" }).fill("800");
+
+    await page.getByRole("combobox", { name: "Categories" }).click();
+    await page
+      .getByTitle(/Groceries/i)
+      .first()
+      .click();
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("combobox", { name: "Tags" }).click();
+    await page.getByTitle(tagA, { exact: true }).first().click();
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: /save/i }).click();
+    await expect(page).toHaveURL(/\/budgets/);
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+
+    // Category count for this budget should be 1
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: name })
+        .getByRole("cell", { name: "1" })
+        .first()
+    ).toBeVisible();
+
+    // Edit: keep the existing category/tagA link and add tagB alongside it
+    await page
+      .getByRole("row")
+      .filter({ hasText: name })
+      .getByRole("button", { name: "edit" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Edit Budget" })
+    ).toBeVisible();
+    await waitForFormReady(page, "budget-edit-form");
+
+    // Prior links should be pre-populated
+    await expect(page.getByTitle(/Groceries/i).first()).toBeVisible();
+    await expect(page.getByTitle(tagA, { exact: true }).first()).toBeVisible();
+
+    await page.getByRole("combobox", { name: "Tags" }).click();
+    await page.getByTitle(tagB, { exact: true }).click();
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: /save/i }).click();
+    await expect(page).toHaveURL(/\/budgets/);
+    await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+
+    // Tag count for this budget should now be 2 (tagA + tagB), category
+    // count unchanged at 1
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: name })
+        .getByRole("cell", { name: "2" })
+        .first()
+    ).toBeVisible();
+
+    // Re-open edit to verify the addition persisted through the RPC
+    // round-trip (proves the edit form's prefill -> resubmit -> replace-links
+    // path in update_budget_with_links, not just the create path)
+    await page
+      .getByRole("row")
+      .filter({ hasText: name })
+      .getByRole("button", { name: "edit" })
+      .click();
+    await waitForFormReady(page, "budget-edit-form");
+
+    await expect(page.getByTitle(tagA, { exact: true }).first()).toBeVisible();
+    await expect(page.getByTitle(tagB, { exact: true }).first()).toBeVisible();
   });
 
   test("dashboard shows budgets section with progress bars", async ({

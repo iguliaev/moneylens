@@ -10,3 +10,5 @@ export type {
 export { useQuickActions } from "./useQuickActions";
 export { useTransactionForm } from "./useTransactionForm";
 export type { TransactionFormValues } from "./useTransactionForm";
+export { useBudgetForm } from "./useBudgetForm";
+export type { BudgetFormValues } from "./useBudgetForm";
