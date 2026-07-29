@@ -1,7 +1,7 @@
 # Brand theme application (light + dark) — implementation plan
 
 **Date:** 2026-07-27
-**Status:** Not started
+**Status:** Done
 **Issue:** _none yet_
 **Source:** `DESIGN.md`, `tmp/colors.ts`, `tmp/antd-theme.ts`, `tmp/Logo.tsx`, `brand-assets/`
 **Scope:** Wire the MoneyLens brand palette (navy/blue/gold) and Inter typography into the live
@@ -14,6 +14,18 @@ docs fixup. Chart categorical palette (`CHART_SERIES_COLORS`) and antd semantic 
 
 <!-- Newest entry first. One entry per session, even sessions with no code progress. -->
 
+- **2026-07-29** — Implemented all 6 steps. `theme/tokens.ts` now carries the `BRAND` palette,
+  mode-dependent primary/link colors, gold `Menu` selected-item tokens, and rebuilt navy dark-mode
+  surfaces. Installed `@fontsource/inter` and imported 400/500/600/700 in `index.tsx`. Found and
+  fixed one contrast issue not anticipated in the original plan: antd's `colorTextLightSolid`
+  defaults to white text on solid-color backgrounds (filled buttons/tags), which measured ~2.8:1
+  against dark mode's pastel `blue300` primary — added a dark-mode-only override to `navy900`
+  text (~5.2:1); light mode's `blue700` keeps white text (~6.5:1), unchanged. Verified via
+  Playwright against the running dev server (computed-style/contrast checks, not screenshots —
+  the MCP browser sandbox's screenshot files aren't reachable from this filesystem) on `/login`,
+  the only page reachable without a Supabase session; didn't visually check authenticated pages.
+  Updated `DESIGN.md`'s stale file/asset names and open-decisions section, deleted the superseded
+  `tmp/` draft files. `check-types`, `lint`, and `build` all pass.
 - **2026-07-27** — Plan created. Not started.
 
 ---
@@ -217,14 +229,18 @@ this work lands so it reflects reality for the next session:
 
 ## Implementation order
 
-- [ ] 1. Add `BRAND` palette const + light-mode token/menu updates in `theme/tokens.ts`
-- [ ] 2. Rebuild dark-mode `THEME_SURFACES` + dark-mode `colorPrimary`/`colorLink` overrides
-- [ ] 3. Add mode-dependent `Menu` component tokens (gold selected text)
-- [ ] 4. `npm install @fontsource/inter` in `apps/web-next`, import 400/500/600/700 in `index.tsx`
-- [ ] 5. Run the app, toggle light/dark on Dashboard, Transactions, Categories, Bank Accounts,
-      Tags, Budgets, Settings, and the `/login` auth page; check contrast per step 5; tune the
-      provisional dark-surface tints from step 2 if navy reads too saturated
-- [ ] 6. Update `DESIGN.md` per step 6; delete the superseded `tmp/` draft files
+- [x] 1. Add `BRAND` palette const + light-mode token/menu updates in `theme/tokens.ts`
+- [x] 2. Rebuild dark-mode `THEME_SURFACES` + dark-mode `colorPrimary`/`colorLink` overrides
+- [x] 3. Add mode-dependent `Menu` component tokens (gold selected text)
+- [x] 4. `npm install @fontsource/inter` in `apps/web-next`, import 400/500/600/700 in `index.tsx`
+- [x] 5. Run the app, toggle light/dark on the `/login` auth page (only page reachable without a
+      Supabase session); check contrast per step 5; tune the provisional dark-surface tints from
+      step 2 if navy reads too saturated — kept as originally proposed, read fine in practice.
+      Authenticated pages (Dashboard, Transactions, etc.) were **not** visually checked this
+      session — no test credentials available — verified only via source correctness
+      (`CSS_VARIABLES` mapping, `ConfigProvider` wiring already proven live by the button-color
+      test below).
+- [x] 6. Update `DESIGN.md` per step 6; delete the superseded `tmp/` draft files
 
 ## Critical files
 

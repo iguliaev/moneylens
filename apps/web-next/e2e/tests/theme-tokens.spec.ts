@@ -8,11 +8,13 @@ import {
 const scenarios = [
   {
     mode: "light",
-    bodyColor: "rgb(245, 247, 251)",
+    bodyColor: "rgb(247, 249, 252)",
+    metaThemeColor: "#F7F9FC",
   },
   {
     mode: "dark",
-    bodyColor: "rgb(15, 23, 42)",
+    bodyColor: "rgb(12, 35, 64)",
+    metaThemeColor: "#0C2340",
   },
 ] as const;
 
@@ -47,10 +49,7 @@ test.describe("Theme tokens", () => {
       );
       await expect(
         page.locator('meta[name="theme-color"]').first()
-      ).toHaveAttribute(
-        "content",
-        scenario.bodyColor === "rgb(245, 247, 251)" ? "#f5f7fb" : "#0f172a"
-      );
+      ).toHaveAttribute("content", scenario.metaThemeColor);
     });
 
     test(`apply tokenized danger colors on settings in ${scenario.mode} mode`, async ({
