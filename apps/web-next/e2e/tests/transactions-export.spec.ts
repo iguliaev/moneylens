@@ -159,6 +159,114 @@ test.describe("Transactions CSV Export", () => {
     expect(content).toContain("Export test transaction");
   });
 
+  test("exports transactions in range as JSON with hierarchical category path and a real tags array", async ({
+    page,
+  }) => {
+    const now = new Date().toISOString();
+    const userId = testUser.userId;
+
+    const { data: parentCategory, error: parentError } = await supabaseAdmin
+      .from("categories")
+      .insert({
+        user_id: userId,
+        type: "spend",
+        name: "Transport",
+        created_at: now,
+        updated_at: now,
+      })
+      .select("id")
+      .single();
+    if (parentError || !parentCategory)
+      throw new Error(`Failed to seed parent category: ${parentError?.message}`);
+
+    const { data: childCategory, error: childError } = await supabaseAdmin
+      .from("categories")
+      .insert({
+        user_id: userId,
+        type: "spend",
+        name: "Taxi",
+        parent_id: parentCategory.id,
+        created_at: now,
+        updated_at: now,
+      })
+      .select("id")
+      .single();
+    if (childError || !childCategory)
+      throw new Error(`Failed to seed child category: ${childError?.message}`);
+
+    const { data: tags, error: tagsError } = await supabaseAdmin
+      .from("tags")
+      .insert([
+        { user_id: userId, name: "json-urgent", created_at: now, updated_at: now },
+        {
+          user_id: userId,
+          name: "json-groceries",
+          created_at: now,
+          updated_at: now,
+        },
+      ])
+      .select("id, name");
+    if (tagsError || !tags)
+      throw new Error(`Failed to seed tags: ${tagsError?.message}`);
+
+    const transactionDate = "2026-04-20";
+    const { data: transaction, error: transactionError } = await supabaseAdmin
+      .from("transactions")
+      .insert({
+        user_id: userId,
+        date: transactionDate,
+        type: "spend",
+        category_id: childCategory.id,
+        amount: 18.75,
+        created_at: now,
+        updated_at: now,
+      })
+      .select("id")
+      .single();
+    if (transactionError || !transaction)
+      throw new Error(
+        `Failed to seed transaction: ${transactionError?.message}`
+      );
+
+    const { error: transactionTagsError } = await supabaseAdmin
+      .from("transaction_tags")
+      .insert(
+        tags.map((tag) => ({
+          transaction_id: transaction.id,
+          tag_id: tag.id,
+        }))
+      );
+    if (transactionTagsError)
+      throw new Error(
+        `Failed to associate tags: ${transactionTagsError.message}`
+      );
+
+    await page.goto("/settings");
+    await page.getByRole("tab", { name: /import.*export/i }).click();
+
+    await page.getByText("JSON", { exact: true }).click();
+    await fillExportDateRange(page, "01/04/2026", "30/04/2026");
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: /export json/i }).click();
+    const download = await downloadPromise;
+
+    const downloadPath = await download.path();
+    if (!downloadPath) throw new Error("Download did not produce a file");
+    const content = await fs.readFile(downloadPath, "utf-8");
+
+    const parsed = JSON.parse(content);
+    expect(Array.isArray(parsed.transactions)).toBe(true);
+    const row = parsed.transactions.find(
+      (tx: { date: string }) => tx.date === transactionDate
+    );
+    expect(row).toBeDefined();
+    expect(row.category).toBe("Transport/Taxi");
+    expect(Array.isArray(row.tags)).toBe(true);
+    expect([...row.tags].sort()).toEqual(["json-groceries", "json-urgent"]);
+    expect(row).not.toHaveProperty("bank_account");
+  });
+
   test("blocks export and shows an error when the date range exceeds the row cap", async ({
     page,
   }) => {
@@ -186,7 +294,7 @@ test.describe("Transactions CSV Export", () => {
     await page.getByRole("button", { name: /export csv/i }).click();
 
     await expect(
-      page.getByText(/exceeds the 10,000-row export limit/i)
+      page.getByText(/exceeds the 10,000-row export limit/i).first()
     ).toBeVisible();
   });
 });
