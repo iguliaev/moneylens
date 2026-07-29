@@ -1,13 +1,14 @@
 # Transactions CSV Export Implementation Plan
 
 **Date:** 2026-07-25
-**Status:** Not started
+**Status:** Implemented, PR open
 **Goal:** Let a user export their own transactions for a date range they choose to a CSV file, from the Settings > Import & Export tab, with fields: date, transaction type, category (hierarchy joined with `/`), bank account, amount, tags (sorted, `;`-joined), notes.
 
 ## Progress Log
 
 <!-- Newest entry first. One entry per session, even sessions with no code progress. -->
 
+- **2026-07-29** — Implemented Tasks 1–5. CSV escaping/row utility (`csvExport.ts`), count-capped paginated fetch (`exportTransactions.ts`), `ExportSection` wired into Settings > Import & Export, e2e coverage for the happy path (hierarchical category, bank account, sorted tags) and the row-cap error path (via `page.route` intercepting the PostgREST `HEAD` count request — required also setting `access-control-expose-headers: content-range` on the mocked response, since the real Supabase REST calls are cross-origin from the Vite dev server and the browser hides `Content-Range` from JS otherwise). Manually verified export in the dev server. Opening PR next.
 - **2026-07-25** — Plan created (PR #241). Not started.
 
 **Architecture:** No new database objects are needed — the existing `transactions_with_details` view (added in `supabase/migrations/20260627120000_transaction_category_parent_labels.sql`) already resolves category parent/child names and pre-sorts/aggregates tag names (`ARRAY_AGG(... ORDER BY tg.name)`), scoped by RLS to the current user. The frontend adds:
