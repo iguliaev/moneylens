@@ -11,6 +11,7 @@ import {
   Tabs,
   Select,
   DatePicker,
+  Segmented,
 } from "antd";
 import { useNotification } from "@refinedev/core";
 import type { Dayjs } from "dayjs";
@@ -28,6 +29,8 @@ import {
   buildCsv,
   downloadCsv,
   transactionToCsvRow,
+  buildJsonExport,
+  downloadJson,
   fetchTransactionsForExport,
   MAX_EXPORT_ROWS,
   DATE_PICKER_INPUT_FORMATS,
@@ -294,9 +297,12 @@ const BulkUploadSection = () => {
   );
 };
 
+type ExportFormat = "csv" | "json";
+
 const ExportSection = () => {
   const { open: openNotification } = useNotification();
   const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const [format, setFormat] = useState<ExportFormat>("csv");
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -334,8 +340,14 @@ const ExportSection = () => {
       return;
     }
 
-    const csv = buildCsv(result.rows.map(transactionToCsvRow));
-    downloadCsv(`transactions_${startDate}_to_${endDate}.csv`, csv);
+    if (format === "csv") {
+      const csv = buildCsv(result.rows.map(transactionToCsvRow));
+      downloadCsv(`transactions_${startDate}_to_${endDate}.csv`, csv);
+    } else {
+      const json = buildJsonExport(result.rows);
+      downloadJson(`transactions_${startDate}_to_${endDate}.json`, json);
+    }
+
     openNotification?.({
       type: "success",
       message: `Exported ${result.rows.length.toLocaleString()} transactions`,
@@ -346,10 +358,18 @@ const ExportSection = () => {
   return (
     <Card title="Export" extra={<DownloadOutlined />}>
       <Paragraph type="secondary">
-        Export transactions for a date range as CSV. Limited to{" "}
+        Export transactions for a date range as CSV or JSON. Limited to{" "}
         {MAX_EXPORT_ROWS.toLocaleString()} transactions per export.
       </Paragraph>
       <Space direction="vertical" style={{ width: "100%" }} size="middle">
+        <Segmented
+          options={[
+            { label: "CSV", value: "csv" },
+            { label: "JSON", value: "json" },
+          ]}
+          value={format}
+          onChange={(value) => setFormat(value as ExportFormat)}
+        />
         <DatePicker.RangePicker
           format={DATE_PICKER_INPUT_FORMATS}
           value={range}
@@ -367,7 +387,7 @@ const ExportSection = () => {
           loading={isExporting}
           disabled={!range}
         >
-          {isExporting ? "Exporting..." : "Export CSV"}
+          {isExporting ? "Exporting..." : `Export ${format.toUpperCase()}`}
         </Button>
       </Space>
     </Card>
