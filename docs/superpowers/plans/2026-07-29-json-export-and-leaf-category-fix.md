@@ -1,7 +1,7 @@
 # JSON export + leaf-category-path fix — implementation plan
 
 **Date:** 2026-07-29
-**Status:** Not started
+**Status:** Implemented, PR open
 **Source:** [`2026-07-25-transactions-csv-export.md`](2026-07-25-transactions-csv-export.md) — "Future work" section
 **Scope:** (A) Fix a latent bug in `bulk_insert_transactions` where bare category names can silently resolve to the wrong category once same-named leaves exist under different parents, by requiring `"Parent/Child"` paths for nested categories and narrowing bare-name resolution to root-level leaves only. (B) Add a JSON export option to the existing CSV export feature in Settings > Import & Export, reusing the existing format-agnostic fetch layer and emitting the same hierarchical `"Parent/Child"` category path CSV already uses — safe to round-trip through `bulk_insert_transactions` because of (A). Ships as **one PR**.
 
@@ -9,6 +9,7 @@
 
 <!-- Newest entry first. One entry per session, even sessions with no code progress. -->
 
+- **2026-07-29** — Implemented Tasks 1–7. Migration `20260729212856_bulk_insert_hierarchical_category_path.sql` lands the Parent/Child resolution rule with 7 new pgTAP assertions (Tests 14–18, 23/23 total). `fileDownload.ts` extracted; `jsonExport.ts`/`jsonExport.test.ts` added (12 unit tests); `ExportSection` in Settings gets a CSV/JSON `Segmented` toggle. E2E coverage added for the JSON path; also fixed a pre-existing strict-mode locator flake in the row-cap test (unrelated to this feature, found while running the full spec). `docs/api/bulk-upload.md` updated with the new category-resolution rule and message table. Full regression: 245/245 pgTAP, 32/32 Vitest, 107/108 Playwright e2e (1 pre-existing unrelated failure in `transactions.spec.ts`, confirmed identical to `main` and failing there too, out of scope). Manually verified export→re-upload round-trip in the dev server (100 transactions). Opened PR #254.
 - **2026-07-29** — Plan designed and written. Not started.
 
 ---
@@ -34,7 +35,7 @@ This is the "future work" carved out at the bottom of `docs/superpowers/plans/20
 - Create: `supabase/migrations/20260729130000_bulk_insert_hierarchical_category_path.sql`
 - Modify: `supabase/tests/bulk_insert_test.sql`
 
-- [ ] **Step 1: Add new failing pgTAP test cases to `bulk_insert_test.sql` (before the fix lands)**
+- [x] **Step 1: Add new failing pgTAP test cases to `bulk_insert_test.sql` (before the fix lands)**
 
 Insert these new cases immediately before `SELECT extensions.finish();`. Use fresh category names (`Food`, `Travel`) rather than reusing the existing seeded `Transport` category, since `Transport` is already relied on as a bare-name leaf in Test 11.
 
@@ -118,7 +119,7 @@ Bump the plan count at the top of the file. The existing suite has **16** assert
 SELECT extensions.plan(23);
 ```
 
-- [ ] **Step 2: Run the pgTAP suite to confirm the new cases fail against current behavior**
+- [x] **Step 2: Run the pgTAP suite to confirm the new cases fail against current behavior**
 
 Run:
 ```bash
@@ -127,7 +128,7 @@ supabase test db
 
 Expected: FAIL — Test 14's two `is` assertions fail (current code does an exact `c.name = v_tx->>'category'` match with no path parsing, so `"Food/Eating out"` matches nothing and the row errors instead of inserting); Tests 16/17 fail since there's no path-parsing at all yet. (Test 15 may incidentally pass already, but for the wrong reason — re-verify once Step 3 lands that it's throwing via the new root-only-bare-name rule, not the old any-depth lookup simply not matching "Eating out" today either.)
 
-- [ ] **Step 3: Create the migration with the new category-resolution block**
+- [x] **Step 3: Create the migration with the new category-resolution block**
 
 `CREATE OR REPLACE FUNCTION public.bulk_insert_transactions` — keep required-field checks, type validation, bank_account/tags resolution, insert, and the sanitized-error `EXCEPTION` handler identical to `20260719162135_sanitize_bulk_upload_errors.sql`. Replace only the category-resolution block:
 
@@ -208,7 +209,7 @@ Expected: FAIL — Test 14's two `is` assertions fail (current code does an exac
 
 Add a header comment above `CREATE OR REPLACE FUNCTION` explaining the ambiguity bug being fixed and the two-branch rule (mirrors the "Decisions locked in" section above). Update `COMMENT ON FUNCTION public.bulk_insert_transactions IS ...` to describe the new resolution rule instead of "Only leaf categories (no children) are accepted."
 
-- [ ] **Step 4: Re-run the pgTAP suite to confirm everything passes**
+- [x] **Step 4: Re-run the pgTAP suite to confirm everything passes**
 
 Run:
 ```bash
@@ -217,7 +218,7 @@ supabase test db
 
 Expected: PASS, `23/23`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/20260729130000_bulk_insert_hierarchical_category_path.sql supabase/tests/bulk_insert_test.sql
@@ -232,7 +233,7 @@ git commit -m "fix(db): resolve bulk_insert_transactions category ambiguity via 
 - Create: `apps/web-next/src/utility/fileDownload.ts`
 - Modify: `apps/web-next/src/utility/csvExport.ts`
 
-- [ ] **Step 1: Implement `downloadTextFile`**
+- [x] **Step 1: Implement `downloadTextFile`**
 
 ```ts
 // apps/web-next/src/utility/fileDownload.ts
@@ -253,7 +254,7 @@ export const downloadTextFile = (
 };
 ```
 
-- [ ] **Step 2: Refactor `downloadCsv` to use it, and export `formatCategoryPath` for reuse by JSON export**
+- [x] **Step 2: Refactor `downloadCsv` to use it, and export `formatCategoryPath` for reuse by JSON export**
 
 In `csvExport.ts`: export the existing (currently private) `formatCategoryPath` helper unchanged; replace `downloadCsv`'s body with:
 
@@ -266,7 +267,7 @@ export const downloadCsv = (filename: string, content: string): void =>
 
 Nothing else in the file changes.
 
-- [ ] **Step 3: Run existing CSV tests to confirm no regression**
+- [x] **Step 3: Run existing CSV tests to confirm no regression**
 
 Run:
 ```bash
@@ -276,7 +277,7 @@ npx vitest run src/utility/csvExport.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 4: Type-check**
+- [x] **Step 4: Type-check**
 
 Run:
 ```bash
@@ -286,7 +287,7 @@ npm run check-types
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web-next/src/utility/fileDownload.ts apps/web-next/src/utility/csvExport.ts
@@ -301,7 +302,7 @@ git commit -m "refactor(export): extract shared blob-download helper from CSV ex
 - Create: `apps/web-next/src/utility/jsonExport.ts`
 - Create: `apps/web-next/src/utility/jsonExport.test.ts`
 
-- [ ] **Step 1: Write failing unit tests**
+- [x] **Step 1: Write failing unit tests**
 
 ```ts
 // apps/web-next/src/utility/jsonExport.test.ts
@@ -418,7 +419,7 @@ describe("buildJsonExport", () => {
 });
 ```
 
-- [ ] **Step 2: Run the new tests to confirm they fail**
+- [x] **Step 2: Run the new tests to confirm they fail**
 
 Run:
 ```bash
@@ -428,7 +429,7 @@ npx vitest run src/utility/jsonExport.test.ts
 
 Expected: FAIL (`jsonExport.ts` not found).
 
-- [ ] **Step 3: Implement `jsonExport.ts`**
+- [x] **Step 3: Implement `jsonExport.ts`**
 
 Reuses `formatCategoryPath` exported from `csvExport.ts` (Task 2) rather than duplicating the parent/child-join logic.
 
@@ -483,7 +484,7 @@ export const downloadJson = (filename: string, content: string): void =>
   downloadTextFile(filename, content, "application/json;charset=utf-8;");
 ```
 
-- [ ] **Step 4: Run tests to confirm they pass, then type-check**
+- [x] **Step 4: Run tests to confirm they pass, then type-check**
 
 Run:
 ```bash
@@ -494,7 +495,7 @@ npm run check-types
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web-next/src/utility/jsonExport.ts apps/web-next/src/utility/jsonExport.test.ts
@@ -509,7 +510,7 @@ git commit -m "feat(export): add JSON export serialization matching BulkUploadPa
 - Modify: `apps/web-next/src/utility/index.ts`
 - Modify: `apps/web-next/src/pages/settings/index.tsx`
 
-- [ ] **Step 1: Export the new utilities**
+- [x] **Step 1: Export the new utilities**
 
 ```ts
 // apps/web-next/src/utility/index.ts — add alongside existing exports
@@ -517,7 +518,7 @@ export * from "./jsonExport";
 export * from "./fileDownload";
 ```
 
-- [ ] **Step 2: Add a format selector and branch the export path in `ExportSection`** (`apps/web-next/src/pages/settings/index.tsx`, current `ExportSection` around line 297)
+- [x] **Step 2: Add a format selector and branch the export path in `ExportSection`** (`apps/web-next/src/pages/settings/index.tsx`, current `ExportSection` around line 297)
 
 Add `Segmented` to the antd import, and `buildJsonExport`/`downloadJson` to the utility import. Add local state and branch on export:
 
@@ -614,7 +615,7 @@ const ExportSection = () => {
 };
 ```
 
-- [ ] **Step 3: Type-check and lint**
+- [x] **Step 3: Type-check and lint**
 
 Run:
 ```bash
@@ -625,7 +626,7 @@ npm run lint
 
 Expected: PASS.
 
-- [ ] **Step 4: Manually verify in the dev server**
+- [x] **Step 4: Manually verify in the dev server**
 
 Run:
 ```bash
@@ -635,7 +636,7 @@ npm run dev
 
 Navigate to Settings > Import & Export, pick a date range covering a transaction with a parent/child category, switch the Segmented control to JSON, export, and open the downloaded file to confirm: `{ "transactions": [...] }` shape, `category` is `"Parent/Child"` (or bare for root-level/uncategorized transactions), `tags` is a real array, empty/null optional fields are omitted. Then re-upload that file via the existing Bulk Upload section to confirm it round-trips cleanly against the Task 1 fix.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web-next/src/utility/index.ts apps/web-next/src/pages/settings/index.tsx
@@ -649,7 +650,7 @@ git commit -m "feat(export): add JSON export format option to Settings > Import 
 **Files:**
 - Modify: `apps/web-next/e2e/tests/transactions-export.spec.ts`
 
-- [ ] **Step 1: Add a JSON-format test case inside the existing `test.describe` block**
+- [x] **Step 1: Add a JSON-format test case inside the existing `test.describe` block**
 
 Reuse the file's existing helpers (`fillExportDateRange`, `supabaseAdmin`, `testUser`) and seeding pattern from the existing CSV test (same file, lines 42–160) — seed a category pair, tags, and a transaction on a distinct date range so it doesn't collide with the existing CSV test's seeded row, select JSON via the `Segmented` control, export, and assert on the parsed JSON:
 
@@ -684,7 +685,7 @@ test("exports transactions in range as JSON with hierarchical category path and 
 });
 ```
 
-- [ ] **Step 2: Run the spec**
+- [x] **Step 2: Run the spec**
 
 Run:
 ```bash
@@ -694,7 +695,7 @@ npm run test:e2e:ci -- e2e/tests/transactions-export.spec.ts
 
 Expected: PASS (all 3 tests — original CSV happy path, row-cap error path, new JSON happy path).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web-next/e2e/tests/transactions-export.spec.ts
@@ -708,15 +709,15 @@ git commit -m "test(export): add e2e coverage for JSON export format"
 **Files:**
 - Modify: `docs/api/bulk-upload.md`
 
-- [ ] **Step 1: Update the Transaction Input Schema `category` field description** (replaces the current "Must reference an existing **leaf** category..." bullet) to document the two accepted forms — `"Parent/Child"` path (split on first `/`, trimmed, required once a category has a parent) and bare name (root-level leaves only now) — with an example.
+- [x] **Step 1: Update the Transaction Input Schema `category` field description** (replaces the current "Must reference an existing **leaf** category..." bullet) to document the two accepted forms — `"Parent/Child"` path (split on first `/`, trimmed, required once a category has a parent) and bare name (root-level leaves only now) — with an example.
 
-- [ ] **Step 2: Split the per-row validation message list** — replace `Category "<name>" not found as leaf for type "<type>"` with the three new message variants: root-level-not-found, parent-not-found, and child-not-found-under-parent.
+- [x] **Step 2: Split the per-row validation message list** — replace `Category "<name>" not found as leaf for type "<type>"` with the three new message variants: root-level-not-found, parent-not-found, and child-not-found-under-parent.
 
-- [ ] **Step 3: Update the "Transaction Errors (per row)" table** in Error Codes & Messages to match the three new message variants.
+- [x] **Step 3: Update the "Transaction Errors (per row)" table** in Error Codes & Messages to match the three new message variants.
 
-- [ ] **Step 4: Bump `**Last Updated**: July 29, 2026`**
+- [x] **Step 4: Bump `**Last Updated**: July 29, 2026`**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/api/bulk-upload.md
@@ -727,7 +728,7 @@ git commit -m "docs(bulk-upload): document Parent/Child category path resolution
 
 ### Task 7: Open PR
 
-- [ ] **Step 1: Full regression pass**
+- [x] **Step 1: Full regression pass**
 
 ```bash
 supabase test db
@@ -740,7 +741,7 @@ npm run check-types
 
 Expected: all green.
 
-- [ ] **Step 2: Push branch and open PR**
+- [x] **Step 2: Push branch and open PR**
 
 Use the `create-pull-request` skill (per `AGENTS.md`'s git workflow rules — never commit to `main`, feature branch → PR) rather than raw `git push` + `gh pr create`. PR description should cover: the `bulk_insert_transactions` ambiguity fix and the breaking-but-correct bare-name narrowing (pointing to pgTAP Tests 14–18 as evidence), and the new JSON export format, noting its `"Parent/Child"` output is safe to round-trip through bulk upload because the backend fix ships in the same PR.
 
@@ -748,13 +749,13 @@ Use the `create-pull-request` skill (per `AGENTS.md`'s git workflow rules — ne
 
 ## Implementation order
 
-- [ ] 1. Fix category resolution ambiguity in `bulk_insert_transactions` (Task 1)
-- [ ] 2. Extract shared file-download helper (Task 2)
-- [ ] 3. JSON export utility with unit tests (Task 3)
-- [ ] 4. Wire JSON export into `utility/index.ts` and the Settings UI (Task 4)
-- [ ] 5. E2E coverage for JSON export (Task 5)
-- [ ] 6. Update `docs/api/bulk-upload.md` (Task 6)
-- [ ] 7. Open PR (Task 7)
+- [x] 1. Fix category resolution ambiguity in `bulk_insert_transactions` (Task 1)
+- [x] 2. Extract shared file-download helper (Task 2)
+- [x] 3. JSON export utility with unit tests (Task 3)
+- [x] 4. Wire JSON export into `utility/index.ts` and the Settings UI (Task 4)
+- [x] 5. E2E coverage for JSON export (Task 5)
+- [x] 6. Update `docs/api/bulk-upload.md` (Task 6)
+- [x] 7. Open PR (Task 7)
 
 ## Critical files
 
