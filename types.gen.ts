@@ -420,7 +420,7 @@ export type Database = {
           tags: string[] | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           amount: number
@@ -436,7 +436,7 @@ export type Database = {
           tags?: string[] | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           amount?: number
@@ -452,7 +452,7 @@ export type Database = {
           tags?: string[] | null
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -848,6 +848,28 @@ export type Database = {
         Returns: Json
       }
       bulk_upload_data: { Args: { p_payload: Json }; Returns: Json }
+      create_budget_with_links: {
+        Args: { p_budget: Json; p_category_ids: string[]; p_tag_ids: string[] }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          target_amount: number
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "budgets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_transaction_with_tags: {
         Args: { p_tag_ids: string[]; p_transaction: Json }
         Returns: {
@@ -864,7 +886,7 @@ export type Database = {
           tags: string[] | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         SetofOptions: {
           from: "*"
@@ -942,6 +964,33 @@ export type Database = {
         }
         Returns: number
       }
+      update_budget_with_links: {
+        Args: {
+          p_budget: Json
+          p_budget_id: string
+          p_category_ids: string[]
+          p_tag_ids: string[]
+        }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          target_amount: number
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "budgets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_transaction_with_tags: {
         Args: {
           p_tag_ids: string[]
@@ -962,7 +1011,7 @@ export type Database = {
           tags: string[] | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         SetofOptions: {
           from: "*"

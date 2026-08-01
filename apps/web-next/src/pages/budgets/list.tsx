@@ -20,7 +20,7 @@ import {
   getProgressStatus,
   WARN_STROKE_COLOR,
 } from "../../utility/budgetAlerts";
-import { getBudgetEmptyState, TableSkeleton } from "../../components";
+import { useBudgetEmptyState, TableSkeleton } from "../../components";
 
 export const BudgetList = () => {
   const invalidate = useInvalidate();
@@ -32,7 +32,7 @@ export const BudgetList = () => {
   });
 
   // Always call to keep React hook call count consistent (internally calls useNavigation())
-  const budgetEmptyState = getBudgetEmptyState();
+  const budgetEmptyState = useBudgetEmptyState();
 
   return (
     <List>

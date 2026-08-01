@@ -487,6 +487,196 @@ test.describe("Transactions", () => {
     await expect(updatedRow.getByText("monthly")).toBeVisible();
   });
 
+  test("filtering by multiple tags matches transactions with any selected tag", async ({
+    page,
+  }) => {
+    // tag_ids is a uuid[] computed column — filtering by more than one tag
+    // must use OR/"contains" semantics, not the default "in" operator (which
+    // is a type mismatch against an array column and errors server-side).
+    let hasNon2xxResponse = false;
+    page.on("response", (response) => {
+      if (
+        response.url().includes("/transactions_with_details") &&
+        !response.ok()
+      ) {
+        hasNon2xxResponse = true;
+      }
+    });
+
+    const ts = Date.now();
+    const essentialsNote = `tag-filter-essentials-${ts}`;
+    const monthlyNote = `tag-filter-monthly-${ts}`;
+    const untaggedNote = `tag-filter-untagged-${ts}`;
+    const date = e2eCurrentMonthDate();
+
+    const { data: groceriesCategory, error: categoryError } =
+      await supabaseAdmin
+        .from("categories")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("type", "spend")
+        .eq("name", "Groceries")
+        .single();
+    if (categoryError || !groceriesCategory?.id) {
+      throw new Error(
+        `Failed to resolve Groceries category: ${
+          categoryError?.message ?? "missing category id"
+        }`
+      );
+    }
+
+    const { data: mainAccount, error: accountError } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("id")
+      .eq("user_id", testUser.userId)
+      .eq("name", "Main Account")
+      .single();
+    if (accountError || !mainAccount?.id) {
+      throw new Error(
+        `Failed to resolve Main Account: ${
+          accountError?.message ?? "missing bank account id"
+        }`
+      );
+    }
+
+    const { data: tags, error: tagsError } = await supabaseAdmin
+      .from("tags")
+      .select("id, name")
+      .eq("user_id", testUser.userId)
+      .in("name", ["essentials", "monthly"]);
+    const essentialsTagId = tags?.find((t) => t.name === "essentials")?.id;
+    const monthlyTagId = tags?.find((t) => t.name === "monthly")?.id;
+    if (tagsError || !essentialsTagId || !monthlyTagId) {
+      throw new Error(
+        `Failed to resolve tags: ${tagsError?.message ?? "missing tag ids"}`
+      );
+    }
+
+    const now = new Date().toISOString();
+    const { data: insertedTransactions, error: insertError } =
+      await supabaseAdmin
+        .from("transactions")
+        .insert([
+          {
+            user_id: testUser.userId,
+            date,
+            type: "spend" as const,
+            amount: 11,
+            category: "Groceries",
+            category_id: groceriesCategory.id,
+            bank_account_id: mainAccount.id,
+            notes: essentialsNote,
+            created_at: now,
+            updated_at: now,
+          },
+          {
+            user_id: testUser.userId,
+            date,
+            type: "spend" as const,
+            amount: 12,
+            category: "Groceries",
+            category_id: groceriesCategory.id,
+            bank_account_id: mainAccount.id,
+            notes: monthlyNote,
+            created_at: now,
+            updated_at: now,
+          },
+          {
+            user_id: testUser.userId,
+            date,
+            type: "spend" as const,
+            amount: 13,
+            category: "Groceries",
+            category_id: groceriesCategory.id,
+            bank_account_id: mainAccount.id,
+            notes: untaggedNote,
+            created_at: now,
+            updated_at: now,
+          },
+        ])
+        .select("id, notes");
+    if (insertError || !insertedTransactions) {
+      throw new Error(`Failed to seed transactions: ${insertError?.message}`);
+    }
+
+    const essentialsTxnId = insertedTransactions.find(
+      (t) => t.notes === essentialsNote
+    )?.id;
+    const monthlyTxnId = insertedTransactions.find(
+      (t) => t.notes === monthlyNote
+    )?.id;
+
+    const { error: tagLinkError } = await supabaseAdmin
+      .from("transaction_tags")
+      .insert([
+        { transaction_id: essentialsTxnId, tag_id: essentialsTagId },
+        { transaction_id: monthlyTxnId, tag_id: monthlyTagId },
+      ]);
+    if (tagLinkError) {
+      throw new Error(`Failed to link tags: ${tagLinkError.message}`);
+    }
+
+    await page.goto("/transactions");
+    await page
+      .getByRole("radiogroup", { name: "segmented control" })
+      .getByText(/^spend$/i)
+      .click();
+    await expect(page.getByText(essentialsNote)).toBeVisible();
+    await expect(page.getByText(monthlyNote)).toBeVisible();
+    await expect(page.getByText(untaggedNote)).toBeVisible();
+
+    // Open the Tags column filter and select both tags
+    await page
+      .locator("th", { hasText: "Tags" })
+      .getByRole("button")
+      .click();
+    await page
+      .locator(".ant-table-filter-dropdown:visible")
+      .getByRole("combobox")
+      .click();
+    await page
+      .locator(".ant-select-dropdown:visible")
+      .getByTitle(/^essentials$/i)
+      .click();
+    await page
+      .locator(".ant-select-dropdown:visible")
+      .getByTitle(/^monthly$/i)
+      .click();
+    await page.keyboard.press("Escape");
+    await page
+      .locator(".ant-table-filter-dropdown:visible")
+      .getByRole("button", { name: /filter/i })
+      .click();
+    await page.waitForLoadState("networkidle");
+
+    // OR semantics: transactions with either tag appear, untagged one doesn't
+    await expect(page.getByText(essentialsNote)).toBeVisible();
+    await expect(page.getByText(monthlyNote)).toBeVisible();
+    await expect(page.getByText(untaggedNote)).not.toBeVisible();
+    expect(hasNon2xxResponse).toBeFalsy();
+
+    // Filter survives a direct URL load (round-trips through syncWithLocation)
+    const urlWithFilter = page.url();
+    await page.goto(urlWithFilter);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText(essentialsNote)).toBeVisible();
+    await expect(page.getByText(monthlyNote)).toBeVisible();
+    await expect(page.getByText(untaggedNote)).not.toBeVisible();
+    expect(hasNon2xxResponse).toBeFalsy();
+
+    // Clearing the filter shows the untagged transaction again
+    await page
+      .locator("th", { hasText: "Tags" })
+      .getByRole("button")
+      .click();
+    await page
+      .locator(".ant-table-filter-dropdown:visible")
+      .getByRole("button", { name: /clear/i })
+      .click();
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText(untaggedNote)).toBeVisible();
+  });
+
   test("category options change based on transaction type on edit page", async ({
     page,
   }) => {
@@ -1060,7 +1250,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", transactionId);
         if (deleteTransactionError) {
-          throw new Error(
+          console.error(
             `Failed to clean up transaction: ${deleteTransactionError.message}`
           );
         }
@@ -1071,7 +1261,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", childId);
         if (deleteChildError) {
-          throw new Error(
+          console.error(
             `Failed to clean up child category: ${deleteChildError.message}`
           );
         }
@@ -1082,7 +1272,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", parentId);
         if (deleteParentError) {
-          throw new Error(
+          console.error(
             `Failed to clean up parent category: ${deleteParentError.message}`
           );
         }
@@ -1202,7 +1392,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", childAId);
         if (error) {
-          throw new Error(
+          console.error(
             `Failed to clean up first child category: ${error.message}`
           );
         }
@@ -1213,7 +1403,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", childBId);
         if (error) {
-          throw new Error(
+          console.error(
             `Failed to clean up second child category: ${error.message}`
           );
         }
@@ -1224,7 +1414,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", standaloneId);
         if (error) {
-          throw new Error(
+          console.error(
             `Failed to clean up standalone category: ${error.message}`
           );
         }
@@ -1235,7 +1425,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", parentId);
         if (error) {
-          throw new Error(
+          console.error(
             `Failed to clean up parent category: ${error.message}`
           );
         }
@@ -1356,7 +1546,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", transactionId);
         if (deleteTransactionError) {
-          throw new Error(
+          console.error(
             `Failed to clean up transaction: ${deleteTransactionError.message}`
           );
         }
@@ -1367,7 +1557,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", childId);
         if (deleteChildError) {
-          throw new Error(
+          console.error(
             `Failed to clean up child category: ${deleteChildError.message}`
           );
         }
@@ -1378,7 +1568,7 @@ test.describe("Transactions", () => {
           .delete()
           .eq("id", parentId);
         if (deleteParentError) {
-          throw new Error(
+          console.error(
             `Failed to clean up parent category: ${deleteParentError.message}`
           );
         }

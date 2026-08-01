@@ -35,6 +35,8 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
   async function handleFinish(values: unknown) {
     const formValues = values as TransactionFormValues;
     setIsLoading(true);
+
+    let saved = false;
     try {
       const { tag_ids, ...rawFields } = formValues;
       const tagIds: string[] = tag_ids ?? [];
@@ -49,51 +51,49 @@ export function useTransactionForm({ mode, id }: UseTransactionFormOptions) {
             : String(rawFields.date),
       } satisfies TransactionWithTagsInput;
 
-      let error: { message: string } | null = null;
-
+      let result;
       if (mode === "create") {
-        const result = await createTransactionWithTags(
-          transactionFields,
-          tagIds
-        );
-        error = result.error;
+        result = await createTransactionWithTags(transactionFields, tagIds);
       } else {
         if (!id) throw new Error("id is required for edit mode");
-        const result = await updateTransactionWithTags(
-          id,
-          transactionFields,
-          tagIds
-        );
-        error = result.error;
+        result = await updateTransactionWithTags(id, transactionFields, tagIds);
       }
 
-      if (error) {
+      // result.data can be null if the RPC's UPDATE matched zero rows
+      // (e.g. a concurrent delete) — treat that as a failure too, not a
+      // silent no-op success.
+      if (result.error || !result.data) {
         openNotification?.({
           type: "error",
           message: "Failed to save transaction",
-          description: error.message,
+          description: result.error?.message ?? "Transaction was not saved.",
         });
-        setIsLoading(false);
-        return;
+      } else {
+        saved = true;
       }
-
-      await invalidate({
-        resource: "transactions",
-        invalidates: ["list"],
-      });
-      await invalidate({
-        resource: "transactions_with_details",
-        invalidates: ["list"],
-      });
-      setIsLoading(false);
-      navigate("/transactions");
     } catch (err) {
       openNotification?.({
         type: "error",
         message: "Failed to save transaction",
         description: err instanceof Error ? err.message : "Unknown error",
       });
-      setIsLoading(false);
+    }
+
+    setIsLoading(false);
+
+    // Cache invalidation is best-effort and must never be reported as a
+    // save failure — the RPC already committed by this point.
+    if (saved) {
+      try {
+        await invalidate({ resource: "transactions", invalidates: ["list"] });
+        await invalidate({
+          resource: "transactions_with_details",
+          invalidates: ["list"],
+        });
+      } catch {
+        // ignore — navigation still proceeds below
+      }
+      navigate("/transactions");
     }
   }
 

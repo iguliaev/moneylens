@@ -10,18 +10,30 @@ import {
   Modal,
   Tabs,
   Select,
+  DatePicker,
+  Segmented,
 } from "antd";
 import { useNotification } from "@refinedev/core";
+import type { Dayjs } from "dayjs";
 import {
   UploadOutlined,
   DeleteOutlined,
   FileTextOutlined,
   GlobalOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import {
   bulkUploadData,
   resetUserData,
+  buildCsv,
+  downloadCsv,
+  transactionToCsvRow,
+  buildJsonExport,
+  downloadJson,
+  fetchTransactionsForExport,
+  MAX_EXPORT_ROWS,
+  DATE_PICKER_INPUT_FORMATS,
   type BulkUploadPayload,
   type BulkUploadResult,
   type DataResetResult,
@@ -285,6 +297,103 @@ const BulkUploadSection = () => {
   );
 };
 
+type ExportFormat = "csv" | "json";
+
+const ExportSection = () => {
+  const { open: openNotification } = useNotification();
+  const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const [format, setFormat] = useState<ExportFormat>("csv");
+  const [isExporting, setIsExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleExport = async () => {
+    if (!range) {
+      setError("Select a date range to export.");
+      return;
+    }
+    setIsExporting(true);
+    setError(null);
+
+    const startDate = range[0].format("YYYY-MM-DD");
+    const endDate = range[1].format("YYYY-MM-DD");
+
+    const result = await fetchTransactionsForExport(startDate, endDate);
+
+    if (!result.ok) {
+      const message =
+        result.reason === "too_many_rows"
+          ? `This range has ${result.count.toLocaleString()} transactions, which exceeds the ${MAX_EXPORT_ROWS.toLocaleString()}-row export limit. Please choose a shorter date range.`
+          : result.message;
+      setError(message);
+      openNotification?.({
+        type: "error",
+        message: "Export failed",
+        description: message,
+      });
+      setIsExporting(false);
+      return;
+    }
+
+    if (result.rows.length === 0) {
+      setError("No transactions found in the selected date range.");
+      setIsExporting(false);
+      return;
+    }
+
+    if (format === "csv") {
+      const csv = buildCsv(result.rows.map(transactionToCsvRow));
+      downloadCsv(`transactions_${startDate}_to_${endDate}.csv`, csv);
+    } else {
+      const json = buildJsonExport(result.rows);
+      downloadJson(`transactions_${startDate}_to_${endDate}.json`, json);
+    }
+
+    openNotification?.({
+      type: "success",
+      message: `Exported ${result.rows.length.toLocaleString()} transactions`,
+    });
+    setIsExporting(false);
+  };
+
+  return (
+    <Card title="Export" extra={<DownloadOutlined />}>
+      <Paragraph type="secondary">
+        Export transactions for a date range as CSV or JSON. Limited to{" "}
+        {MAX_EXPORT_ROWS.toLocaleString()} transactions per export.
+      </Paragraph>
+      <Space direction="vertical" style={{ width: "100%" }} size="middle">
+        <Segmented
+          options={[
+            { label: "CSV", value: "csv" },
+            { label: "JSON", value: "json" },
+          ]}
+          value={format}
+          onChange={(value) => setFormat(value as ExportFormat)}
+        />
+        <DatePicker.RangePicker
+          format={DATE_PICKER_INPUT_FORMATS}
+          value={range}
+          onChange={(dates) =>
+            setRange(dates && dates[0] && dates[1] ? [dates[0], dates[1]] : null)
+          }
+        />
+        {error && (
+          <Alert message="Error" description={error} type="error" showIcon />
+        )}
+        <Button
+          type="primary"
+          icon={<DownloadOutlined />}
+          onClick={handleExport}
+          loading={isExporting}
+          disabled={!range}
+        >
+          {isExporting ? "Exporting..." : `Export ${format.toUpperCase()}`}
+        </Button>
+      </Space>
+    </Card>
+  );
+};
+
 const DataResetSection = () => {
   const { open: openNotification } = useNotification();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -447,7 +556,12 @@ export const SettingsPage = () => {
           {
             key: "import-export",
             label: "Import & Export",
-            children: <BulkUploadSection />,
+            children: (
+              <Space direction="vertical" style={{ width: "100%" }} size="middle">
+                <ExportSection />
+                <BulkUploadSection />
+              </Space>
+            ),
           },
           {
             key: "danger",

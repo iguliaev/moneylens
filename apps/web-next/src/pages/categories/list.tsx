@@ -13,7 +13,7 @@ import {
   TRANSACTION_TYPES,
   TRANSACTION_TYPE_LABELS,
 } from "../../constants/transactionTypes";
-import { getCategoryEmptyState, TableSkeleton } from "../../components";
+import { useCategoryEmptyState, TableSkeleton } from "../../components";
 
 export const CategoryList = () => {
   const invalidate = useInvalidate();
@@ -40,7 +40,7 @@ export const CategoryList = () => {
   });
 
   // Always call to keep React hook call count consistent (internally calls useNavigation())
-  const categoryEmptyState = getCategoryEmptyState();
+  const categoryEmptyState = useCategoryEmptyState();
 
   return (
     <List

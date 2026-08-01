@@ -1,4 +1,10 @@
-import { BaseRecord, useInvalidate } from "@refinedev/core";
+import {
+  BaseRecord,
+  useInvalidate,
+  type CrudFilters,
+  type ConditionalFilter,
+  type LogicalFilter,
+} from "@refinedev/core";
 import {
   useTable,
   useSelect,
@@ -18,8 +24,11 @@ import {
   DatePicker,
   InputNumber,
   Button,
+  theme,
 } from "antd";
+import { FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
   TRANSACTION_TYPE_LABELS,
@@ -27,12 +36,42 @@ import {
 } from "../../constants/transactionTypes";
 import { formatAmount, DATE_PICKER_INPUT_FORMATS } from "../../utility";
 import { formatDisplayDate } from "../../utility/dateDisplay";
-import { getTransactionEmptyState, TableSkeleton } from "../../components";
+import { useTransactionEmptyState, TableSkeleton } from "../../components";
 
 const commonSelectOptions = {
   sorters: [{ field: "name", order: "asc" as const }],
   pagination: { mode: "off" as const },
 };
+
+// tag_ids is a uuid[] computed column, so multi-tag filtering can't use the
+// default "in" operator (a scalar-list comparison against an array column).
+// Instead we build an explicit OR-of-"contains" filter — "has tag1 OR tag2"
+// — keyed separately from the field so refine's own filteredValue/"in"
+// machinery never touches it (it explicitly skips or/and filters).
+const TAG_IDS_OR_KEY = "tag_ids_or";
+
+function buildTagIdsOrFilter(tagIds: string[]): ConditionalFilter {
+  return {
+    key: TAG_IDS_OR_KEY,
+    operator: "or",
+    value: tagIds.map((tagId) => ({
+      field: "tag_ids",
+      operator: "ina",
+      value: [tagId],
+    })),
+  };
+}
+
+function getTagIdsFilterValue(filters: CrudFilters): string[] {
+  const orFilter = filters.find(
+    (f): f is ConditionalFilter =>
+      f.operator === "or" && "key" in f && f.key === TAG_IDS_OR_KEY
+  );
+  if (!orFilter) return [];
+  return orFilter.value
+    .filter((f): f is LogicalFilter => "field" in f && f.field === "tag_ids")
+    .flatMap((f) => f.value as string[]);
+}
 
 /** Reusable multi-select filter dropdown - forwards FilterDropdown's onChange/value */
 const MultiSelectFilter = ({
@@ -57,9 +96,77 @@ const MultiSelectFilter = ({
   />
 );
 
+/**
+ * Fully custom filter dropdown for tag_ids — never calls antd's own
+ * setSelectedKeys/confirm, since that would let refine's default "in"
+ * mapping race with the "or" filter this manages via setFilters directly.
+ */
+const TagsFilterDropdown = ({
+  close,
+  filters,
+  setFilters,
+  selectProps,
+}: {
+  close: () => void;
+  filters: CrudFilters;
+  setFilters: (filters: CrudFilters) => void;
+  selectProps: ReturnType<typeof useSelect>["selectProps"];
+}) => {
+  const [pending, setPending] = useState<string[]>(() =>
+    getTagIdsFilterValue(filters)
+  );
+
+  const applyFilter = (tagIds: string[]) => {
+    setFilters([buildTagIdsOrFilter(tagIds)]);
+    close();
+  };
+
+  return (
+    <div
+      style={{
+        padding: 10,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-end",
+      }}
+    >
+      <div style={{ marginBottom: 15 }}>
+        <MultiSelectFilter
+          placeholder="Select tags"
+          selectProps={selectProps}
+          value={pending}
+          onChange={(value) => setPending(value as string[])}
+        />
+      </div>
+      <Space>
+        <Button
+          type="primary"
+          size="small"
+          onClick={() => applyFilter(pending)}
+        >
+          <FilterOutlined /> Filter
+        </Button>
+        <Button
+          danger
+          size="small"
+          onClick={() => {
+            setPending([]);
+            applyFilter([]);
+          }}
+        >
+          Clear
+        </Button>
+      </Space>
+    </div>
+  );
+};
+
+const { useToken } = theme;
+
 export const TransactionList = () => {
   const invalidate = useInvalidate();
   const navigate = useNavigate();
+  const { token } = useToken();
 
   const { tableProps, filters, setFilters, setCurrentPage } = useTable({
     syncWithLocation: true,
@@ -100,7 +207,7 @@ export const TransactionList = () => {
 
   // Bank account select
   const { selectProps: bankAccountSelectProps } = useSelect({
-    resource: "bank_accounts",
+    resource: "bank_accounts_with_usage",
     optionLabel: "name",
     optionValue: "id",
     ...commonSelectOptions,
@@ -109,15 +216,15 @@ export const TransactionList = () => {
 
   // Tags select
   const { selectProps: tagSelectProps } = useSelect({
-    resource: "tags",
+    resource: "tags_with_usage",
     optionLabel: "name",
     optionValue: "id",
     ...commonSelectOptions,
-    defaultValue: getDefaultFilter("tag_ids", filters, "in"),
+    defaultValue: getTagIdsFilterValue(filters),
   });
 
   // Always call to keep React hook call count consistent (internally calls useNavigation())
-  const transactionEmptyState = getTransactionEmptyState();
+  const transactionEmptyState = useTransactionEmptyState();
 
   return (
     <List
@@ -255,15 +362,23 @@ export const TransactionList = () => {
                 ))}
               </>
             )}
-            filterDropdown={(props) => (
-              <FilterDropdown {...props}>
-                <MultiSelectFilter
-                  placeholder="Select tags"
-                  selectProps={tagSelectProps}
-                />
-              </FilterDropdown>
+            filterIcon={() => (
+              <FilterOutlined
+                style={{
+                  color: getTagIdsFilterValue(filters).length
+                    ? token.colorPrimary
+                    : undefined,
+                }}
+              />
             )}
-            filteredValue={getDefaultFilter("tag_ids", filters, "in") ?? null}
+            filterDropdown={({ close }) => (
+              <TagsFilterDropdown
+                close={close}
+                filters={filters}
+                setFilters={setFilters}
+                selectProps={tagSelectProps}
+              />
+            )}
           />
           <Table.Column
             key="bank_account_id"

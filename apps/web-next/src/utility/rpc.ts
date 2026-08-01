@@ -62,9 +62,19 @@ export interface TransactionWithTagsInput {
   notes?: string;
 }
 
+export interface BudgetWithLinksInput {
+  name: string;
+  description?: string | null;
+  type: Database["public"]["Enums"]["transaction_type"];
+  target_amount: number;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
 type RpcResponse<T> = Promise<PostgrestSingleResponse<T>>;
 type JsonObject = { [key: string]: Json | undefined };
 type TransactionRow = Tables<"transactions">;
+type BudgetRow = Tables<"budgets">;
 
 // INTENTIONAL_DIRECT_SUPABASE: RPC must run via Supabase client, wrapped here for typed call sites.
 export const bulkUploadData = async (
@@ -100,6 +110,36 @@ export const updateTransactionWithTags = async (
   return await supabaseClient.rpc("update_transaction_with_tags", {
     p_transaction_id: transactionId,
     p_transaction: transactionPayload,
+    p_tag_ids: tagIds,
+  });
+};
+
+// INTENTIONAL_DIRECT_SUPABASE: RPC must run via Supabase client, wrapped here for typed call sites.
+export const createBudgetWithLinks = async (
+  budget: BudgetWithLinksInput,
+  categoryIds: string[],
+  tagIds: string[]
+): RpcResponse<BudgetRow> => {
+  const budgetPayload: JsonObject = { ...budget };
+  return await supabaseClient.rpc("create_budget_with_links", {
+    p_budget: budgetPayload,
+    p_category_ids: categoryIds,
+    p_tag_ids: tagIds,
+  });
+};
+
+// INTENTIONAL_DIRECT_SUPABASE: RPC must run via Supabase client, wrapped here for typed call sites.
+export const updateBudgetWithLinks = async (
+  budgetId: string,
+  budget: BudgetWithLinksInput,
+  categoryIds: string[],
+  tagIds: string[]
+): RpcResponse<BudgetRow> => {
+  const budgetPayload: JsonObject = { ...budget };
+  return await supabaseClient.rpc("update_budget_with_links", {
+    p_budget_id: budgetId,
+    p_budget: budgetPayload,
+    p_category_ids: categoryIds,
     p_tag_ids: tagIds,
   });
 };
