@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(20);
 
 -- Create two test users
 select tests.create_supabase_user('tx_user1@test.com');
@@ -176,6 +176,40 @@ SELECT results_eq(
     ) $$,
   $$ SELECT '[]'::jsonb $$,
   'User2 cannot read User1 transaction tags via get_transaction_tags'
+);
+
+-- 12) get_transaction_tags excludes soft-deleted tags
+select tests.authenticate_as('tx_user1@test.com');
+
+INSERT INTO public.tags (user_id, name) VALUES (auth.uid(), 'SoftDelTag') ON CONFLICT DO NOTHING;
+INSERT INTO public.transactions (user_id, date, type, amount, category_id, bank_account_id)
+VALUES (
+  auth.uid(), '2025-01-04', 'spend'::public.transaction_type, 75,
+  (SELECT id FROM public.categories WHERE user_id = auth.uid() AND name = 'TestCat' LIMIT 1),
+  (SELECT id FROM public.bank_accounts WHERE user_id = auth.uid() AND name = 'TestAccount' LIMIT 1)
+) ON CONFLICT DO NOTHING;
+INSERT INTO public.transaction_tags (transaction_id, tag_id)
+VALUES (
+  (SELECT id FROM public.transactions WHERE user_id = auth.uid() AND date = '2025-01-04' LIMIT 1),
+  (SELECT id FROM public.tags WHERE user_id = auth.uid() AND name = 'SoftDelTag' LIMIT 1)
+) ON CONFLICT DO NOTHING;
+
+SELECT results_eq(
+  $$ SELECT (public.get_transaction_tags(
+      (SELECT id FROM public.transactions WHERE user_id = auth.uid() AND date = '2025-01-04' LIMIT 1)
+    ) -> 0 ->> 'name') $$,
+  $$ SELECT 'SoftDelTag' $$,
+  'get_transaction_tags returns tag before soft delete'
+);
+
+UPDATE public.tags SET deleted_at = now() WHERE user_id = auth.uid() AND name = 'SoftDelTag';
+
+SELECT results_eq(
+  $$ SELECT public.get_transaction_tags(
+      (SELECT id FROM public.transactions WHERE user_id = auth.uid() AND date = '2025-01-04' LIMIT 1)
+    ) $$,
+  $$ SELECT '[]'::jsonb $$,
+  'get_transaction_tags excludes soft-deleted tags'
 );
 
 -- Finish
