@@ -2,19 +2,18 @@ import { useEffect, useMemo } from "react";
 import { Edit, useForm, useSelect as useAntSelect } from "@refinedev/antd";
 import { useSelect as useCoreSelect, useList } from "@refinedev/core";
 import { Form, DatePicker, Select, InputNumber, Input } from "antd";
-import dayjs from "dayjs";
 import {
   TRANSACTION_TYPE_OPTIONS,
   TransactionType,
 } from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
-import { DATE_PICKER_INPUT_FORMATS } from "../../utility";
+import { DATE_PICKER_INPUT_FORMATS, toDayjs } from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
+  categoryFilterOption,
   categoryLabel as formatCategoryLabel,
   categorySearchText as getCategorySearchText,
-  compareCategoriesByHierarchyLabel,
-  isLeafCategory,
+  toLeafCategoryOptions,
 } from "../../utility/categoryHierarchy";
 
 export const TransactionEdit = () => {
@@ -60,14 +59,7 @@ export const TransactionEdit = () => {
 
   const leafCategoryOptions = useMemo(() => {
     const all = categoriesResult?.data ?? [];
-    const leaves = all
-      .filter(isLeafCategory)
-      .sort(compareCategoriesByHierarchyLabel)
-      .map((c: Category) => ({
-        label: formatCategoryLabel(c),
-        value: c.id,
-        searchText: getCategorySearchText(c),
-      }));
+    const leaves = toLeafCategoryOptions(all);
     // Always include the current category even if it has since become a parent,
     // so the form doesn't show a raw UUID or blank value.
     if (
@@ -127,9 +119,7 @@ export const TransactionEdit = () => {
               required: true,
             },
           ]}
-          getValueProps={(value) => ({
-            value: value ? dayjs(value) : undefined,
-          })}
+          getValueProps={(value) => ({ value: toDayjs(value) })}
         >
           <DatePicker format={DATE_PICKER_INPUT_FORMATS} />
         </Form.Item>
@@ -163,20 +153,7 @@ export const TransactionEdit = () => {
             options={leafCategoryOptions}
             loading={categoriesQuery.isLoading}
             showSearch
-            filterOption={(input, option) => {
-              const normalized = input.toLowerCase();
-              const label = String(option?.label ?? "").toLowerCase();
-              const searchText =
-                option &&
-                typeof option === "object" &&
-                "searchText" in option &&
-                typeof option.searchText === "string"
-                  ? option.searchText
-                  : "";
-              return (
-                label.includes(normalized) || searchText.includes(normalized)
-              );
-            }}
+            filterOption={categoryFilterOption}
           />
         </Form.Item>
         <Form.Item

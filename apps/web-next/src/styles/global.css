@@ -53,3 +53,20 @@ h6 {
 * {
   box-sizing: border-box;
 }
+
+/*
+ * Visually hidden but still announced by screen readers and still resolvable as
+ * an accessible name. Used for labels on controls whose meaning is carried
+ * visually by a surrounding table header.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

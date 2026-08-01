@@ -1,12 +1,21 @@
 # Transaction entry defaults & export range presets — implementation plan
 
 **Date:** 2026-08-01
-**Status:** Not started
+**Status:** Implemented — all steps done, `supabase test db` and the full Playwright suite green
 **Scope:** In — default date on the transaction Create form; user-configurable per-type default Category/Bank Account plus a default Type, edited in a new Settings tab; preset date ranges on Settings → Export. Out — any change to the transaction Edit form, and any change to the bulk-upload/export payload shapes.
 
 ## Progress Log
 
 <!-- Newest entry first. One entry per session, even sessions with no code progress. -->
+
+- **2026-08-01** — All 8 steps implemented. `supabase test db` 275 tests green (18 files); full Playwright suite 118 tests green.
+
+  Two things diverged from the plan, both in the Create form (§2e):
+
+  1. **`initialValues` had to be frozen at mount.** The plan said "add `date: dayjs()` to the `mergedInitialValues` memo". That memo recomputes when `formProps.initialValues` changes identity, producing a fresh `dayjs()` — and antd re-seeds the field from the new object, discarding a date the user is part-way through typing. Replaced the memo with a `useState(() => …)` initialiser, and moved the default `type` out of `initialValues` entirely (it can arrive asynchronously with the stored default, so an effect applies it instead).
+  2. **`getValueProps` was rewrapping an already-Dayjs value.** `dayjs(value)` returns a new instance on every render; rc-picker reads a new `value` identity as an external change and throws away in-progress typed text. Any background query resolving mid-typing silently reverted the date. This was pre-existing but latent — the two new queries this feature adds widened the window enough that ~5 existing tests began failing intermittently. Extracted `toDayjs()` (`utility/dayjsValue.ts`), which returns the same instance when the value is already a Dayjs, and applied it to both the create and edit forms.
+
+  Also added, beyond the plan: `toLeafCategoryOptions` / `categoryFilterOption` in `utility/categoryHierarchy.ts`, replacing the same filter/sort/map and filter predicate that had been copy-pasted across the create form, the edit form, and the new settings grid; and an `.sr-only` class in `styles/global.css` for the grid's per-cell labels.
 
 - **2026-08-01** — Plan created from a UX review of the live web UI. Not started.
 
@@ -139,14 +148,14 @@ Wire into `ExportSection` in `pages/settings/index.tsx:373-379`: `<DatePicker.Ra
 
 ## Implementation order
 
-- [ ] 1. Migration: `user_settings.default_transaction_type`, `user_transaction_defaults` table, RLS, triggers, `reset_user_data` update. Apply with `supabase migration up`.
-- [ ] 2. pgTAP suite `supabase/tests/user_transaction_defaults_rls_test.sql`; `supabase test db` green.
-- [ ] 3. Regenerate `types.gen.ts` and manually sync `apps/web-next/src/types/database.types.ts`.
-- [ ] 4. `useTransactionDefaults` hook + `hooks/index.ts` export.
-- [ ] 5. Settings → Transactions tab (`TransactionDefaultsSection`).
-- [ ] 6. Create form: default date, default type, prefill effect, Type `onChange` clearing both fields.
-- [ ] 7. `getExportRangePresets()` + wire into `ExportSection`.
-- [ ] 8. E2E tests (including the `settings-tabs.spec.ts` update); `npm run test:e2e:ci` green.
+- [x] 1. Migration: `user_settings.default_transaction_type`, `user_transaction_defaults` table, RLS, triggers, `reset_user_data` update. Apply with `supabase migration up`.
+- [x] 2. pgTAP suite `supabase/tests/user_transaction_defaults_rls_test.sql`; `supabase test db` green.
+- [x] 3. Regenerate `types.gen.ts` and manually sync `apps/web-next/src/types/database.types.ts`.
+- [x] 4. `useTransactionDefaults` hook + `hooks/index.ts` export.
+- [x] 5. Settings → Transactions tab (`TransactionDefaultsSection`).
+- [x] 6. Create form: default date, default type, prefill effect, Type `onChange` clearing both fields.
+- [x] 7. `getExportRangePresets()` + wire into `ExportSection`.
+- [x] 8. E2E tests (including the `settings-tabs.spec.ts` update); `npm run test:e2e:ci` green.
 
 ## Critical files
 

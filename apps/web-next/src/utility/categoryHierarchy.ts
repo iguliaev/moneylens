@@ -1,3 +1,4 @@
+import type { DefaultOptionType } from "antd/es/select";
 import type { Tables } from "../types/database.types";
 
 export type Category = Tables<"categories"> & {
@@ -50,4 +51,42 @@ export const compareCategoriesByHierarchyLabel = (
   );
   if (primary !== 0) return primary;
   return String(a.id).localeCompare(String(b.id));
+};
+
+export interface CategoryOption {
+  label: string;
+  value: string;
+  searchText: string;
+}
+
+/**
+ * Leaf categories as antd Select options, ordered by hierarchy label. Every
+ * category picker in the app shows the same thing, so they all build options
+ * through here rather than repeating the filter/sort/map.
+ */
+export const toLeafCategoryOptions = (
+  categories: Category[]
+): CategoryOption[] =>
+  leafCategoriesOnly(categories)
+    .sort(compareCategoriesByHierarchyLabel)
+    .map((category) => ({
+      label: categoryLabel(category),
+      value: category.id,
+      searchText: categorySearchText(category),
+    }));
+
+/**
+ * antd `filterOption` for category selects: matches against the visible label
+ * *and* the parent-inclusive search text, so typing a parent name surfaces its
+ * children even though the label starts with the parent.
+ */
+export const categoryFilterOption = (
+  input: string,
+  option?: DefaultOptionType
+): boolean => {
+  const normalized = input.toLowerCase();
+  const label = String(option?.label ?? "").toLowerCase();
+  const searchText =
+    typeof option?.searchText === "string" ? option.searchText : "";
+  return label.includes(normalized) || searchText.includes(normalized);
 };
