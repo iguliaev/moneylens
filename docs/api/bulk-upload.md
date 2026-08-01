@@ -130,8 +130,21 @@ interface TransactionInput {
   not a descriptive format message.
 - `type`: Must be `earn`, `spend`, or `save`
 - `amount`: Numeric. There's no positivity check today — zero/negative values are accepted.
-- `category`: Must reference an existing **leaf** category (no sub-categories) of matching
-  `type` for the authenticated user, or one included in the same `categories` section
+- `category`: Optional. Two accepted forms:
+  - **`"Parent/Child"` path** — split on the *first* `/`, each side trimmed; resolves an
+    exact nested leaf category unambiguously. Required for any category that has a parent.
+  - **Bare name** — resolves only against the authenticated user's **root-level** (no
+    parent) categories that are *also* leaves (no children), for the row's `type`. A
+    category that has since been moved under a parent can no longer be referenced by bare
+    name — switch to the `"Parent/Child"` form.
+  - Either form may reference a category included in the same `categories` section of the
+    payload, as long as it's inserted as a root-level category (`insert_categories` does not
+    support setting `parent_id`).
+
+  **Example:**
+  ```json
+  { "date": "2025-10-15", "type": "spend", "amount": 12.50, "category": "Food/Eating out" }
+  ```
 - `bank_account`: Must reference an existing bank account for the authenticated user, or one
   included in the same `bank_accounts` section
 - `tags`: Array of strings, each must reference an existing tag for the authenticated user, or
@@ -142,7 +155,12 @@ interface TransactionInput {
 - `date`, `type`, and `amount` presence: `Missing required field: <field>` or
   `Missing required fields: <a>, <b>`
 - Invalid `type` value: `Invalid transaction type: "<value>"`
-- Category not found as a leaf for the row's type: `Category "<name>" not found as leaf for type "<type>"`
+- Bare category name doesn't resolve to a root-level leaf category:
+  `Category "<name>" not found as a root-level category for type "<type>"`
+- `"Parent/Child"` path, parent not found:
+  `Category parent "<parent>" not found for type "<type>"`
+- `"Parent/Child"` path, parent found but child not found under it:
+  `Category "<parent>/<child>" not found`
 - Bank account not found: `Bank account "<name>" not found`
 - Tag not found: `Tag "<name>" not found`
 - Any other unexpected DB error for the row (e.g. a malformed `date`) is sanitized rather than
@@ -496,7 +514,9 @@ except where noted.
 |---|---|---|
 | `Missing required field: <field>` / `Missing required fields: <a>, <b>` | no | Row is missing `date`, `type`, and/or `amount` |
 | `Invalid transaction type: "<value>"` | no | Row's `type` isn't `earn`/`spend`/`save` |
-| `Category "<name>" not found as leaf for type "<type>"` | no | No matching leaf category for that user/type/name |
+| `Category "<name>" not found as a root-level category for type "<type>"` | no | Bare name doesn't match any root-level leaf category for that user/type |
+| `Category parent "<parent>" not found for type "<type>"` | no | `"Parent/Child"` form: no root category matches `<parent>` for that user/type |
+| `Category "<parent>/<child>" not found` | no | `"Parent/Child"` form: parent found, but no matching child under it |
 | `Bank account "<name>" not found` | no | No matching bank account for that user/name |
 | `Tag "<name>" not found` | no | No matching tag for that user/name |
 | `Duplicate entry` | yes (`23505`) | Sanitized — an unhandled uniqueness conflict |
@@ -650,8 +670,10 @@ A: No, `auth.uid()` must return a valid user ID.
 A: The upload fails atomically with a clear error message before any changes.
 
 **Q: Can I use this for data exports?**  
-A: This function only imports. Export functionality is not yet available.
+A: This function only imports. Export is available separately from Settings > Import &
+Export (CSV and JSON), using the same `"Parent/Child"` category path convention described
+above so exported JSON round-trips cleanly back through this API.
 
 ---
 
-**Last Updated**: July 19, 2026
+**Last Updated**: July 29, 2026
