@@ -250,4 +250,78 @@ test.describe("Bulk Upload", () => {
 
     expect(txns).toHaveLength(0);
   });
+
+  test("bulk upload creates a nested category via the parent field and resolves it for a same-payload transaction", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const parentName = `e2e-parent-${ts}`;
+    const childName = `e2e-child-${ts}`;
+
+    await page.goto("/settings");
+    await page.getByRole("tab", { name: /import.*export/i }).click();
+
+    const fixtureContent = JSON.stringify({
+      categories: [{ type: "spend", name: childName, parent: parentName }],
+      transactions: [
+        {
+          date: "2026-06-15",
+          type: "spend",
+          category: `${parentName}/${childName}`,
+          amount: 12.5,
+          notes: "nested category round-trip",
+        },
+      ],
+    });
+
+    await page.locator("input[type='file']").setInputFiles({
+      name: "nested-category-upload.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(fixtureContent),
+    });
+
+    await expect(page.getByText(/Preview:.*1 categories/i)).toBeVisible();
+    await expect(page.getByText(/1 transactions/i)).toBeVisible();
+
+    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
+
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: new RegExp("Upload Successful", "i") })
+    ).toBeVisible();
+
+    // 2 categories inserted: the auto-created parent + the explicit child
+    await expect(page.getByText(/2 categories inserted/i)).toBeVisible();
+    await expect(page.getByText(/1 transactions inserted/i)).toBeVisible();
+
+    const { data: parent } = await supabaseAdmin
+      .from("categories")
+      .select("id, parent_id")
+      .eq("user_id", testUser.userId)
+      .eq("name", parentName)
+      .single();
+
+    expect(parent).toBeTruthy();
+    expect(parent?.parent_id).toBeNull();
+
+    const { data: child } = await supabaseAdmin
+      .from("categories")
+      .select("id, parent_id")
+      .eq("user_id", testUser.userId)
+      .eq("name", childName)
+      .single();
+
+    expect(child).toBeTruthy();
+    expect(child?.parent_id).toBe(parent?.id);
+
+    const { data: transaction } = await supabaseAdmin
+      .from("transactions")
+      .select("category_id")
+      .eq("user_id", testUser.userId)
+      .eq("date", "2026-06-15")
+      .single();
+
+    expect(transaction?.category_id).toBe(child?.id);
+  });
 });
