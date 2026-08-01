@@ -26,9 +26,20 @@
 --      its own description) and as an auto-derived parent, the explicit
 --      entry wins.
 --   2. Nested categories: for each entry with a non-empty `parent`, resolve
---      parent_id against that user's root-level (parent_id IS NULL) category
---      of the same type and name (guaranteed to exist after phase 1), then
---      insert the child under it.
+--      parent_id against that user's LIVE root-level (parent_id IS NULL,
+--      deleted_at IS NULL) category of the same type and name, then insert
+--      the child under it.
+--
+-- Both `name` and `parent` are trimmed everywhere they are matched or
+-- stored, so an entry's own name and a reference to it from another entry's
+-- `parent` can never disagree over incidental whitespace.
+--
+-- Soft-deleted categories are never used as a parent (per the soft-delete
+-- rule in docs/database/schema-and-migrations.md). Because the
+-- unique_user_type_name constraint counts soft-deleted rows, a name already
+-- taken by a soft-deleted root cannot be auto-vivified into a live one; that
+-- case raises an explicit error rather than silently dropping the child row
+-- or nesting it under a deleted parent.
 --
 -- The schema caps hierarchy at 2 levels (trg_validate_category_parent,
 -- 20260601210000_add_category_hierarchy.sql). A batch where some name is
@@ -42,6 +53,8 @@ DECLARE
   v_missing_count int;
   v_invalid_type text;
   v_conflict_name text;
+  v_unresolved_parent text;
+  v_unresolved_type text;
   v_root_inserted int := 0;
   v_child_inserted int := 0;
 BEGIN
@@ -93,7 +106,7 @@ BEGIN
     WHERE elem->>'parent' IS NOT NULL AND trim(elem->>'parent') <> ''
   ) p
   JOIN (
-    SELECT DISTINCT (elem->>'type') AS typ, elem->>'name' AS name
+    SELECT DISTINCT (elem->>'type') AS typ, trim(elem->>'name') AS name
     FROM jsonb_array_elements(p_categories) AS elem
     WHERE elem->>'parent' IS NOT NULL AND trim(elem->>'parent') <> ''
   ) c ON c.typ = p.typ AND c.name = p.name
@@ -114,7 +127,7 @@ BEGIN
     SELECT DISTINCT ON (t, n) t, n, d
     FROM (
       SELECT (elem->>'type')::public.transaction_type AS t,
-             elem->>'name' AS n,
+             trim(elem->>'name') AS n,
              elem->>'description' AS d,
              0 AS priority
       FROM jsonb_array_elements(p_categories) AS elem
@@ -133,15 +146,40 @@ BEGIN
 
   GET DIAGNOSTICS v_root_inserted = ROW_COUNT;
 
+  -- Every nested entry's parent must now resolve to a LIVE root-level
+  -- category. Phase 1 auto-vivifies missing parents, so the only way this
+  -- fails is when the name is already taken by a soft-deleted root (the
+  -- unique constraint counts soft-deleted rows, so phase 1's ON CONFLICT
+  -- DO NOTHING could not create a live one). Fail loudly rather than
+  -- silently skipping the child row or nesting it under a deleted parent.
+  SELECT trim(elem->>'parent'), elem->>'type'
+  INTO v_unresolved_parent, v_unresolved_type
+  FROM jsonb_array_elements(p_categories) AS elem
+  WHERE elem->>'parent' IS NOT NULL AND trim(elem->>'parent') <> ''
+    AND NOT EXISTS (
+      SELECT 1 FROM public.categories c
+      WHERE c.user_id = p_user_id
+        AND c.type = (elem->>'type')::public.transaction_type
+        AND c.name = trim(elem->>'parent')
+        AND c.parent_id IS NULL
+        AND c.deleted_at IS NULL
+    )
+  LIMIT 1;
+
+  IF v_unresolved_parent IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_categories: parent category "%" not found as a live root-level category for type "%"',
+      v_unresolved_parent, v_unresolved_type;
+  END IF;
+
   -- Phase 2: nested categories. Resolve each "parent" name against that
-  -- user's root-level (parent_id IS NULL) categories of the same type
-  -- (guaranteed to exist after phase 1) and insert the child under it.
+  -- user's live root-level (parent_id IS NULL, deleted_at IS NULL)
+  -- categories of the same type and insert the child under it.
   INSERT INTO public.categories (user_id, type, name, description, parent_id)
   SELECT p_user_id, t, n, d, pid
   FROM (
     SELECT
       (elem->>'type')::public.transaction_type AS t,
-      elem->>'name' AS n,
+      trim(elem->>'name') AS n,
       elem->>'description' AS d,
       (
         SELECT c.id FROM public.categories c
@@ -149,12 +187,12 @@ BEGIN
           AND c.type = (elem->>'type')::public.transaction_type
           AND c.name = trim(elem->>'parent')
           AND c.parent_id IS NULL
+          AND c.deleted_at IS NULL
         LIMIT 1
       ) AS pid
     FROM jsonb_array_elements(p_categories) AS elem
     WHERE elem->>'parent' IS NOT NULL AND trim(elem->>'parent') <> ''
   ) children
-  WHERE pid IS NOT NULL
   ON CONFLICT ON CONSTRAINT unique_user_type_name DO NOTHING;
 
   GET DIAGNOSTICS v_child_inserted = ROW_COUNT;

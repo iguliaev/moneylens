@@ -63,9 +63,16 @@ interface CategoryInput {
   - If duplicate exists, it's silently skipped (ON CONFLICT DO NOTHING)
 - `description`: Optional, max 1000 characters
 - `parent`: Optional. The bare name of a root-level category (same `type`) to nest this category
-  under. If that parent doesn't already exist — neither in the database nor as another root-level
-  entry in the same `categories` array — it's **auto-created** (as a root category with no
-  description) alongside the child. This makes a `"Parent/Child"` transaction category reference
+  under. If that parent doesn't already exist as a **live root-level** category — neither in the
+  database nor as another root-level entry in the same `categories` array — it's **auto-created**
+  (as a root category with no description) alongside the child.
+  - `name` and `parent` are both trimmed of leading/trailing whitespace wherever they are matched
+    or stored, so an entry's own name and a `parent` reference to it can't disagree over
+    incidental whitespace.
+  - Soft-deleted categories are never reused as a parent. Because the uniqueness constraint counts
+    soft-deleted rows, a name already taken by a soft-deleted root category can't be auto-created
+    as a live one; that case is rejected with:
+    `insert_categories: parent category "<name>" not found as a live root-level category for type "<type>"` This makes a `"Parent/Child"` transaction category reference
   (see [Transaction Input Schema](#transaction-input-schema) below) fully satisfiable within a
   single payload, with no pre-existing setup required.
   - The schema caps hierarchy at 2 levels: a name cannot be used as a `parent` by one entry *and*
@@ -515,6 +522,7 @@ except where noted.
 | `P0001` | `insert_categories: one or more items are missing required fields "name" or "type"` | Any element in `categories` is missing `name` and/or `type` |
 | `P0001` | `insert_categories: invalid transaction_type: <value>` | Any element's `type` isn't `earn`/`spend`/`save` |
 | `P0001` | `insert_categories: category "<name>" cannot be both a parent and a child in the same batch (max 2 levels)` | Some name is referenced as a `parent` by one element and itself carries a `parent` (attempted 3-level nesting) |
+| `P0001` | `insert_categories: parent category "<name>" not found as a live root-level category for type "<type>"` | A `parent` name is already taken by a soft-deleted root category, so it can't be auto-created as a live one |
 | *original code* | `"insert_categories failed"` | Any other DB error — sanitized; original SQLSTATE preserved on `error.code` |
 
 ### Bank Account Errors (whole batch, not per-row)

@@ -55,7 +55,14 @@ export const collectJsonExportCategories = (
       ? { type: row.type, name: row.category_name, parent: row.category_parent_name }
       : { type: row.type, name: row.category_name };
 
-    const key = `${category.type}::${category.parent ?? ""}::${category.name}`;
+    // JSON-encode the tuple rather than joining on a separator: a category
+    // name is free text and could otherwise collide with a different
+    // (parent, name) pair, silently dropping one from the export.
+    const key = JSON.stringify([
+      category.type,
+      category.parent ?? null,
+      category.name,
+    ]);
     if (!seen.has(key)) seen.set(key, category);
   }
 

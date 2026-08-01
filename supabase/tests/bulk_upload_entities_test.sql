@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(31);
+select plan(35);
 
 -- Create test users
 select tests.create_supabase_user('user1@test.com');
@@ -392,6 +392,53 @@ SELECT is(
     )))->>'transactions_inserted')::bigint,
   1::bigint,
   'End-to-end: nested category created and resolved for a transaction in the same call'
+);
+
+-- Test 32: a soft-deleted root category is never reused as a parent — the
+-- batch errors instead of silently nesting under (or resurrecting) it
+select tests.authenticate_as('user21@test.com');
+DO $$
+BEGIN
+  INSERT INTO public.categories (user_id, type, name, deleted_at)
+  VALUES (tests.get_supabase_uid('user21@test.com'), 'spend', 'Food', now());
+END $$;
+
+SELECT throws_like(
+  $$ SELECT insert_categories(tests.get_supabase_uid('user21@test.com'),
+      '[{"type":"spend","name":"Eating out","parent":"Food"}]'::jsonb) $$,
+  '%not found as a live root-level category%',
+  'Soft-deleted root is not reused as a parent'
+);
+
+-- Test 33: the child under that soft-deleted parent is not inserted either
+SELECT is(
+  (SELECT COUNT(*) FROM categories
+    WHERE user_id = tests.get_supabase_uid('user21@test.com')
+      AND name = 'Eating out'),
+  0::bigint,
+  'Child under a soft-deleted parent is not inserted'
+);
+
+-- Test 34: incidental whitespace in "name"/"parent" is trimmed consistently,
+-- so a child still resolves to its explicitly-listed parent
+select tests.authenticate_as('user16@test.com');
+SELECT is(
+  insert_categories(tests.get_supabase_uid('user16@test.com'),
+    '[{"type":"earn","name":"  Consulting  "},
+      {"type":"earn","name":"  Retainer  ","parent":"  Consulting  "}]'::jsonb),
+  2,
+  'Whitespace-padded names and parents are trimmed and resolve to each other'
+);
+
+-- Test 35: the trimmed child really is nested under the trimmed root
+SELECT ok(
+  EXISTS(
+    SELECT 1 FROM categories c
+    JOIN categories p ON p.id = c.parent_id
+    WHERE c.user_id = tests.get_supabase_uid('user16@test.com')
+      AND c.name = 'Retainer' AND p.name = 'Consulting' AND p.parent_id IS NULL
+  ),
+  'Trimmed child "Retainer" is nested under trimmed root "Consulting"'
 );
 
 select * from finish();

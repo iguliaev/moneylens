@@ -167,6 +167,24 @@ describe("collectJsonExportCategories", () => {
     ]);
   });
 
+  it("keeps categories distinct when a name contains the key separator", () => {
+    const categories = collectJsonExportCategories([
+      { ...base, category_name: "X", category_parent_name: "Food::Sub" },
+      { ...base, category_name: "Sub::X", category_parent_name: "Food" },
+    ]);
+    expect(categories).toHaveLength(2);
+    expect(categories).toContainEqual({
+      type: "spend",
+      name: "X",
+      parent: "Food::Sub",
+    });
+    expect(categories).toContainEqual({
+      type: "spend",
+      name: "Sub::X",
+      parent: "Food",
+    });
+  });
+
   it("sorts deterministically by type, then parent, then name", () => {
     const categories = collectJsonExportCategories([
       { ...base, category_name: "Groceries" },
