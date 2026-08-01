@@ -59,6 +59,10 @@ SELECT ...
 
 User-facing tables (`transactions`, `categories`, `bank_accounts`, `tags`) have a `deleted_at TIMESTAMPTZ DEFAULT NULL` column (added in `20260227201422_add_soft_delete.sql`) instead of ever being hard-deleted. Deletion goes through dedicated RPCs — `delete_category_safe`, `delete_bank_account_safe`, `delete_tag_safe` — which check whether the row is still referenced (e.g. a category still used by transactions) and return `(ok boolean, in_use_count bigint)` rather than throwing, so the caller can decide what to do instead of it being an error. Any new view, RPC, or query that reads one of these tables **must** filter `deleted_at IS NULL`, or it will leak soft-deleted rows.
 
+This has happened in this codebase: `get_transaction_tags`, added in `20260718204224_fix_transaction_tags_idor_and_category_ownership.sql`, joined `tags` without a `deleted_at IS NULL` filter, so a transaction could still show a tag the user had already deleted. It was caught in code review after merge and fixed in `20260801090343_fix_get_transaction_tags_soft_delete.sql` (PR #257).
+
+**Rule of thumb when writing or reviewing any view/RPC/query touching `transactions`, `categories`, `bank_accounts`, or `tags`:** add `deleted_at IS NULL` on every join to one of these tables, not just the top-level `WHERE` — a join without the filter leaks soft-deleted rows just as easily as a bare `SELECT`.
+
 ### Standard 4-policy RLS shape
 
 Every user-facing table gets exactly four RLS policies, named `<table>_select` / `<table>_insert` / `<table>_update` / `<table>_delete`, each scoped with the identical predicate `user_id = (SELECT auth.uid())` (wrapped in a `SELECT` so Postgres can cache/inline it instead of re-evaluating `auth.uid()` per row — see `20260201164000_baseline_from_schemas.sql:190-236`). When adding a new user table, copy this exact template rather than writing a combined or ad-hoc policy.
