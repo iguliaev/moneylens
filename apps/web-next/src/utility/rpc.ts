@@ -6,6 +6,12 @@ interface CategoryInput {
   type: Database["public"]["Enums"]["transaction_type"];
   name: string;
   description?: string | null;
+  /**
+   * Bare name of an existing or same-payload root-level category (same
+   * type) to nest this category under. Auto-creates the parent as a root
+   * category if it doesn't already exist. Max 2 levels.
+   */
+  parent?: string | null;
 }
 
 interface BankAccountInput {

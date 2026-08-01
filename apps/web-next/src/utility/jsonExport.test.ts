@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { transactionToJsonExportRow, buildJsonExport } from "./jsonExport";
+import {
+  transactionToJsonExportRow,
+  buildJsonExport,
+  collectJsonExportCategories,
+} from "./jsonExport";
 import type { TransactionExportRow } from "./exportTransactions";
 
 describe("transactionToJsonExportRow", () => {
@@ -76,7 +80,7 @@ describe("transactionToJsonExportRow", () => {
 });
 
 describe("buildJsonExport", () => {
-  it("wraps rows in a { transactions: [...] } object matching BulkUploadPayload", () => {
+  it("wraps rows in a { categories, transactions } object matching BulkUploadPayload", () => {
     const json = buildJsonExport([
       {
         date: "2026-07-01",
@@ -90,6 +94,7 @@ describe("buildJsonExport", () => {
       },
     ]);
     expect(JSON.parse(json)).toEqual({
+      categories: [{ type: "spend", name: "Eating out", parent: "Food" }],
       transactions: [
         {
           date: "2026-07-01",
@@ -106,6 +111,92 @@ describe("buildJsonExport", () => {
 
   it("pretty-prints with 2-space indentation", () => {
     const json = buildJsonExport([]);
-    expect(json).toBe('{\n  "transactions": []\n}');
+    expect(json).toBe('{\n  "categories": [],\n  "transactions": []\n}');
+  });
+});
+
+describe("collectJsonExportCategories", () => {
+  const base: TransactionExportRow = {
+    date: "2026-07-01",
+    type: "spend",
+    category_name: null,
+    category_parent_name: null,
+    bank_account_name: null,
+    amount: 12.34,
+    tag_names: [],
+    notes: null,
+  };
+
+  it("emits a bare { type, name } for a root-level category", () => {
+    const categories = collectJsonExportCategories([
+      { ...base, category_name: "Salary", type: "earn" },
+    ]);
+    expect(categories).toEqual([{ type: "earn", name: "Salary" }]);
+  });
+
+  it("includes parent for a nested category", () => {
+    const categories = collectJsonExportCategories([
+      { ...base, category_name: "Eating out", category_parent_name: "Food" },
+    ]);
+    expect(categories).toEqual([
+      { type: "spend", name: "Eating out", parent: "Food" },
+    ]);
+  });
+
+  it("skips rows with no category", () => {
+    const categories = collectJsonExportCategories([base]);
+    expect(categories).toEqual([]);
+  });
+
+  it("dedupes repeated (type, parent, name) triples across rows", () => {
+    const categories = collectJsonExportCategories([
+      { ...base, category_name: "Eating out", category_parent_name: "Food" },
+      { ...base, category_name: "Eating out", category_parent_name: "Food" },
+    ]);
+    expect(categories).toHaveLength(1);
+  });
+
+  it("treats the same leaf name under different parents as distinct categories", () => {
+    const categories = collectJsonExportCategories([
+      { ...base, category_name: "Other", category_parent_name: "Food" },
+      { ...base, category_name: "Other", category_parent_name: "Transport" },
+    ]);
+    expect(categories).toEqual([
+      { type: "spend", name: "Other", parent: "Food" },
+      { type: "spend", name: "Other", parent: "Transport" },
+    ]);
+  });
+
+  it("keeps categories distinct when a name contains the key separator", () => {
+    const categories = collectJsonExportCategories([
+      { ...base, category_name: "X", category_parent_name: "Food::Sub" },
+      { ...base, category_name: "Sub::X", category_parent_name: "Food" },
+    ]);
+    expect(categories).toHaveLength(2);
+    expect(categories).toContainEqual({
+      type: "spend",
+      name: "X",
+      parent: "Food::Sub",
+    });
+    expect(categories).toContainEqual({
+      type: "spend",
+      name: "Sub::X",
+      parent: "Food",
+    });
+  });
+
+  it("sorts deterministically by type, then parent, then name", () => {
+    const categories = collectJsonExportCategories([
+      { ...base, category_name: "Groceries" },
+      { ...base, category_name: "Eating out", category_parent_name: "Food" },
+      { ...base, category_name: "Salary", type: "earn" },
+      { ...base, category_name: "Taxi", category_parent_name: "Transport" },
+    ]);
+    expect(categories).toEqual([
+      { type: "earn", name: "Salary" },
+      { type: "spend", name: "Groceries" },
+      { type: "spend", name: "Eating out", parent: "Food" },
+      { type: "spend", name: "Taxi", parent: "Transport" },
+    ]);
   });
 });

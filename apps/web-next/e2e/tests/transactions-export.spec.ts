@@ -265,6 +265,13 @@ test.describe("Transactions CSV Export", () => {
     expect(Array.isArray(row.tags)).toBe(true);
     expect([...row.tags].sort()).toEqual(["json-groceries", "json-urgent"]);
     expect(row).not.toHaveProperty("bank_account");
+
+    expect(Array.isArray(parsed.categories)).toBe(true);
+    expect(parsed.categories).toContainEqual({
+      type: "spend",
+      name: "Taxi",
+      parent: "Transport",
+    });
   });
 
   test("blocks export and shows an error when the date range exceeds the row cap", async ({

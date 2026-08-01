@@ -51,15 +51,40 @@ interface CategoryInput {
   type: "earn" | "spend" | "save";  // Required
   name: string;                      // Required
   description?: string | null;       // Optional
+  parent?: string | null;            // Optional — bare name of a root-level parent category
 }
 ```
 
 **Constraints:**
 - `type`: Must be one of the valid enum values: `earn`, `spend`, or `save`
-- `name`: Max 255 characters, non-null
-- Duplicate detection: `(user_id, type, name)` unique constraint
+- `name`: Max 255 characters, non-null. Always a plain leaf name — never a `"Parent/Child"` path
+  (that convention is separate, used only by a transaction's own `category` field, below)
+- Duplicate detection: `(user_id, type, name, parent_id)` unique constraint
   - If duplicate exists, it's silently skipped (ON CONFLICT DO NOTHING)
 - `description`: Optional, max 1000 characters
+- `parent`: Optional. The bare name of a root-level category (same `type`) to nest this category
+  under. If that parent doesn't already exist as a **live root-level** category — neither in the
+  database nor as another root-level entry in the same `categories` array — it's **auto-created**
+  (as a root category with no description) alongside the child.
+  - `name` and `parent` are both trimmed of leading/trailing whitespace wherever they are matched
+    or stored, so an entry's own name and a `parent` reference to it can't disagree over
+    incidental whitespace.
+  - Soft-deleted categories are never reused as a parent. Because the uniqueness constraint counts
+    soft-deleted rows, a name already taken by a soft-deleted root category can't be auto-created
+    as a live one; that case is rejected with:
+    `insert_categories: parent category "<name>" not found as a live root-level category for type "<type>"` This makes a `"Parent/Child"` transaction category reference
+  (see [Transaction Input Schema](#transaction-input-schema) below) fully satisfiable within a
+  single payload, with no pre-existing setup required.
+  - The schema caps hierarchy at 2 levels: a name cannot be used as a `parent` by one entry *and*
+    itself carry a non-empty `parent` in the same batch. Such a batch is rejected with:
+    `insert_categories: category "<name>" cannot be both a parent and a child in the same batch (max 2 levels)`
+  - If a name appears both as an explicit root-level entry (with its own `description`) and as an
+    auto-derived parent (referenced by another entry's `parent`), the explicit entry's data wins.
+
+  **Example — creates both "Food" (auto, root) and "Eating out" (child of Food):**
+  ```json
+  { "categories": [{ "type": "spend", "name": "Eating out", "parent": "Food" }] }
+  ```
 
 **Validation:**
 - Both `type` and `name` are required for every element in the array
@@ -67,6 +92,8 @@ interface CategoryInput {
   `insert_categories: one or more items are missing required fields "name" or "type"`
 - If any element has an invalid `type`, the whole batch is rejected with:
   `insert_categories: invalid transaction_type: <value>`
+- If a name is used as both a `parent` and a child in the same batch (attempted 3-level nesting),
+  the whole batch is rejected with the "cannot be both a parent and a child" message above
 - These are validation errors (SQLSTATE `P0001`) and are surfaced to the client with this exact
   message — see [Error Response](#error-response) below.
 
@@ -138,8 +165,10 @@ interface TransactionInput {
     category that has since been moved under a parent can no longer be referenced by bare
     name — switch to the `"Parent/Child"` form.
   - Either form may reference a category included in the same `categories` section of the
-    payload, as long as it's inserted as a root-level category (`insert_categories` does not
-    support setting `parent_id`).
+    payload. As of the `parent` field on `CategoryInput` (see
+    [Category Input Schema](#category-input-schema) above), a `"Parent/Child"` reference can be
+    fully satisfied within the same payload — `categories` doesn't need to pre-exist a root
+    entry for the parent; it's auto-created.
 
   **Example:**
   ```json
@@ -492,6 +521,8 @@ except where noted.
 |---|---|---|
 | `P0001` | `insert_categories: one or more items are missing required fields "name" or "type"` | Any element in `categories` is missing `name` and/or `type` |
 | `P0001` | `insert_categories: invalid transaction_type: <value>` | Any element's `type` isn't `earn`/`spend`/`save` |
+| `P0001` | `insert_categories: category "<name>" cannot be both a parent and a child in the same batch (max 2 levels)` | Some name is referenced as a `parent` by one element and itself carries a `parent` (attempted 3-level nesting) |
+| `P0001` | `insert_categories: parent category "<name>" not found as a live root-level category for type "<type>"` | A `parent` name is already taken by a soft-deleted root category, so it can't be auto-created as a live one |
 | *original code* | `"insert_categories failed"` | Any other DB error — sanitized; original SQLSTATE preserved on `error.code` |
 
 ### Bank Account Errors (whole batch, not per-row)
@@ -672,8 +703,12 @@ A: The upload fails atomically with a clear error message before any changes.
 **Q: Can I use this for data exports?**  
 A: This function only imports. Export is available separately from Settings > Import &
 Export (CSV and JSON), using the same `"Parent/Child"` category path convention described
-above so exported JSON round-trips cleanly back through this API.
+above so exported JSON round-trips cleanly back through this API. JSON export additionally
+includes a top-level `categories` section (using the `parent` field described above) listing
+every distinct category used by the exported transactions, so a JSON export is always
+self-contained and re-importable into an empty account in a single call — including nested
+categories.
 
 ---
 
-**Last Updated**: July 29, 2026
+**Last Updated**: August 1, 2026

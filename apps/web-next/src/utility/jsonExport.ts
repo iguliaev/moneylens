@@ -13,7 +13,14 @@ export interface JsonExportTransaction {
   notes?: string;
 }
 
+export interface JsonExportCategory {
+  type: Database["public"]["Enums"]["transaction_type"];
+  name: string;
+  parent?: string;
+}
+
 export interface JsonExportPayload {
+  categories: JsonExportCategory[];
   transactions: JsonExportTransaction[];
 }
 
@@ -36,8 +43,39 @@ export const transactionToJsonExportRow = (
   return result;
 };
 
+export const collectJsonExportCategories = (
+  rows: TransactionExportRow[]
+): JsonExportCategory[] => {
+  const seen = new Map<string, JsonExportCategory>();
+
+  for (const row of rows) {
+    if (!row.category_name) continue;
+
+    const category: JsonExportCategory = row.category_parent_name
+      ? { type: row.type, name: row.category_name, parent: row.category_parent_name }
+      : { type: row.type, name: row.category_name };
+
+    // JSON-encode the tuple rather than joining on a separator: a category
+    // name is free text and could otherwise collide with a different
+    // (parent, name) pair, silently dropping one from the export.
+    const key = JSON.stringify([
+      category.type,
+      category.parent ?? null,
+      category.name,
+    ]);
+    if (!seen.has(key)) seen.set(key, category);
+  }
+
+  return [...seen.values()].sort((a, b) => {
+    if (a.type !== b.type) return a.type.localeCompare(b.type);
+    const parentCompare = (a.parent ?? "").localeCompare(b.parent ?? "");
+    return parentCompare !== 0 ? parentCompare : a.name.localeCompare(b.name);
+  });
+};
+
 export const buildJsonExport = (rows: TransactionExportRow[]): string => {
   const payload: JsonExportPayload = {
+    categories: collectJsonExportCategories(rows),
     transactions: rows.map(transactionToJsonExportRow),
   };
   return JSON.stringify(payload, null, 2);
