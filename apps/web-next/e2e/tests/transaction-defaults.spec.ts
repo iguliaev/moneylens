@@ -33,6 +33,29 @@ async function openTransactionsSettingsTab(page: Page) {
   await expect(page.locator(".ant-spin-blur")).toHaveCount(0);
 }
 
+/**
+ * Picks an option, then waits for the shell to show it before returning.
+ *
+ * These Selects have no optimistic local state — their displayed value comes
+ * straight from the query result, which only updates once the write has been
+ * confirmed and refetched. Against local Supabase that round trip is fast
+ * enough to hide behind Playwright's normal action waits, but against a
+ * remote preview deployment it isn't: firing the next select (or navigating
+ * away) before this one's write has actually landed races the write. This
+ * helper makes that round trip an explicit, awaited step instead of an
+ * implicit assumption.
+ */
+async function setDefaultAndConfirm(
+  page: Page,
+  comboboxName: string,
+  optionTitle: string
+) {
+  await selectFromVisibleAntdDropdown(page, comboboxName, optionTitle);
+  await expect(selectShell(page, comboboxName)).toContainText(optionTitle, {
+    timeout: 15000,
+  });
+}
+
 test.describe("Transaction Defaults", () => {
   let testUser: { email: string; password: string; userId: string };
 
@@ -98,17 +121,9 @@ test.describe("Transaction Defaults", () => {
   test("defaults persist across a reload", async ({ page }) => {
     await openTransactionsSettingsTab(page);
 
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default transaction type",
-      "Spend"
-    );
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default category for Spend",
-      "Groceries"
-    );
-    await selectFromVisibleAntdDropdown(
+    await setDefaultAndConfirm(page, "Default transaction type", "Spend");
+    await setDefaultAndConfirm(page, "Default category for Spend", "Groceries");
+    await setDefaultAndConfirm(
       page,
       "Default bank account for Spend",
       "Main Account"
@@ -134,15 +149,12 @@ test.describe("Transaction Defaults", () => {
   test("a default can be cleared again", async ({ page }) => {
     await openTransactionsSettingsTab(page);
 
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default category for Earn",
-      "Salary"
-    );
+    await setDefaultAndConfirm(page, "Default category for Earn", "Salary");
 
     const shell = selectShell(page, "Default category for Earn");
     await shell.hover();
     await shell.locator(".ant-select-clear").click({ force: true });
+    await expect(shell).not.toContainText("Salary", { timeout: 15000 });
 
     await page.reload();
     await page.getByRole("tab", { name: /^transactions$/i }).click();
@@ -155,17 +167,9 @@ test.describe("Transaction Defaults", () => {
     page,
   }) => {
     await openTransactionsSettingsTab(page);
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default transaction type",
-      "Spend"
-    );
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default category for Spend",
-      "Groceries"
-    );
-    await selectFromVisibleAntdDropdown(
+    await setDefaultAndConfirm(page, "Default transaction type", "Spend");
+    await setDefaultAndConfirm(page, "Default category for Spend", "Groceries");
+    await setDefaultAndConfirm(
       page,
       "Default bank account for Spend",
       "Main Account"
@@ -193,22 +197,14 @@ test.describe("Transaction Defaults", () => {
     page,
   }) => {
     await openTransactionsSettingsTab(page);
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default category for Spend",
-      "Groceries"
-    );
-    await selectFromVisibleAntdDropdown(
+    await setDefaultAndConfirm(page, "Default category for Spend", "Groceries");
+    await setDefaultAndConfirm(
       page,
       "Default bank account for Spend",
       "Main Account"
     );
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default category for Earn",
-      "Salary"
-    );
-    await selectFromVisibleAntdDropdown(
+    await setDefaultAndConfirm(page, "Default category for Earn", "Salary");
+    await setDefaultAndConfirm(
       page,
       "Default bank account for Earn",
       "Secondary Account"
@@ -233,12 +229,8 @@ test.describe("Transaction Defaults", () => {
     page,
   }) => {
     await openTransactionsSettingsTab(page);
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default transaction type",
-      "Spend"
-    );
-    await selectFromVisibleAntdDropdown(
+    await setDefaultAndConfirm(page, "Default transaction type", "Spend");
+    await setDefaultAndConfirm(
       page,
       "Default bank account for Spend",
       "Main Account"
@@ -263,16 +255,8 @@ test.describe("Transaction Defaults", () => {
     page,
   }) => {
     await openTransactionsSettingsTab(page);
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default transaction type",
-      "Spend"
-    );
-    await selectFromVisibleAntdDropdown(
-      page,
-      "Default category for Spend",
-      "Groceries"
-    );
+    await setDefaultAndConfirm(page, "Default transaction type", "Spend");
+    await setDefaultAndConfirm(page, "Default category for Spend", "Groceries");
 
     // The FK is ON DELETE SET NULL, which never fires for a soft delete — the
     // defaults row keeps pointing at a category the UI no longer lists.
