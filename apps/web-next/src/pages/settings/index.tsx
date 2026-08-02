@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Card,
   Typography,
@@ -8,12 +8,13 @@ import {
   List,
   Space,
   Modal,
+  Table,
   Tabs,
   Select,
   DatePicker,
   Segmented,
 } from "antd";
-import { useNotification } from "@refinedev/core";
+import { useList, useNotification } from "@refinedev/core";
 import type { Dayjs } from "dayjs";
 import {
   UploadOutlined,
@@ -21,6 +22,7 @@ import {
   FileTextOutlined,
   GlobalOutlined,
   DownloadOutlined,
+  SlidersOutlined,
 } from "@ant-design/icons";
 import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import {
@@ -32,6 +34,9 @@ import {
   buildJsonExport,
   downloadJson,
   fetchTransactionsForExport,
+  getExportRangePresets,
+  simpleLabelFilterOption,
+  valueIfStillAvailable,
   MAX_EXPORT_ROWS,
   DATE_PICKER_INPUT_FORMATS,
   type BulkUploadPayload,
@@ -41,6 +46,18 @@ import {
 import { Show } from "@refinedev/antd";
 import { useCurrency, SUPPORTED_CURRENCIES } from "../../contexts/currency";
 import { DANGER_BORDER_COLOR, DANGER_TEXT_COLOR } from "../../theme/tokens";
+import {
+  TRANSACTION_TYPES,
+  TRANSACTION_TYPE_LABELS,
+  TRANSACTION_TYPE_OPTIONS,
+  type TransactionType,
+} from "../../constants/transactionTypes";
+import { useTransactionDefaults } from "../../hooks";
+import type { Category, CategoryOption } from "../../utility/categoryHierarchy";
+import {
+  categoryFilterOption,
+  toLeafCategoryOptions,
+} from "../../utility/categoryHierarchy";
 
 const { Paragraph } = Typography;
 
@@ -297,6 +314,159 @@ const BulkUploadSection = () => {
   );
 };
 
+interface SelectOption {
+  label: string;
+  value: string;
+}
+
+/** One editable cell in the defaults grid: a per-type default id, backed by a
+ * select whose options and filter strategy vary by field (category vs. bank
+ * account) but whose value/change/stale-guard wiring is otherwise identical. */
+const DefaultValueSelect = ({
+  ariaLabel,
+  options,
+  value,
+  onChange,
+  filterOption,
+}: {
+  ariaLabel: string;
+  options: SelectOption[];
+  value: string | null;
+  onChange: (value: string | null) => void;
+  filterOption: React.ComponentProps<typeof Select>["filterOption"];
+}) => (
+  <Select
+    aria-label={ariaLabel}
+    style={{ width: "100%", minWidth: 180 }}
+    options={options}
+    value={valueIfStillAvailable(value, options)}
+    onChange={(next) => onChange((next as string | undefined) ?? null)}
+    placeholder="No default"
+    showSearch
+    filterOption={filterOption}
+    allowClear
+  />
+);
+
+const TransactionDefaultsSection = () => {
+  const {
+    defaultsByType,
+    defaultType,
+    isLoading,
+    setDefaultsForType,
+    setDefaultType,
+  } = useTransactionDefaults();
+
+  // One fetch for all types, grouped client-side — cheaper than a query per row.
+  const { result: categoriesResult, query: categoriesQuery } = useList<Category>(
+    {
+      resource: "categories_with_usage",
+      pagination: { mode: "off" },
+      sorters: [{ field: "name", order: "asc" }],
+    }
+  );
+
+  const { result: bankAccountsResult, query: bankAccountsQuery } =
+    useList<{ id: string; name: string }>({
+      resource: "bank_accounts_with_usage",
+      pagination: { mode: "off" },
+      sorters: [{ field: "name", order: "asc" }],
+    });
+
+  const categoryOptionsByType = useMemo(() => {
+    const all = categoriesResult?.data ?? [];
+    return Object.values(TRANSACTION_TYPES).reduce(
+      (acc, type) => {
+        acc[type] = toLeafCategoryOptions(all.filter((c) => c.type === type));
+        return acc;
+      },
+      {} as Record<TransactionType, CategoryOption[]>
+    );
+  }, [categoriesResult?.data]);
+
+  const bankAccountOptions = useMemo<SelectOption[]>(
+    () =>
+      (bankAccountsResult?.data ?? []).map((account) => ({
+        label: account.name,
+        value: account.id,
+      })),
+    [bankAccountsResult?.data]
+  );
+
+  const optionsLoading = categoriesQuery.isLoading || bankAccountsQuery.isLoading;
+
+  return (
+    <Card title="Transaction Defaults" extra={<SlidersOutlined />}>
+      <Paragraph type="secondary">
+        Pre-fill the new transaction form. The default type decides which row's
+        category and bank account are applied; changing the type on the form
+        swaps them for that type's defaults.
+      </Paragraph>
+
+      <Space direction="vertical" style={{ width: "100%" }} size="middle">
+        <div>
+          <Typography.Text strong>Default type</Typography.Text>
+          <Select
+            aria-label="Default transaction type"
+            style={{ width: 280, display: "block", marginTop: 8 }}
+            options={TRANSACTION_TYPE_OPTIONS}
+            value={defaultType ?? undefined}
+            onChange={(value) => setDefaultType((value ?? null) as TransactionType | null)}
+            placeholder="No default"
+            loading={isLoading}
+            allowClear
+          />
+        </div>
+
+        <Table
+          rowKey="type"
+          pagination={false}
+          loading={isLoading || optionsLoading}
+          scroll={{ x: "max-content" }}
+          dataSource={Object.values(TRANSACTION_TYPES).map((type) => ({
+            type,
+          }))}
+          columns={[
+            {
+              title: "Type",
+              dataIndex: "type",
+              render: (type: TransactionType) => TRANSACTION_TYPE_LABELS[type],
+            },
+            {
+              title: "Default Category",
+              key: "category",
+              render: (_, { type }) => (
+                <DefaultValueSelect
+                  ariaLabel={`Default category for ${TRANSACTION_TYPE_LABELS[type]}`}
+                  options={categoryOptionsByType[type]}
+                  value={defaultsByType[type].categoryId}
+                  onChange={(categoryId) => setDefaultsForType(type, { categoryId })}
+                  filterOption={categoryFilterOption}
+                />
+              ),
+            },
+            {
+              title: "Default Bank Account",
+              key: "bank_account",
+              render: (_, { type }) => (
+                <DefaultValueSelect
+                  ariaLabel={`Default bank account for ${TRANSACTION_TYPE_LABELS[type]}`}
+                  options={bankAccountOptions}
+                  value={defaultsByType[type].bankAccountId}
+                  onChange={(bankAccountId) =>
+                    setDefaultsForType(type, { bankAccountId })
+                  }
+                  filterOption={simpleLabelFilterOption}
+                />
+              ),
+            },
+          ]}
+        />
+      </Space>
+    </Card>
+  );
+};
+
 type ExportFormat = "csv" | "json";
 
 const ExportSection = () => {
@@ -305,6 +475,10 @@ const ExportSection = () => {
   const [format, setFormat] = useState<ExportFormat>("csv");
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Evaluated once per mount, not per render — still fresh on every visit to
+  // the page (unlike a module-level constant), without recomputing on every
+  // keystroke/toggle elsewhere in this component.
+  const rangePresets = useMemo(() => getExportRangePresets(), []);
 
   const handleExport = async () => {
     if (!range) {
@@ -372,6 +546,7 @@ const ExportSection = () => {
         />
         <DatePicker.RangePicker
           format={DATE_PICKER_INPUT_FORMATS}
+          presets={rangePresets}
           value={range}
           onChange={(dates) =>
             setRange(dates && dates[0] && dates[1] ? [dates[0], dates[1]] : null)
@@ -552,6 +727,11 @@ export const SettingsPage = () => {
             key: "general",
             label: "General",
             children: <CurrencySection />,
+          },
+          {
+            key: "transactions",
+            label: "Transactions",
+            children: <TransactionDefaultsSection />,
           },
           {
             key: "import-export",

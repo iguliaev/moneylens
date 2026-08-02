@@ -2,10 +2,13 @@ import { useMemo } from "react";
 import { Create, useForm } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
 import { Form, Input, InputNumber, Select, DatePicker } from "antd";
-import dayjs from "dayjs";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { useBudgetForm } from "../../hooks";
-import { DATE_PICKER_INPUT_FORMATS } from "../../utility";
+import {
+  DATE_PICKER_INPUT_FORMATS,
+  simpleLabelFilterOption,
+  toDayjs,
+} from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
   categoryLabel,
@@ -79,9 +82,7 @@ export const BudgetCreate = () => {
         <Form.Item
           label="Start Date"
           name="start_date"
-          getValueProps={(value) => ({
-            value: value ? dayjs(value) : undefined,
-          })}
+          getValueProps={(value) => ({ value: toDayjs(value) })}
           getValueFromEvent={(date) => date?.format("YYYY-MM-DD")}
         >
           <DatePicker
@@ -92,9 +93,7 @@ export const BudgetCreate = () => {
         <Form.Item
           label="End Date"
           name="end_date"
-          getValueProps={(value) => ({
-            value: value ? dayjs(value) : undefined,
-          })}
+          getValueProps={(value) => ({ value: toDayjs(value) })}
           getValueFromEvent={(date) => date?.format("YYYY-MM-DD")}
         >
           <DatePicker
@@ -109,11 +108,7 @@ export const BudgetCreate = () => {
             loading={categoriesQuery.isLoading}
             placeholder="Select categories"
             showSearch
-            filterOption={(input, option) =>
-              (option?.label as string)
-                ?.toLowerCase()
-                .includes(input.toLowerCase())
-            }
+            filterOption={simpleLabelFilterOption}
             allowClear
           />
         </Form.Item>
@@ -124,11 +119,7 @@ export const BudgetCreate = () => {
             loading={tagsQuery.isLoading}
             placeholder="Select tags"
             showSearch
-            filterOption={(input, option) =>
-              (option?.label as string)
-                ?.toLowerCase()
-                .includes(input.toLowerCase())
-            }
+            filterOption={simpleLabelFilterOption}
             allowClear
           />
         </Form.Item>

@@ -12,3 +12,8 @@ export { useTransactionForm } from "./useTransactionForm";
 export type { TransactionFormValues } from "./useTransactionForm";
 export { useBudgetForm } from "./useBudgetForm";
 export type { BudgetFormValues } from "./useBudgetForm";
+export { useTransactionDefaults } from "./useTransactionDefaults";
+export type {
+  TransactionTypeDefaults,
+  TransactionDefaultsByType,
+} from "./useTransactionDefaults";

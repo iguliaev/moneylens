@@ -489,22 +489,87 @@ export type Database = {
         Row: {
           created_at: string;
           currency: string;
+          default_transaction_type:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null;
           updated_at: string;
           user_id: string;
         };
         Insert: {
           created_at?: string;
           currency?: string;
+          default_transaction_type?:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null;
           updated_at?: string;
           user_id: string;
         };
         Update: {
           created_at?: string;
           currency?: string;
+          default_transaction_type?:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null;
           updated_at?: string;
           user_id?: string;
         };
         Relationships: [];
+      };
+      user_transaction_defaults: {
+        Row: {
+          bank_account_id: string | null;
+          category_id: string | null;
+          created_at: string;
+          type: Database["public"]["Enums"]["transaction_type"];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          bank_account_id?: string | null;
+          category_id?: string | null;
+          created_at?: string;
+          type: Database["public"]["Enums"]["transaction_type"];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          bank_account_id?: string | null;
+          category_id?: string | null;
+          created_at?: string;
+          type?: Database["public"]["Enums"]["transaction_type"];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_transaction_defaults_bank_account_id_fkey";
+            columns: ["bank_account_id"];
+            isOneToOne: false;
+            referencedRelation: "bank_accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_transaction_defaults_bank_account_id_fkey";
+            columns: ["bank_account_id"];
+            isOneToOne: false;
+            referencedRelation: "bank_accounts_with_usage";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_transaction_defaults_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_transaction_defaults_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories_with_usage";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
