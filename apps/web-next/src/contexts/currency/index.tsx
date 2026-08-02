@@ -6,7 +6,7 @@ import {
   useEffect,
   type PropsWithChildren,
 } from "react";
-import { supabaseClient } from "../../utility";
+import { supabaseClient, upsertUserSettings } from "../../utility";
 
 export const SUPPORTED_CURRENCIES = [
   { value: "GBP", label: "GBP — British Pound (£)" },
@@ -92,14 +92,11 @@ export const CurrencyContextProvider = ({ children }: PropsWithChildren) => {
 
     // Only persist to Supabase when authenticated; user_id set by DB trigger
     if (!currentUserIdRef.current) return;
-    supabaseClient
-      .from("user_settings")
-      .upsert({ currency: newCurrency }, { onConflict: "user_id" })
-      .then(({ error }) => {
-        if (error) {
-          console.error("[CurrencyContext] Failed to save currency:", error);
-        }
-      });
+    upsertUserSettings({ currency: newCurrency }).then(({ error }) => {
+      if (error) {
+        console.error("[CurrencyContext] Failed to save currency:", error);
+      }
+    });
   };
 
   return (

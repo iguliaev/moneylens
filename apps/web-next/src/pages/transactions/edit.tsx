@@ -7,7 +7,11 @@ import {
   TransactionType,
 } from "../../constants/transactionTypes";
 import { useTransactionForm } from "../../hooks";
-import { DATE_PICKER_INPUT_FORMATS, toDayjs } from "../../utility";
+import {
+  DATE_PICKER_INPUT_FORMATS,
+  simpleLabelFilterOption,
+  toDayjs,
+} from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
   categoryFilterOption,
@@ -189,11 +193,7 @@ export const TransactionEdit = () => {
             loading={tagsQuery.isLoading}
             placeholder="Select tags"
             showSearch
-            filterOption={(input, option) =>
-              (option?.label as string)
-                ?.toLowerCase()
-                .includes(input.toLowerCase())
-            }
+            filterOption={simpleLabelFilterOption}
             allowClear
           />
         </Form.Item>

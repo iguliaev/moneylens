@@ -5,7 +5,7 @@ import {
   type TransactionType,
 } from "../constants/transactionTypes";
 import type { Database } from "../types/database.types";
-import { supabaseClient } from "../utility";
+import { supabaseClient, upsertUserSettings } from "../utility";
 
 type DefaultsRow =
   Database["public"]["Tables"]["user_transaction_defaults"]["Row"];
@@ -79,17 +79,26 @@ export function useTransactionDefaults() {
   );
 
   const setDefaultsForType = useCallback(
-    async (type: TransactionType, next: TransactionTypeDefaults) => {
+    async (
+      type: TransactionType,
+      patch: Partial<TransactionTypeDefaults>
+    ) => {
+      // Only the changed column goes in the payload — PostgREST's upsert only
+      // SETs columns present in it, so this can't clobber the other column
+      // with a stale value from a defaultsByType snapshot that hasn't caught
+      // up with an in-flight write yet (defaultsByType only refreshes once
+      // invalidate()'s refetch below lands).
+      const row: { type: TransactionType } & Partial<{
+        category_id: string | null;
+        bank_account_id: string | null;
+      }> = { type };
+      if ("categoryId" in patch) row.category_id = patch.categoryId ?? null;
+      if ("bankAccountId" in patch)
+        row.bank_account_id = patch.bankAccountId ?? null;
+
       const { error } = await supabaseClient
         .from("user_transaction_defaults")
-        .upsert(
-          {
-            type,
-            category_id: next.categoryId,
-            bank_account_id: next.bankAccountId,
-          },
-          { onConflict: "user_id,type" }
-        );
+        .upsert(row, { onConflict: "user_id,type" });
 
       if (error) {
         notifyFailure(
@@ -109,12 +118,9 @@ export function useTransactionDefaults() {
 
   const setDefaultType = useCallback(
     async (type: TransactionType | null) => {
-      const { error } = await supabaseClient
-        .from("user_settings")
-        .upsert(
-          { default_transaction_type: type },
-          { onConflict: "user_id" }
-        );
+      const { error } = await upsertUserSettings({
+        default_transaction_type: type,
+      });
 
       if (error) {
         notifyFailure("Failed to save default type", error.message);

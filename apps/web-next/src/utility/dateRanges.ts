@@ -39,12 +39,20 @@ export function getExportRangePresets(): DateRangePreset[] {
       value: [lastMonth.startOf("month"), lastMonth.endOf("month")],
     },
     {
+      // The 3/12 complete calendar months before the current one — consistent
+      // with "Last month"/"Last year" excluding the current, incomplete period.
       label: "Last 3 months",
-      value: [today.subtract(2, "month").startOf("month"), today.endOf("month")],
+      value: [
+        today.subtract(3, "month").startOf("month"),
+        lastMonth.endOf("month"),
+      ],
     },
     {
       label: "Last 12 months",
-      value: [today.subtract(11, "month").startOf("month"), today.endOf("month")],
+      value: [
+        today.subtract(12, "month").startOf("month"),
+        lastMonth.endOf("month"),
+      ],
     },
     {
       label: "This year",

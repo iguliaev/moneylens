@@ -35,6 +35,7 @@ import {
   downloadJson,
   fetchTransactionsForExport,
   getExportRangePresets,
+  simpleLabelFilterOption,
   MAX_EXPORT_ROWS,
   DATE_PICKER_INPUT_FORMATS,
   type BulkUploadPayload,
@@ -447,7 +448,6 @@ const TransactionDefaultsSection = () => {
                   )}
                   onChange={(value) =>
                     setDefaultsForType(type, {
-                      ...defaultsByType[type],
                       categoryId: (value as string | undefined) ?? null,
                     })
                   }
@@ -472,17 +472,12 @@ const TransactionDefaultsSection = () => {
                   )}
                   onChange={(value) =>
                     setDefaultsForType(type, {
-                      ...defaultsByType[type],
                       bankAccountId: (value as string | undefined) ?? null,
                     })
                   }
                   placeholder="No default"
                   showSearch
-                  filterOption={(input, option) =>
-                    String(option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
+                  filterOption={simpleLabelFilterOption}
                   allowClear
                 />
               ),
