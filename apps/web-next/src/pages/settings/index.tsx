@@ -36,6 +36,7 @@ import {
   fetchTransactionsForExport,
   getExportRangePresets,
   simpleLabelFilterOption,
+  valueIfStillAvailable,
   MAX_EXPORT_ROWS,
   DATE_PICKER_INPUT_FORMATS,
   type BulkUploadPayload,
@@ -318,33 +319,33 @@ interface SelectOption {
   value: string;
 }
 
-/**
- * A stored default can outlive its target: the FKs use ON DELETE SET NULL, which
- * only fires on a hard delete, and this app soft-deletes. The `*_with_usage`
- * views already exclude soft-deleted rows, so treating "not in options" as
- * "no default" renders a stale reference as empty instead of a raw UUID.
- */
-const valueIfStillAvailable = (
-  id: string | null,
-  options: readonly { value: string }[]
-): string | undefined =>
-  id && options.some((option) => option.value === id) ? id : undefined;
-
-/** A Select with a visually hidden label, so it has an accessible name. */
-const LabelledSelect = ({
-  id,
-  label,
-  ...selectProps
+/** One editable cell in the defaults grid: a per-type default id, backed by a
+ * select whose options and filter strategy vary by field (category vs. bank
+ * account) but whose value/change/stale-guard wiring is otherwise identical. */
+const DefaultValueSelect = ({
+  ariaLabel,
+  options,
+  value,
+  onChange,
+  filterOption,
 }: {
-  id: string;
-  label: string;
-} & React.ComponentProps<typeof Select>) => (
-  <>
-    <label className="sr-only" htmlFor={id}>
-      {label}
-    </label>
-    <Select id={id} style={{ width: "100%", minWidth: 180 }} {...selectProps} />
-  </>
+  ariaLabel: string;
+  options: SelectOption[];
+  value: string | null;
+  onChange: (value: string | null) => void;
+  filterOption: React.ComponentProps<typeof Select>["filterOption"];
+}) => (
+  <Select
+    aria-label={ariaLabel}
+    style={{ width: "100%", minWidth: 180 }}
+    options={options}
+    value={valueIfStillAvailable(value, options)}
+    onChange={(next) => onChange((next as string | undefined) ?? null)}
+    placeholder="No default"
+    showSearch
+    filterOption={filterOption}
+    allowClear
+  />
 );
 
 const TransactionDefaultsSection = () => {
@@ -404,12 +405,9 @@ const TransactionDefaultsSection = () => {
 
       <Space direction="vertical" style={{ width: "100%" }} size="middle">
         <div>
-          <label className="sr-only" htmlFor="default-transaction-type">
-            Default transaction type
-          </label>
           <Typography.Text strong>Default type</Typography.Text>
           <Select
-            id="default-transaction-type"
+            aria-label="Default transaction type"
             style={{ width: 280, display: "block", marginTop: 8 }}
             options={TRANSACTION_TYPE_OPTIONS}
             value={defaultType ?? undefined}
@@ -438,23 +436,12 @@ const TransactionDefaultsSection = () => {
               title: "Default Category",
               key: "category",
               render: (_, { type }) => (
-                <LabelledSelect
-                  id={`default-category-${type}`}
-                  label={`Default category for ${TRANSACTION_TYPE_LABELS[type]}`}
+                <DefaultValueSelect
+                  ariaLabel={`Default category for ${TRANSACTION_TYPE_LABELS[type]}`}
                   options={categoryOptionsByType[type]}
-                  value={valueIfStillAvailable(
-                    defaultsByType[type].categoryId,
-                    categoryOptionsByType[type]
-                  )}
-                  onChange={(value) =>
-                    setDefaultsForType(type, {
-                      categoryId: (value as string | undefined) ?? null,
-                    })
-                  }
-                  placeholder="No default"
-                  showSearch
+                  value={defaultsByType[type].categoryId}
+                  onChange={(categoryId) => setDefaultsForType(type, { categoryId })}
                   filterOption={categoryFilterOption}
-                  allowClear
                 />
               ),
             },
@@ -462,23 +449,14 @@ const TransactionDefaultsSection = () => {
               title: "Default Bank Account",
               key: "bank_account",
               render: (_, { type }) => (
-                <LabelledSelect
-                  id={`default-bank-account-${type}`}
-                  label={`Default bank account for ${TRANSACTION_TYPE_LABELS[type]}`}
+                <DefaultValueSelect
+                  ariaLabel={`Default bank account for ${TRANSACTION_TYPE_LABELS[type]}`}
                   options={bankAccountOptions}
-                  value={valueIfStillAvailable(
-                    defaultsByType[type].bankAccountId,
-                    bankAccountOptions
-                  )}
-                  onChange={(value) =>
-                    setDefaultsForType(type, {
-                      bankAccountId: (value as string | undefined) ?? null,
-                    })
+                  value={defaultsByType[type].bankAccountId}
+                  onChange={(bankAccountId) =>
+                    setDefaultsForType(type, { bankAccountId })
                   }
-                  placeholder="No default"
-                  showSearch
                   filterOption={simpleLabelFilterOption}
-                  allowClear
                 />
               ),
             },
@@ -497,6 +475,10 @@ const ExportSection = () => {
   const [format, setFormat] = useState<ExportFormat>("csv");
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Evaluated once per mount, not per render — still fresh on every visit to
+  // the page (unlike a module-level constant), without recomputing on every
+  // keystroke/toggle elsewhere in this component.
+  const rangePresets = useMemo(() => getExportRangePresets(), []);
 
   const handleExport = async () => {
     if (!range) {
@@ -564,7 +546,7 @@ const ExportSection = () => {
         />
         <DatePicker.RangePicker
           format={DATE_PICKER_INPUT_FORMATS}
-          presets={getExportRangePresets()}
+          presets={rangePresets}
           value={range}
           onChange={(dates) =>
             setRange(dates && dates[0] && dates[1] ? [dates[0], dates[1]] : null)

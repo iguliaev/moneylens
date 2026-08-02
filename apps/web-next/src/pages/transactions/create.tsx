@@ -14,6 +14,7 @@ import {
   DATE_PICKER_INPUT_FORMATS,
   simpleLabelFilterOption,
   toDayjs,
+  valueIfStillAvailable,
 } from "../../utility";
 import type { Category } from "../../utility/categoryHierarchy";
 import {
@@ -52,10 +53,7 @@ export const TransactionCreate = () => {
   // antd re-seed the fields from it, which silently discards a date the user is
   // part-way through typing. Type is deliberately not in here — it can arrive
   // asynchronously with the stored default, so the effect below applies it.
-  const [initialValues] = useState(() => ({
-    ...(formProps.initialValues ?? {}),
-    date: dayjs(),
-  }));
+  const [initialValues] = useState(() => ({ date: dayjs() }));
 
   const type = Form.useWatch("type", formProps.form);
 
@@ -105,23 +103,22 @@ export const TransactionCreate = () => {
     const defaults = defaultsByType[type as TransactionType];
     if (!defaults) return;
 
-    if (
-      !form.getFieldValue("category_id") &&
-      defaults.categoryId &&
-      leafCategoryOptions.some((o) => o.value === defaults.categoryId)
-    ) {
-      form.setFieldValue("category_id", defaults.categoryId);
-    }
+    const applyDefaultIfEmpty = (
+      field: string,
+      defaultId: string | null,
+      options: readonly { value?: unknown }[]
+    ) => {
+      if (form.getFieldValue(field)) return;
+      const value = valueIfStillAvailable(defaultId, options);
+      if (value) form.setFieldValue(field, value);
+    };
 
-    if (
-      !form.getFieldValue("bank_account_id") &&
-      defaults.bankAccountId &&
-      (bankAccountSelectProps.options ?? []).some(
-        (o) => String(o.value) === defaults.bankAccountId
-      )
-    ) {
-      form.setFieldValue("bank_account_id", defaults.bankAccountId);
-    }
+    applyDefaultIfEmpty("category_id", defaults.categoryId, leafCategoryOptions);
+    applyDefaultIfEmpty(
+      "bank_account_id",
+      defaults.bankAccountId,
+      bankAccountSelectProps.options ?? []
+    );
   }, [
     type,
     defaultsByType,

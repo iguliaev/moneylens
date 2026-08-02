@@ -6,6 +6,7 @@ export * from "./dateDisplay";
 export * from "./dateRanges";
 export * from "./dayjsValue";
 export * from "./selectFilterOption";
+export * from "./selectOptions";
 export * from "./userSettings";
 export * from "./datePickerFormats";
 export * from "./csvExport";
