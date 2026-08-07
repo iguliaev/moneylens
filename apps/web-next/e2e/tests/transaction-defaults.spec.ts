@@ -56,6 +56,25 @@ async function setDefaultAndConfirm(
   });
 }
 
+/**
+ * The Create page's default-prefill effect sits behind a longer chain than a
+ * settings-grid write: auth-session restore, then the type/defaults fetch,
+ * then (once type is set) the category fetch — all starting fresh on this
+ * page load, not warmed up by anything earlier in the test. A test whose
+ * first assertion after navigating here checks a prefilled value has no
+ * earlier `expect` to "absorb" that chain's latency the way later assertions
+ * in the same test implicitly do, so it needs its own generous timeout
+ * instead of the 10s default — otherwise a slow/cold environment (a fresh
+ * deploy, a shared CI runner) turns a real-but-slow prefill into a false
+ * failure.
+ */
+async function expectPrefilledOnCreatePage(
+  locator: ReturnType<typeof selectShell>,
+  text: string | RegExp
+) {
+  await expect(locator).toContainText(text, { timeout: 20000 });
+}
+
 test.describe("Transaction Defaults", () => {
   let testUser: { email: string; password: string; userId: string };
 
@@ -186,9 +205,13 @@ test.describe("Transaction Defaults", () => {
     ).padStart(2, "0")}/${today.getFullYear()}`;
     await expect(page.getByLabel("Date")).toHaveValue(expectedDate);
 
-    await expect(selectShell(page, "* Type")).toContainText(/spend/i);
-    await expect(selectShell(page, "* Category")).toContainText("Groceries");
-    await expect(selectShell(page, "* Bank Account")).toContainText(
+    await expectPrefilledOnCreatePage(selectShell(page, "* Type"), /spend/i);
+    await expectPrefilledOnCreatePage(
+      selectShell(page, "* Category"),
+      "Groceries"
+    );
+    await expectPrefilledOnCreatePage(
+      selectShell(page, "* Bank Account"),
       "Main Account"
     );
   });
@@ -213,8 +236,12 @@ test.describe("Transaction Defaults", () => {
     await page.goto("/transactions/create");
 
     await selectFromVisibleAntdDropdown(page, "* Type", "Spend");
-    await expect(selectShell(page, "* Category")).toContainText("Groceries");
-    await expect(selectShell(page, "* Bank Account")).toContainText(
+    await expectPrefilledOnCreatePage(
+      selectShell(page, "* Category"),
+      "Groceries"
+    );
+    await expectPrefilledOnCreatePage(
+      selectShell(page, "* Bank Account"),
       "Main Account"
     );
 
@@ -237,7 +264,8 @@ test.describe("Transaction Defaults", () => {
     );
 
     await page.goto("/transactions/create");
-    await expect(selectShell(page, "* Bank Account")).toContainText(
+    await expectPrefilledOnCreatePage(
+      selectShell(page, "* Bank Account"),
       "Main Account"
     );
 
