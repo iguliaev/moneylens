@@ -1,5 +1,11 @@
 import type { Database } from "../types/database.types";
 import type { TransactionExportRow } from "./exportTransactions";
+import type {
+  BankAccountExportRecord,
+  CategoryExportRecord,
+  ExportMetadata,
+  TagExportRecord,
+} from "./exportMetadata";
 import { formatCategoryPath } from "./csvExport";
 import { downloadTextFile } from "./fileDownload";
 
@@ -16,15 +22,18 @@ export interface JsonExportTransaction {
 export interface JsonExportCategory {
   type: Database["public"]["Enums"]["transaction_type"];
   name: string;
+  description?: string;
   parent?: string;
 }
 
 export interface JsonExportBankAccount {
   name: string;
+  description?: string;
 }
 
 export interface JsonExportTag {
   name: string;
+  description?: string;
 }
 
 export interface JsonExportPayload {
@@ -53,61 +62,53 @@ export const transactionToJsonExportRow = (
   return result;
 };
 
-export const collectJsonExportCategories = (
-  rows: TransactionExportRow[]
-): JsonExportCategory[] => {
-  const seen = new Map<string, JsonExportCategory>();
+export const categoryRecordToJsonExportCategory = (
+  record: CategoryExportRecord
+): JsonExportCategory => {
+  const result: JsonExportCategory = { type: record.type, name: record.name };
+  if (record.parent_name) result.parent = record.parent_name;
+  if (record.description) result.description = record.description;
+  return result;
+};
 
-  for (const row of rows) {
-    if (!row.category_name) continue;
+export const bankAccountRecordToJsonExportBankAccount = (
+  record: BankAccountExportRecord
+): JsonExportBankAccount => {
+  const result: JsonExportBankAccount = { name: record.name };
+  if (record.description) result.description = record.description;
+  return result;
+};
 
-    const category: JsonExportCategory = row.category_parent_name
-      ? { type: row.type, name: row.category_name, parent: row.category_parent_name }
-      : { type: row.type, name: row.category_name };
+export const tagRecordToJsonExportTag = (record: TagExportRecord): JsonExportTag => {
+  const result: JsonExportTag = { name: record.name };
+  if (record.description) result.description = record.description;
+  return result;
+};
 
-    // JSON-encode the tuple rather than joining on a separator: a category
-    // name is free text and could otherwise collide with a different
-    // (parent, name) pair, silently dropping one from the export.
-    const key = JSON.stringify([
-      category.type,
-      category.parent ?? null,
-      category.name,
-    ]);
-    if (!seen.has(key)) seen.set(key, category);
-  }
-
-  return [...seen.values()].sort((a, b) => {
+const sortJsonExportCategories = (
+  categories: JsonExportCategory[]
+): JsonExportCategory[] =>
+  [...categories].sort((a, b) => {
     if (a.type !== b.type) return a.type.localeCompare(b.type);
     const parentCompare = (a.parent ?? "").localeCompare(b.parent ?? "");
     return parentCompare !== 0 ? parentCompare : a.name.localeCompare(b.name);
   });
-};
 
-const collectUniqueNames = (
+const sortByName = <T extends { name: string }>(items: T[]): T[] =>
+  [...items].sort((a, b) => a.name.localeCompare(b.name));
+
+export const buildJsonExport = (
   rows: TransactionExportRow[],
-  getNames: (row: TransactionExportRow) => Iterable<string | null | undefined>
-): { name: string }[] => {
-  const names = new Set<string>();
-  for (const row of rows) {
-    for (const name of getNames(row)) {
-      if (name) names.add(name);
-    }
-  }
-  return [...names].sort((a, b) => a.localeCompare(b)).map((name) => ({ name }));
-};
-
-export const collectJsonExportBankAccounts = (
-  rows: TransactionExportRow[]
-): JsonExportBankAccount[] => collectUniqueNames(rows, (row) => [row.bank_account_name]);
-
-export const collectJsonExportTags = (rows: TransactionExportRow[]): JsonExportTag[] =>
-  collectUniqueNames(rows, (row) => row.tag_names);
-
-export const buildJsonExport = (rows: TransactionExportRow[]): string => {
+  metadata: ExportMetadata
+): string => {
   const payload: JsonExportPayload = {
-    categories: collectJsonExportCategories(rows),
-    bank_accounts: collectJsonExportBankAccounts(rows),
-    tags: collectJsonExportTags(rows),
+    categories: sortJsonExportCategories(
+      metadata.categories.map(categoryRecordToJsonExportCategory)
+    ),
+    bank_accounts: sortByName(
+      metadata.bank_accounts.map(bankAccountRecordToJsonExportBankAccount)
+    ),
+    tags: sortByName(metadata.tags.map(tagRecordToJsonExportTag)),
     transactions: rows.map(transactionToJsonExportRow),
   };
   return JSON.stringify(payload, null, 2);
