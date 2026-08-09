@@ -3,6 +3,8 @@ import {
   transactionToJsonExportRow,
   buildJsonExport,
   collectJsonExportCategories,
+  collectJsonExportBankAccounts,
+  collectJsonExportTags,
 } from "./jsonExport";
 import type { TransactionExportRow } from "./exportTransactions";
 
@@ -95,6 +97,8 @@ describe("buildJsonExport", () => {
     ]);
     expect(JSON.parse(json)).toEqual({
       categories: [{ type: "spend", name: "Eating out", parent: "Food" }],
+      bank_accounts: [{ name: "Chase Checking" }],
+      tags: [{ name: "groceries" }, { name: "urgent" }],
       transactions: [
         {
           date: "2026-07-01",
@@ -111,7 +115,9 @@ describe("buildJsonExport", () => {
 
   it("pretty-prints with 2-space indentation", () => {
     const json = buildJsonExport([]);
-    expect(json).toBe('{\n  "categories": [],\n  "transactions": []\n}');
+    expect(json).toBe(
+      '{\n  "categories": [],\n  "bank_accounts": [],\n  "tags": [],\n  "transactions": []\n}'
+    );
   });
 });
 
@@ -198,5 +204,68 @@ describe("collectJsonExportCategories", () => {
       { type: "spend", name: "Eating out", parent: "Food" },
       { type: "spend", name: "Taxi", parent: "Transport" },
     ]);
+  });
+});
+
+describe("collectJsonExportBankAccounts", () => {
+  const base: TransactionExportRow = {
+    date: "2026-07-01",
+    type: "spend",
+    category_name: null,
+    category_parent_name: null,
+    bank_account_name: null,
+    amount: 12.34,
+    tag_names: [],
+    notes: null,
+  };
+
+  it("skips rows with no bank account", () => {
+    expect(collectJsonExportBankAccounts([base])).toEqual([]);
+  });
+
+  it("dedupes repeated bank account names across rows", () => {
+    const accounts = collectJsonExportBankAccounts([
+      { ...base, bank_account_name: "Chase Checking" },
+      { ...base, bank_account_name: "Chase Checking" },
+    ]);
+    expect(accounts).toEqual([{ name: "Chase Checking" }]);
+  });
+
+  it("sorts alphabetically by name", () => {
+    const accounts = collectJsonExportBankAccounts([
+      { ...base, bank_account_name: "Wise" },
+      { ...base, bank_account_name: "AmEx" },
+    ]);
+    expect(accounts).toEqual([{ name: "AmEx" }, { name: "Wise" }]);
+  });
+});
+
+describe("collectJsonExportTags", () => {
+  const base: TransactionExportRow = {
+    date: "2026-07-01",
+    type: "spend",
+    category_name: null,
+    category_parent_name: null,
+    bank_account_name: null,
+    amount: 12.34,
+    tag_names: [],
+    notes: null,
+  };
+
+  it("skips rows with no tags", () => {
+    expect(collectJsonExportTags([base])).toEqual([]);
+  });
+
+  it("dedupes repeated tag names across rows", () => {
+    const tags = collectJsonExportTags([
+      { ...base, tag_names: ["urgent", "groceries"] },
+      { ...base, tag_names: ["urgent"] },
+    ]);
+    expect(tags).toEqual([{ name: "groceries" }, { name: "urgent" }]);
+  });
+
+  it("sorts alphabetically by name", () => {
+    const tags = collectJsonExportTags([{ ...base, tag_names: ["Wise", "AmEx"] }]);
+    expect(tags).toEqual([{ name: "AmEx" }, { name: "Wise" }]);
   });
 });

@@ -19,8 +19,18 @@ export interface JsonExportCategory {
   parent?: string;
 }
 
+export interface JsonExportBankAccount {
+  name: string;
+}
+
+export interface JsonExportTag {
+  name: string;
+}
+
 export interface JsonExportPayload {
   categories: JsonExportCategory[];
+  bank_accounts: JsonExportBankAccount[];
+  tags: JsonExportTag[];
   transactions: JsonExportTransaction[];
 }
 
@@ -73,9 +83,29 @@ export const collectJsonExportCategories = (
   });
 };
 
+export const collectJsonExportBankAccounts = (
+  rows: TransactionExportRow[]
+): JsonExportBankAccount[] => {
+  const names = new Set<string>();
+  for (const row of rows) {
+    if (row.bank_account_name) names.add(row.bank_account_name);
+  }
+  return [...names].sort((a, b) => a.localeCompare(b)).map((name) => ({ name }));
+};
+
+export const collectJsonExportTags = (rows: TransactionExportRow[]): JsonExportTag[] => {
+  const names = new Set<string>();
+  for (const row of rows) {
+    for (const name of row.tag_names) names.add(name);
+  }
+  return [...names].sort((a, b) => a.localeCompare(b)).map((name) => ({ name }));
+};
+
 export const buildJsonExport = (rows: TransactionExportRow[]): string => {
   const payload: JsonExportPayload = {
     categories: collectJsonExportCategories(rows),
+    bank_accounts: collectJsonExportBankAccounts(rows),
+    tags: collectJsonExportTags(rows),
     transactions: rows.map(transactionToJsonExportRow),
   };
   return JSON.stringify(payload, null, 2);
