@@ -83,23 +83,25 @@ export const collectJsonExportCategories = (
   });
 };
 
-export const collectJsonExportBankAccounts = (
-  rows: TransactionExportRow[]
-): JsonExportBankAccount[] => {
+const collectUniqueNames = (
+  rows: TransactionExportRow[],
+  getNames: (row: TransactionExportRow) => Iterable<string | null | undefined>
+): { name: string }[] => {
   const names = new Set<string>();
   for (const row of rows) {
-    if (row.bank_account_name) names.add(row.bank_account_name);
+    for (const name of getNames(row)) {
+      if (name) names.add(name);
+    }
   }
   return [...names].sort((a, b) => a.localeCompare(b)).map((name) => ({ name }));
 };
 
-export const collectJsonExportTags = (rows: TransactionExportRow[]): JsonExportTag[] => {
-  const names = new Set<string>();
-  for (const row of rows) {
-    for (const name of row.tag_names) names.add(name);
-  }
-  return [...names].sort((a, b) => a.localeCompare(b)).map((name) => ({ name }));
-};
+export const collectJsonExportBankAccounts = (
+  rows: TransactionExportRow[]
+): JsonExportBankAccount[] => collectUniqueNames(rows, (row) => [row.bank_account_name]);
+
+export const collectJsonExportTags = (rows: TransactionExportRow[]): JsonExportTag[] =>
+  collectUniqueNames(rows, (row) => row.tag_names);
 
 export const buildJsonExport = (rows: TransactionExportRow[]): string => {
   const payload: JsonExportPayload = {
