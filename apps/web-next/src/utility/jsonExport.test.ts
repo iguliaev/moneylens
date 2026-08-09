@@ -115,6 +115,20 @@ describe("categoryRecordToJsonExportCategory", () => {
       description: "Vacation dining",
     });
   });
+
+  it("preserves an empty-string description rather than treating it as absent", () => {
+    const record: CategoryExportRecord = {
+      type: "spend",
+      name: "Groceries",
+      description: "",
+      parent_name: null,
+    };
+    expect(categoryRecordToJsonExportCategory(record)).toEqual({
+      type: "spend",
+      name: "Groceries",
+      description: "",
+    });
+  });
 });
 
 describe("bankAccountRecordToJsonExportBankAccount", () => {
@@ -131,6 +145,14 @@ describe("bankAccountRecordToJsonExportBankAccount", () => {
     expect(bankAccountRecordToJsonExportBankAccount(record)).toEqual({
       name: "AmEx",
       description: "Primary credit card",
+    });
+  });
+
+  it("preserves an empty-string description rather than treating it as absent", () => {
+    const record: BankAccountExportRecord = { name: "AmEx", description: "" };
+    expect(bankAccountRecordToJsonExportBankAccount(record)).toEqual({
+      name: "AmEx",
+      description: "",
     });
   });
 });
@@ -257,5 +279,58 @@ describe("buildJsonExport", () => {
     expect(json).toBe(
       '{\n  "categories": [],\n  "bank_accounts": [],\n  "tags": [],\n  "transactions": []\n}'
     );
+  });
+
+  it("adds a category/bank_account/tag referenced by a transaction but absent from the metadata library (e.g. soft-deleted), so the file can still re-import", () => {
+    const row: TransactionExportRow = {
+      date: "2026-07-01",
+      type: "spend",
+      category_name: "Side Gig",
+      category_parent_name: null,
+      bank_account_name: "Closed Account",
+      amount: 12.34,
+      tag_names: ["retired-tag"],
+      notes: null,
+    };
+    const json = buildJsonExport([row], emptyMetadata);
+    expect(JSON.parse(json)).toEqual({
+      categories: [{ type: "spend", name: "Side Gig" }],
+      bank_accounts: [{ name: "Closed Account" }],
+      tags: [{ name: "retired-tag" }],
+      transactions: [
+        {
+          date: "2026-07-01",
+          type: "spend",
+          amount: 12.34,
+          category: "Side Gig",
+          bank_account: "Closed Account",
+          tags: ["retired-tag"],
+        },
+      ],
+    });
+  });
+
+  it("prefers the metadata library's description over a bare row-derived entry for the same category", () => {
+    const metadata: ExportMetadata = {
+      categories: [
+        { type: "spend", name: "Groceries", description: "Food", parent_name: null },
+      ],
+      bank_accounts: [],
+      tags: [],
+    };
+    const row: TransactionExportRow = {
+      date: "2026-07-01",
+      type: "spend",
+      category_name: "Groceries",
+      category_parent_name: null,
+      bank_account_name: null,
+      amount: 12.34,
+      tag_names: [],
+      notes: null,
+    };
+    const json = buildJsonExport([row], metadata);
+    expect(JSON.parse(json).categories).toEqual([
+      { type: "spend", name: "Groceries", description: "Food" },
+    ]);
   });
 });
