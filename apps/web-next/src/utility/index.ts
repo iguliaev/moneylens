@@ -11,5 +11,6 @@ export * from "./userSettings";
 export * from "./datePickerFormats";
 export * from "./csvExport";
 export * from "./exportTransactions";
+export * from "./exportMetadata";
 export * from "./jsonExport";
 export * from "./fileDownload";

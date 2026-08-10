@@ -34,6 +34,7 @@ import {
   buildJsonExport,
   downloadJson,
   fetchTransactionsForExport,
+  fetchExportMetadata,
   getExportRangePresets,
   simpleLabelFilterOption,
   valueIfStillAvailable,
@@ -518,7 +519,18 @@ const ExportSection = () => {
       const csv = buildCsv(result.rows.map(transactionToCsvRow));
       downloadCsv(`transactions_${startDate}_to_${endDate}.csv`, csv);
     } else {
-      const json = buildJsonExport(result.rows);
+      const metadataResult = await fetchExportMetadata();
+      if (!metadataResult.ok) {
+        setError(metadataResult.message);
+        openNotification?.({
+          type: "error",
+          message: "Export failed",
+          description: metadataResult.message,
+        });
+        setIsExporting(false);
+        return;
+      }
+      const json = buildJsonExport(result.rows, metadataResult);
       downloadJson(`transactions_${startDate}_to_${endDate}.json`, json);
     }
 
