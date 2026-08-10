@@ -33,6 +33,8 @@ A JSON object containing optional sections for bulk data import.
 
 ## Payload Schema
 
+> **Two producers of this payload:** this app's own JSON export (`apps/web-next/src/utility/jsonExport.ts`) is one source of `p_payload`. The other is the separate `moneylens-converter-rs` repo (ODS spreadsheet → JSON), which independently maintains Rust structs matching this same shape (`src/payload/types.rs`). There's no shared schema definition between the two — **whenever a field or section is added or changed here, check whether it should be ported to `moneylens-converter-rs` too**, following the precedent set when `CategoryInput.parent` was added (ported over in that repo's `docs/plans/bulk-upload-category-parent-compat.md`, PR #8). Not every change needs porting — e.g. `description` fields stay `None`/omitted there since ODS has no description data — but it should be a deliberate call, not an oversight. See `docs/superpowers/plans/2026-08-10-json-export-import-full-restore.md` for the fuller compatibility assessment.
+
 ### Payload Root Structure
 
 ```typescript
@@ -711,4 +713,4 @@ categories.
 
 ---
 
-**Last Updated**: August 1, 2026
+**Last Updated**: August 10, 2026
