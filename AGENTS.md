@@ -110,6 +110,7 @@ Check these before starting work in the relevant area — don't guess at convent
 | Doc | When to read it |
 |---|---|
 | [`docs/getting-started.md`](docs/getting-started.md) | Local setup, prerequisites, common commands |
+| [`docs/domain/overview.md`](docs/domain/overview.md) | What MoneyLens is, and before working on transactions, categories, budgets, or tags — links to a concept doc for each |
 | [`docs/database/schema-and-migrations.md`](docs/database/schema-and-migrations.md) | Any schema/migration change, RLS, `SECURITY DEFINER` rules |
 | [`docs/api/bulk-upload.md`](docs/api/bulk-upload.md) | Working on the `bulk_upload_data` RPC / bulk import |
 | [`docs/deployment/release-howto.md`](docs/deployment/release-howto.md) | Cutting a release, syncing `main` → `release` |
