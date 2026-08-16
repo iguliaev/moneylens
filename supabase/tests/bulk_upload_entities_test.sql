@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(23);
+select plan(35);
 
 -- Create test users
 select tests.create_supabase_user('user1@test.com');
@@ -25,6 +25,11 @@ select tests.create_supabase_user('user13@test.com');
 select tests.create_supabase_user('user14@test.com');
 select tests.create_supabase_user('user15@test.com');
 select tests.create_supabase_user('user16@test.com');
+select tests.create_supabase_user('user17@test.com');
+select tests.create_supabase_user('user18@test.com');
+select tests.create_supabase_user('user19@test.com');
+select tests.create_supabase_user('user20@test.com');
+select tests.create_supabase_user('user21@test.com');
 
 -- Authenticate as user1 when helpful (not required for insert_categories which uses explicit user_id)
 select tests.authenticate_as('user1@test.com');
@@ -299,6 +304,141 @@ SELECT throws_like(
     )) $$,
   '%Bulk insert failed with 1 error(s)%',
   'Bulk upload rejects parent category names in transactions'
+);
+
+-- Unit tests for nested category creation via the "parent" field
+-- (insert_categories(p_user_id, p_categories) — parent auto-vivify support)
+
+-- Test 24: Nested category — auto-creates missing parent, returns 2 inserted
+select tests.authenticate_as('user17@test.com');
+SELECT is(
+  insert_categories(tests.get_supabase_uid('user17@test.com'),
+    '[{"type":"spend","name":"Eating out","parent":"Food"}]'::jsonb),
+  2,
+  'Nested category: auto-creates missing parent, returns 2 inserted'
+);
+
+-- Test 25: root parent "Food" was auto-created
+SELECT ok(
+  EXISTS(
+    SELECT 1 FROM categories
+    WHERE user_id = tests.get_supabase_uid('user17@test.com')
+      AND name = 'Food' AND parent_id IS NULL
+  ),
+  'Nested category: root parent "Food" was auto-created'
+);
+
+-- Test 26: child "Eating out" was created under "Food"
+SELECT ok(
+  EXISTS(
+    SELECT 1 FROM categories c
+    JOIN categories p ON p.id = c.parent_id
+    WHERE c.user_id = tests.get_supabase_uid('user17@test.com')
+      AND c.name = 'Eating out' AND p.name = 'Food' AND p.parent_id IS NULL
+  ),
+  'Nested category: child "Eating out" was created under "Food"'
+);
+
+-- Test 27: nested category with a pre-existing parent — only the child is inserted
+select tests.authenticate_as('user18@test.com');
+DO $$
+BEGIN
+  INSERT INTO public.categories (user_id, type, name)
+  VALUES (tests.get_supabase_uid('user18@test.com'), 'spend', 'Food');
+END $$;
+
+SELECT is(
+  insert_categories(tests.get_supabase_uid('user18@test.com'),
+    '[{"type":"spend","name":"Eating out","parent":"Food"}]'::jsonb),
+  1,
+  'Nested category: pre-existing parent, only the child is inserted'
+);
+
+-- Test 28: no duplicate root "Food" was created
+SELECT is(
+  (SELECT COUNT(*) FROM categories
+    WHERE user_id = tests.get_supabase_uid('user18@test.com')
+      AND name = 'Food' AND parent_id IS NULL),
+  1::bigint,
+  'Nested category: no duplicate root "Food" was created'
+);
+
+-- Test 29: idempotency — re-running the same nested payload inserts 0
+select tests.authenticate_as('user17@test.com');
+SELECT is(
+  insert_categories(tests.get_supabase_uid('user17@test.com'),
+    '[{"type":"spend","name":"Eating out","parent":"Food"}]'::jsonb),
+  0,
+  'Nested category: idempotent re-upload inserts 0 new rows'
+);
+
+-- Test 30: 3-level chain (a name used as both parent and child) is rejected
+select tests.authenticate_as('user19@test.com');
+SELECT throws_like(
+  $$ SELECT insert_categories(tests.get_supabase_uid('user19@test.com'),
+      '[{"type":"spend","name":"B","parent":"A"},{"type":"spend","name":"C","parent":"B"}]'::jsonb) $$,
+  '%cannot be both a parent and a child%',
+  '3-level category chain is rejected'
+);
+
+-- Test 31: bulk_upload_data end-to-end — categories + transactions in one call,
+-- proving a "Parent/Child" transaction reference no longer requires the
+-- categories to pre-exist (fixes the "Known limitation" from the previous plan)
+select tests.authenticate_as('user20@test.com');
+SELECT is(
+  (SELECT (bulk_upload_data(jsonb_build_object(
+      'categories', '[{"type":"spend","name":"Eating out","parent":"Food"}]'::jsonb,
+      'transactions', '[{"date":"2026-05-01","type":"spend","amount":10,"category":"Food/Eating out"}]'::jsonb
+    )))->>'transactions_inserted')::bigint,
+  1::bigint,
+  'End-to-end: nested category created and resolved for a transaction in the same call'
+);
+
+-- Test 32: a soft-deleted root category is never reused as a parent — the
+-- batch errors instead of silently nesting under (or resurrecting) it
+select tests.authenticate_as('user21@test.com');
+DO $$
+BEGIN
+  INSERT INTO public.categories (user_id, type, name, deleted_at)
+  VALUES (tests.get_supabase_uid('user21@test.com'), 'spend', 'Food', now());
+END $$;
+
+SELECT throws_like(
+  $$ SELECT insert_categories(tests.get_supabase_uid('user21@test.com'),
+      '[{"type":"spend","name":"Eating out","parent":"Food"}]'::jsonb) $$,
+  '%not found as a live root-level category%',
+  'Soft-deleted root is not reused as a parent'
+);
+
+-- Test 33: the child under that soft-deleted parent is not inserted either
+SELECT is(
+  (SELECT COUNT(*) FROM categories
+    WHERE user_id = tests.get_supabase_uid('user21@test.com')
+      AND name = 'Eating out'),
+  0::bigint,
+  'Child under a soft-deleted parent is not inserted'
+);
+
+-- Test 34: incidental whitespace in "name"/"parent" is trimmed consistently,
+-- so a child still resolves to its explicitly-listed parent
+select tests.authenticate_as('user16@test.com');
+SELECT is(
+  insert_categories(tests.get_supabase_uid('user16@test.com'),
+    '[{"type":"earn","name":"  Consulting  "},
+      {"type":"earn","name":"  Retainer  ","parent":"  Consulting  "}]'::jsonb),
+  2,
+  'Whitespace-padded names and parents are trimmed and resolve to each other'
+);
+
+-- Test 35: the trimmed child really is nested under the trimmed root
+SELECT ok(
+  EXISTS(
+    SELECT 1 FROM categories c
+    JOIN categories p ON p.id = c.parent_id
+    WHERE c.user_id = tests.get_supabase_uid('user16@test.com')
+      AND c.name = 'Retainer' AND p.name = 'Consulting' AND p.parent_id IS NULL
+  ),
+  'Trimmed child "Retainer" is nested under trimmed root "Consulting"'
 );
 
 select * from finish();

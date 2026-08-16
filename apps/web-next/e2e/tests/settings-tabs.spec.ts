@@ -21,17 +21,19 @@ test.describe("Settings Tabs", () => {
     await loginUser(page, testUser.email, testUser.password);
   });
 
-  test("settings page displays three tabs", async ({ page }) => {
+  test("settings page displays four tabs", async ({ page }) => {
     await page.goto("/settings");
 
     const tabs = page.getByRole("tab");
-    await expect(tabs).toHaveCount(3);
+    await expect(tabs).toHaveCount(4);
 
     const generalTab = page.getByRole("tab", { name: /^general$/i });
+    const transactionsTab = page.getByRole("tab", { name: /^transactions$/i });
     const importExportTab = page.getByRole("tab", { name: /import.*export/i });
     const dangerZoneTab = page.getByRole("tab", { name: dangerZoneTabName });
 
     await expect(generalTab).toBeVisible();
+    await expect(transactionsTab).toBeVisible();
     await expect(importExportTab).toBeVisible();
     await expect(dangerZoneTab).toBeVisible();
   });

@@ -265,6 +265,13 @@ test.describe("Transactions CSV Export", () => {
     expect(Array.isArray(row.tags)).toBe(true);
     expect([...row.tags].sort()).toEqual(["json-groceries", "json-urgent"]);
     expect(row).not.toHaveProperty("bank_account");
+
+    expect(Array.isArray(parsed.categories)).toBe(true);
+    expect(parsed.categories).toContainEqual({
+      type: "spend",
+      name: "Taxi",
+      parent: "Transport",
+    });
   });
 
   test("blocks export and shows an error when the date range exceeds the row cap", async ({
@@ -296,5 +303,34 @@ test.describe("Transactions CSV Export", () => {
     await expect(
       page.getByText(/exceeds the 10,000-row export limit/i).first()
     ).toBeVisible();
+  });
+
+  test("a range preset fills both dates and enables export", async ({
+    page,
+  }) => {
+    await page.goto("/settings");
+    await page.getByRole("tab", { name: /import.*export/i }).click();
+
+    const exportButton = page.getByRole("button", { name: /export csv/i });
+    await expect(exportButton).toBeDisabled();
+
+    await page.getByRole("textbox", { name: "Start date" }).click();
+    await page.getByText("Last month", { exact: true }).click();
+
+    const lastMonth = new Date();
+    lastMonth.setDate(1);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const expectedMonth = `${String(lastMonth.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}/${lastMonth.getFullYear()}`;
+
+    await expect(page.getByRole("textbox", { name: "Start date" })).toHaveValue(
+      `01/${expectedMonth}`
+    );
+    await expect(page.getByRole("textbox", { name: "End date" })).toHaveValue(
+      new RegExp(`^\\d{2}/${expectedMonth}$`)
+    );
+    await expect(exportButton).toBeEnabled();
   });
 });
