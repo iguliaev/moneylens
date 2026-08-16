@@ -21,6 +21,7 @@ See [Getting Started](docs/getting-started.md) for the full setup guide.
 ## Documentation
 
 - [Getting Started](docs/getting-started.md)
+- [Domain Overview](docs/domain/overview.md) — what MoneyLens is: transactions, categories, budgets, tags
 - [Deployment Docs](docs/deployment/release-howto.md)
 - [Web App README](apps/web-next/README.MD)
 - [API Docs](docs/api/bulk-upload.md)
