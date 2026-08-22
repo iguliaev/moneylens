@@ -5,12 +5,14 @@ import {
   categoryRecordToJsonExportCategory,
   bankAccountRecordToJsonExportBankAccount,
   tagRecordToJsonExportTag,
+  budgetRecordToJsonExportBudget,
 } from "./jsonExport";
 import type { TransactionExportRow } from "./exportTransactions";
 import type {
   CategoryExportRecord,
   BankAccountExportRecord,
   TagExportRecord,
+  BudgetExportRecord,
   ExportMetadata,
 } from "./exportMetadata";
 
@@ -175,10 +177,67 @@ describe("tagRecordToJsonExportTag", () => {
   });
 });
 
-describe("buildJsonExport", () => {
-  const emptyMetadata: ExportMetadata = { categories: [], bank_accounts: [], tags: [] };
+describe("budgetRecordToJsonExportBudget", () => {
+  const base: BudgetExportRecord = {
+    name: "Groceries budget",
+    type: "spend",
+    target_amount: 400,
+    description: null,
+    start_date: null,
+    end_date: null,
+    categories: [],
+    tags: [],
+  };
 
-  it("wraps rows and metadata in a { categories, bank_accounts, tags, transactions } object matching BulkUploadPayload", () => {
+  it("omits description, dates, categories, and tags when absent/empty", () => {
+    expect(budgetRecordToJsonExportBudget(base)).toEqual({
+      name: "Groceries budget",
+      type: "spend",
+      target_amount: 400,
+    });
+  });
+
+  it("includes description, dates, categories, and tags when present", () => {
+    const record: BudgetExportRecord = {
+      ...base,
+      description: "Monthly groceries",
+      start_date: "2026-01-01",
+      end_date: "2026-12-31",
+      categories: ["Food/Eating out"],
+      tags: ["essentials"],
+    };
+    expect(budgetRecordToJsonExportBudget(record)).toEqual({
+      name: "Groceries budget",
+      type: "spend",
+      target_amount: 400,
+      description: "Monthly groceries",
+      start_date: "2026-01-01",
+      end_date: "2026-12-31",
+      categories: ["Food/Eating out"],
+      tags: ["essentials"],
+    });
+  });
+
+  it("preserves an empty-string description rather than treating it as absent", () => {
+    const record: BudgetExportRecord = { ...base, description: "" };
+    expect(budgetRecordToJsonExportBudget(record)).toEqual({
+      name: "Groceries budget",
+      type: "spend",
+      target_amount: 400,
+      description: "",
+    });
+  });
+});
+
+describe("buildJsonExport", () => {
+  const emptyMetadata: ExportMetadata = {
+    categories: [],
+    bank_accounts: [],
+    tags: [],
+    budgets: [],
+  };
+
+  it("wraps rows and metadata in a { categories, bank_accounts, tags, budgets, transactions } object matching BulkUploadPayload", () => {
     const metadata: ExportMetadata = {
       categories: [
         { type: "spend", name: "Eating out", description: null, parent_name: "Food" },
@@ -188,6 +247,7 @@ describe("buildJsonExport", () => {
         { name: "groceries", description: null },
         { name: "urgent", description: null },
       ],
+      budgets: [],
     };
     const json = buildJsonExport(
       [
@@ -208,6 +268,7 @@ describe("buildJsonExport", () => {
       categories: [{ type: "spend", name: "Eating out", parent: "Food" }],
       bank_accounts: [{ name: "Chase Checking" }],
       tags: [{ name: "groceries" }, { name: "urgent" }],
+      budgets: [],
       transactions: [
         {
           date: "2026-07-01",
@@ -227,14 +288,60 @@ describe("buildJsonExport", () => {
       categories: [{ type: "earn", name: "Salary", description: null, parent_name: null }],
       bank_accounts: [{ name: "Unused Account", description: null }],
       tags: [{ name: "unused-tag", description: null }],
+      budgets: [
+        {
+          name: "Unused budget",
+          type: "spend",
+          target_amount: 100,
+          description: null,
+          start_date: null,
+          end_date: null,
+          categories: [],
+          tags: [],
+        },
+      ],
     };
     const json = buildJsonExport([], metadata);
     expect(JSON.parse(json)).toEqual({
       categories: [{ type: "earn", name: "Salary" }],
       bank_accounts: [{ name: "Unused Account" }],
       tags: [{ name: "unused-tag" }],
+      budgets: [{ name: "Unused budget", type: "spend", target_amount: 100 }],
       transactions: [],
     });
+  });
+
+  it("includes a budget's optional fields, linked categories, and linked tags", () => {
+    const metadata: ExportMetadata = {
+      categories: [],
+      bank_accounts: [],
+      tags: [],
+      budgets: [
+        {
+          name: "Food budget",
+          type: "spend",
+          target_amount: 300,
+          description: "Monthly food",
+          start_date: "2026-01-01",
+          end_date: "2026-12-31",
+          categories: ["Food/Eating out"],
+          tags: ["essentials"],
+        },
+      ],
+    };
+    const json = buildJsonExport([], metadata);
+    expect(JSON.parse(json).budgets).toEqual([
+      {
+        name: "Food budget",
+        type: "spend",
+        target_amount: 300,
+        description: "Monthly food",
+        start_date: "2026-01-01",
+        end_date: "2026-12-31",
+        categories: ["Food/Eating out"],
+        tags: ["essentials"],
+      },
+    ]);
   });
 
   it("sorts categories by type, then parent, then name", () => {
@@ -247,6 +354,7 @@ describe("buildJsonExport", () => {
       ],
       bank_accounts: [],
       tags: [],
+      budgets: [],
     };
     const json = buildJsonExport([], metadata);
     expect(JSON.parse(json).categories).toEqual([
@@ -257,7 +365,7 @@ describe("buildJsonExport", () => {
     ]);
   });
 
-  it("sorts bank_accounts and tags alphabetically by name", () => {
+  it("sorts bank_accounts, tags, and budgets alphabetically by name", () => {
     const metadata: ExportMetadata = {
       categories: [],
       bank_accounts: [
@@ -268,16 +376,42 @@ describe("buildJsonExport", () => {
         { name: "Wise", description: null },
         { name: "AmEx", description: null },
       ],
+      budgets: [
+        {
+          name: "Wise budget",
+          type: "spend",
+          target_amount: 1,
+          description: null,
+          start_date: null,
+          end_date: null,
+          categories: [],
+          tags: [],
+        },
+        {
+          name: "AmEx budget",
+          type: "spend",
+          target_amount: 1,
+          description: null,
+          start_date: null,
+          end_date: null,
+          categories: [],
+          tags: [],
+        },
+      ],
     };
     const json = buildJsonExport([], metadata);
     expect(JSON.parse(json).bank_accounts).toEqual([{ name: "AmEx" }, { name: "Wise" }]);
     expect(JSON.parse(json).tags).toEqual([{ name: "AmEx" }, { name: "Wise" }]);
+    expect(JSON.parse(json).budgets.map((b: { name: string }) => b.name)).toEqual([
+      "AmEx budget",
+      "Wise budget",
+    ]);
   });
 
   it("pretty-prints with 2-space indentation", () => {
     const json = buildJsonExport([], emptyMetadata);
     expect(json).toBe(
-      '{\n  "categories": [],\n  "bank_accounts": [],\n  "tags": [],\n  "transactions": []\n}'
+      '{\n  "categories": [],\n  "bank_accounts": [],\n  "tags": [],\n  "budgets": [],\n  "transactions": []\n}'
     );
   });
 
@@ -297,6 +431,7 @@ describe("buildJsonExport", () => {
       categories: [{ type: "spend", name: "Side Gig" }],
       bank_accounts: [{ name: "Closed Account" }],
       tags: [{ name: "retired-tag" }],
+      budgets: [],
       transactions: [
         {
           date: "2026-07-01",
@@ -317,6 +452,7 @@ describe("buildJsonExport", () => {
       ],
       bank_accounts: [],
       tags: [],
+      budgets: [],
     };
     const row: TransactionExportRow = {
       date: "2026-07-01",
