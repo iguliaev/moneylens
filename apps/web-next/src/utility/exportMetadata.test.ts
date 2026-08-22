@@ -10,6 +10,7 @@ function createSupabaseMock({
   budgetCategories,
   budgetTags,
   errorTable,
+  orderCalls,
 }: {
   categories?: unknown[];
   bankAccounts?: unknown[];
@@ -18,6 +19,7 @@ function createSupabaseMock({
   budgetCategories?: unknown[];
   budgetTags?: unknown[];
   errorTable?: string;
+  orderCalls?: Array<{ table: string; column: string; ascending: boolean }>;
 }) {
   const tableData: Record<string, unknown[]> = {
     categories_with_usage: categories ?? [],
@@ -32,11 +34,19 @@ function createSupabaseMock({
       table === errorTable
         ? Promise.resolve({ data: null, error: { message: `${table} failed` } })
         : Promise.resolve({ data: tableData[table] ?? [], error: null });
-    // budget_categories/budget_tags are paginated via .range(); every other
-    // table here is fetched in one shot, so .range() just resolves to the
-    // same single-page result. Promises are objects, so a .range() method
-    // can be attached directly without breaking the plain-await path.
-    return { select: () => Object.assign(result, { range: () => result }) };
+    // budget_categories/budget_tags are paginated via .order().range(); every
+    // other table here is fetched in one shot without .order(), so .order()
+    // just resolves to the same single-page result. Promises are objects, so
+    // .order()/.range() methods can be attached directly without breaking
+    // the plain-await path.
+    const withRange = Object.assign(result, { range: () => result });
+    const withOrder = Object.assign(result, {
+      order: (column: string, opts: { ascending: boolean }) => {
+        orderCalls?.push({ table, column, ascending: opts.ascending });
+        return withRange;
+      },
+    });
+    return { select: () => withOrder };
   };
   return { from } as unknown as SupabaseClient;
 }
@@ -189,6 +199,16 @@ describe("fetchExportMetadata", () => {
         tags: ["essentials"],
       },
     ]);
+  });
+
+  it("orders budget_categories/budget_tags by id before paginating, for deterministic .range() pages", async () => {
+    const orderCalls: Array<{ table: string; column: string; ascending: boolean }> = [];
+    const client = createSupabaseMock({ orderCalls });
+
+    await fetchExportMetadata(client);
+
+    expect(orderCalls).toContainEqual({ table: "budget_categories", column: "id", ascending: true });
+    expect(orderCalls).toContainEqual({ table: "budget_tags", column: "id", ascending: true });
   });
 
   it("drops a budget's link to a category or tag that is no longer live (soft-deleted)", async () => {

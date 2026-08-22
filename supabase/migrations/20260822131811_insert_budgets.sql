@@ -133,7 +133,43 @@ BEGIN
     RAISE EXCEPTION 'insert_budgets: target_amount for budget "%" must be greater than 0', v_bad_name;
   END IF;
 
-  -- start_date/end_date, if present, must be plain ISO dates and, together,
+  -- budgets.target_amount is NUMERIC(12,2): reject values that would
+  -- otherwise hit the column's native "numeric field overflow" (sanitized by
+  -- the WHEN others branch below) instead of naming the offending budget.
+  SELECT elem->>'name' INTO v_bad_name
+  FROM jsonb_array_elements(p_budgets) AS elem
+  WHERE (elem->>'target_amount')::numeric >= 10 ^ 10
+  LIMIT 1;
+
+  IF v_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: target_amount for budget "%" exceeds the maximum allowed value', v_bad_name;
+  END IF;
+
+  -- categories/tags, if present, must be JSON arrays (not scalars, and not
+  -- an explicit JSON null) — jsonb_array_elements_text below would otherwise
+  -- raise a native "cannot extract elements from a scalar" error, sanitized
+  -- by the WHEN others branch instead of naming the offending budget.
+  SELECT elem->>'name' INTO v_bad_name
+  FROM jsonb_array_elements(p_budgets) AS elem
+  WHERE elem->'categories' IS NOT NULL
+    AND jsonb_typeof(elem->'categories') NOT IN ('array', 'null')
+  LIMIT 1;
+
+  IF v_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: categories for budget "%" must be an array', v_bad_name;
+  END IF;
+
+  SELECT elem->>'name' INTO v_bad_name
+  FROM jsonb_array_elements(p_budgets) AS elem
+  WHERE elem->'tags' IS NOT NULL
+    AND jsonb_typeof(elem->'tags') NOT IN ('array', 'null')
+  LIMIT 1;
+
+  IF v_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: tags for budget "%" must be an array', v_bad_name;
+  END IF;
+
+  -- start_date/end_date, if present, must be plain ISO dates, and, together,
   -- satisfy budgets' CHECK (start_date <= end_date) for the same reason.
   SELECT elem->>'name' INTO v_bad_name
   FROM jsonb_array_elements(p_budgets) AS elem
@@ -154,6 +190,30 @@ BEGIN
   IF v_bad_name IS NOT NULL THEN
     RAISE EXCEPTION 'insert_budgets: end_date for budget "%" is not a valid date (expected YYYY-MM-DD)', v_bad_name;
   END IF;
+
+  -- The regex above only checks shape, not calendar validity (e.g.
+  -- "2026-02-30" matches but isn't a real date). Catch that here so it
+  -- surfaces the same friendly, budget-naming message instead of the
+  -- native "date/time field value out of range" error the INSERT below
+  -- would otherwise raise (sanitized by the WHEN others branch).
+  FOR v_elem IN SELECT * FROM jsonb_array_elements(p_budgets)
+  LOOP
+    IF v_elem->>'start_date' IS NOT NULL THEN
+      BEGIN
+        PERFORM (v_elem->>'start_date')::date;
+      EXCEPTION WHEN others THEN
+        RAISE EXCEPTION 'insert_budgets: start_date for budget "%" is not a valid date (expected YYYY-MM-DD)', v_elem->>'name';
+      END;
+    END IF;
+
+    IF v_elem->>'end_date' IS NOT NULL THEN
+      BEGIN
+        PERFORM (v_elem->>'end_date')::date;
+      EXCEPTION WHEN others THEN
+        RAISE EXCEPTION 'insert_budgets: end_date for budget "%" is not a valid date (expected YYYY-MM-DD)', v_elem->>'name';
+      END;
+    END IF;
+  END LOOP;
 
   SELECT elem->>'name' INTO v_bad_name
   FROM jsonb_array_elements(p_budgets) AS elem
@@ -186,7 +246,7 @@ BEGIN
     IF v_budget_id IS NOT NULL THEN
       v_inserted_count := v_inserted_count + 1;
 
-      IF v_elem->'categories' IS NOT NULL THEN
+      IF v_elem->>'categories' IS NOT NULL THEN
         FOR v_cat_raw IN SELECT jsonb_array_elements_text(v_elem->'categories')
         LOOP
           v_slash_pos := position('/' in v_cat_raw);
@@ -241,7 +301,7 @@ BEGIN
         END LOOP;
       END IF;
 
-      IF v_elem->'tags' IS NOT NULL THEN
+      IF v_elem->>'tags' IS NOT NULL THEN
         FOR v_tag_name IN SELECT jsonb_array_elements_text(v_elem->'tags')
         LOOP
           SELECT t.id INTO v_tag_id

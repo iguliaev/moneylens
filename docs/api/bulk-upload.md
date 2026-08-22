@@ -158,15 +158,18 @@ interface BudgetInput {
 
 **Constraints:**
 - `name`, `type`, `target_amount`: all required. `target_amount` must be a plain positive number
-  (pre-validated; also backed by the `budgets.target_amount` `CHECK` constraint).
+  that fits `budgets.target_amount`'s `NUMERIC(12,2)` column (pre-validated; also backed by the
+  `budgets.target_amount` `CHECK` constraint).
 - Duplicate detection: `(user_id, name)` among the user's non-deleted budgets
   - If duplicate exists, it's silently skipped (ON CONFLICT DO NOTHING) — including its
     `categories`/`tags` links, which are only ever added for a budget this call actually
     inserts, never merged into an existing one
 - `description`: Optional
-- `start_date` / `end_date`: Optional. Each, if present, must be a plain `YYYY-MM-DD` date
-  (pre-validated). If both are present, `start_date` must be `<=` `end_date` (pre-validated; also
-  backed by a `budgets` table `CHECK` constraint)
+- `start_date` / `end_date`: Optional. Each, if present, must be a plain, calendar-valid
+  `YYYY-MM-DD` date (pre-validated). If both are present, `start_date` must be `<=` `end_date`
+  (pre-validated; also backed by a `budgets` table `CHECK` constraint)
+- `categories` / `tags`: if present, must be a JSON array — an explicit JSON `null` is treated the
+  same as the field being absent (pre-validated)
 - `categories`: Optional array of category references. A `"Parent/Child"` path resolves an exact
   nested leaf unambiguously; a bare name resolves against **any** of the user's root-level
   categories for the budget's `type` — parent or leaf, since a budget (unlike a transaction) can
@@ -652,8 +655,11 @@ except where noted.
 | `P0001` | `insert_budgets: invalid transaction_type: <value>` | Any element's `type` isn't `earn`/`spend`/`save` |
 | `P0001` | `insert_budgets: target_amount for budget "<name>" is not a valid number` | `target_amount` isn't a plain number |
 | `P0001` | `insert_budgets: target_amount for budget "<name>" must be greater than 0` | `target_amount` is zero or negative |
-| `P0001` | `insert_budgets: start_date for budget "<name>" is not a valid date (expected YYYY-MM-DD)` | `start_date` isn't a plain `YYYY-MM-DD` date |
-| `P0001` | `insert_budgets: end_date for budget "<name>" is not a valid date (expected YYYY-MM-DD)` | `end_date` isn't a plain `YYYY-MM-DD` date |
+| `P0001` | `insert_budgets: target_amount for budget "<name>" exceeds the maximum allowed value` | `target_amount` doesn't fit the `budgets.target_amount` `NUMERIC(12,2)` column |
+| `P0001` | `insert_budgets: categories for budget "<name>" must be an array` | `categories` is present and not an array (and not JSON `null`) |
+| `P0001` | `insert_budgets: tags for budget "<name>" must be an array` | `tags` is present and not an array (and not JSON `null`) |
+| `P0001` | `insert_budgets: start_date for budget "<name>" is not a valid date (expected YYYY-MM-DD)` | `start_date` isn't a plain, calendar-valid `YYYY-MM-DD` date |
+| `P0001` | `insert_budgets: end_date for budget "<name>" is not a valid date (expected YYYY-MM-DD)` | `end_date` isn't a plain, calendar-valid `YYYY-MM-DD` date |
 | `P0001` | `insert_budgets: start_date must be on or before end_date for budget "<name>"` | Both dates present, but `start_date` is after `end_date` |
 | `P0001` | `insert_budgets: category "<name>" not found as a root-level category for type "<type>"` | A bare `categories` entry doesn't resolve to a live root-level category (parent or leaf) for that budget's type |
 | `P0001` | `insert_budgets: category parent "<parent>" not found for type "<type>"` | A `"Parent/Child"` `categories` entry: no live root category matches `<parent>` for that type |

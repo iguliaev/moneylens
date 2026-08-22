@@ -19,6 +19,7 @@ const fetchAllRows = async <T>(
     const { data, error } = await client
       .from(table)
       .select(columns)
+      .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
     if (error) return { data: rows, error };
     const page = (data ?? []) as T[];

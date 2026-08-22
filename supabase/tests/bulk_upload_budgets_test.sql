@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(35);
 
 select tests.create_supabase_user('budget_user1@test.com');
 select tests.create_supabase_user('budget_user2@test.com');
@@ -23,6 +23,7 @@ select tests.create_supabase_user('budget_user12@test.com');
 select tests.create_supabase_user('budget_user13@test.com');
 select tests.create_supabase_user('budget_user14@test.com');
 select tests.create_supabase_user('budget_user15@test.com');
+select tests.create_supabase_user('budget_user16@test.com');
 
 -- Test 1: Insert a new budget with no categories/tags
 select tests.authenticate_as('budget_user1@test.com');
@@ -100,6 +101,63 @@ SELECT throws_like(
   $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"BackwardsRange","type":"spend","target_amount":10,"start_date":"2026-06-01","end_date":"2026-01-01"}]'::jsonb) $$,
   '%start_date must be on or before end_date for budget "BackwardsRange"%',
   'start_date after end_date raises a friendly error'
+);
+
+-- Test 7e: target_amount too large for NUMERIC(12,2) raises a friendly error
+-- instead of the sanitized "numeric field overflow" one.
+SELECT throws_like(
+  $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"HugeAmount","type":"spend","target_amount":123456789012}]'::jsonb) $$,
+  '%target_amount for budget "HugeAmount" exceeds the maximum allowed value%',
+  'Oversized target_amount raises a friendly error'
+);
+
+-- Test 7f: calendar-invalid start_date (matches YYYY-MM-DD shape, but not a
+-- real date) raises a friendly error instead of the sanitized "date/time
+-- field value out of range" one.
+SELECT throws_like(
+  $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"ImpossibleDate","type":"spend","target_amount":10,"start_date":"2026-02-30"}]'::jsonb) $$,
+  '%start_date for budget "ImpossibleDate" is not a valid date%',
+  'Calendar-invalid start_date raises a friendly error'
+);
+
+-- Test 7g: non-array categories raises a friendly error instead of the
+-- sanitized "cannot extract elements from a scalar" one.
+SELECT throws_like(
+  $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"ScalarCategories","type":"spend","target_amount":10,"categories":"oops"}]'::jsonb) $$,
+  '%categories for budget "ScalarCategories" must be an array%',
+  'Non-array categories raises a friendly error'
+);
+
+-- Test 7h: non-array tags raises a friendly error
+SELECT throws_like(
+  $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"ScalarTags","type":"spend","target_amount":10,"tags":"oops"}]'::jsonb) $$,
+  '%tags for budget "ScalarTags" must be an array%',
+  'Non-array tags raises a friendly error'
+);
+
+-- Test 7i: explicit JSON null for categories/tags is treated the same as
+-- the field being absent, not as a value to resolve.
+select tests.authenticate_as('budget_user16@test.com');
+SELECT is(
+  insert_budgets(tests.get_supabase_uid('budget_user16@test.com'),
+    '[{"name":"Null links budget","type":"spend","target_amount":10,"categories":null,"tags":null}]'::jsonb),
+  1,
+  'Explicit JSON null categories/tags: budget still inserted'
+);
+
+SELECT ok(
+  NOT EXISTS(
+    SELECT 1 FROM public.budget_categories bc
+    JOIN public.budgets b ON b.id = bc.budget_id
+    WHERE b.user_id = tests.get_supabase_uid('budget_user16@test.com')
+      AND b.name = 'Null links budget'
+  ) AND NOT EXISTS(
+    SELECT 1 FROM public.budget_tags bt
+    JOIN public.budgets b ON b.id = bt.budget_id
+    WHERE b.user_id = tests.get_supabase_uid('budget_user16@test.com')
+      AND b.name = 'Null links budget'
+  ),
+  'Explicit JSON null categories/tags: no links created'
 );
 
 -- Test 8: Budget with a bare root-leaf category name links it
