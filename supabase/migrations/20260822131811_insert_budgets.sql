@@ -72,6 +72,9 @@ DECLARE
   v_parent_part text;
   v_child_part text;
   v_parent_id uuid;
+  v_start_date date;
+  v_end_date date;
+  v_range_bad_name text;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'insert_budgets: not authenticated' USING ERRCODE = '42501';
@@ -195,12 +198,21 @@ BEGIN
   -- "2026-02-30" matches but isn't a real date). Catch that here so it
   -- surfaces the same friendly, budget-naming message instead of the
   -- native "date/time field value out of range" error the INSERT below
-  -- would otherwise raise (sanitized by the WHEN others branch).
+  -- would otherwise raise (sanitized by the WHEN others branch). The
+  -- start<=end check rides along in the same pass (reusing the already-
+  -- parsed dates instead of re-casting them in a second full scan), but
+  -- still only raises after every element's dates have been confirmed
+  -- calendar-valid — same error precedence as two separate passes.
+  v_range_bad_name := NULL;
+
   FOR v_elem IN SELECT * FROM jsonb_array_elements(p_budgets)
   LOOP
+    v_start_date := NULL;
+    v_end_date := NULL;
+
     IF v_elem->>'start_date' IS NOT NULL THEN
       BEGIN
-        PERFORM (v_elem->>'start_date')::date;
+        v_start_date := (v_elem->>'start_date')::date;
       EXCEPTION WHEN others THEN
         RAISE EXCEPTION 'insert_budgets: start_date for budget "%" is not a valid date (expected YYYY-MM-DD)', v_elem->>'name';
       END;
@@ -208,22 +220,20 @@ BEGIN
 
     IF v_elem->>'end_date' IS NOT NULL THEN
       BEGIN
-        PERFORM (v_elem->>'end_date')::date;
+        v_end_date := (v_elem->>'end_date')::date;
       EXCEPTION WHEN others THEN
         RAISE EXCEPTION 'insert_budgets: end_date for budget "%" is not a valid date (expected YYYY-MM-DD)', v_elem->>'name';
       END;
     END IF;
+
+    IF v_range_bad_name IS NULL AND v_start_date IS NOT NULL AND v_end_date IS NOT NULL
+        AND v_start_date > v_end_date THEN
+      v_range_bad_name := v_elem->>'name';
+    END IF;
   END LOOP;
 
-  SELECT elem->>'name' INTO v_bad_name
-  FROM jsonb_array_elements(p_budgets) AS elem
-  WHERE (elem->>'start_date') IS NOT NULL
-    AND (elem->>'end_date') IS NOT NULL
-    AND (elem->>'start_date')::date > (elem->>'end_date')::date
-  LIMIT 1;
-
-  IF v_bad_name IS NOT NULL THEN
-    RAISE EXCEPTION 'insert_budgets: start_date must be on or before end_date for budget "%"', v_bad_name;
+  IF v_range_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: start_date must be on or before end_date for budget "%"', v_range_bad_name;
   END IF;
 
   FOR v_elem IN SELECT * FROM jsonb_array_elements(p_budgets)

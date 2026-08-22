@@ -39,14 +39,14 @@ function createSupabaseMock({
     // just resolves to the same single-page result. Promises are objects, so
     // .order()/.range() methods can be attached directly without breaking
     // the plain-await path.
-    const withRange = Object.assign(result, { range: () => result });
-    const withOrder = Object.assign(result, {
+    const chainable = Object.assign(result, {
+      range: () => result,
       order: (column: string, opts: { ascending: boolean }) => {
         orderCalls?.push({ table, column, ascending: opts.ascending });
-        return withRange;
+        return chainable;
       },
     });
-    return { select: () => withOrder };
+    return { select: () => chainable };
   };
   return { from } as unknown as SupabaseClient;
 }

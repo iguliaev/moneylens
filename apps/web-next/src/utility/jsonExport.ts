@@ -37,12 +37,6 @@ export interface JsonExportTag {
   description?: string;
 }
 
-// A non-empty tuple type: when `categories`/`tags` is present at all, it must
-// have at least one entry — enforced by the type itself (`[]` doesn't
-// satisfy it), not just by budgetRecordToJsonExportBudget's convention of
-// omitting the key for an empty array.
-type NonEmptyArray<T> = [T, ...T[]];
-
 export interface JsonExportBudget {
   name: string;
   type: Database["public"]["Enums"]["transaction_type"];
@@ -50,8 +44,8 @@ export interface JsonExportBudget {
   description?: string;
   start_date?: string;
   end_date?: string;
-  categories?: NonEmptyArray<string>;
-  tags?: NonEmptyArray<string>;
+  categories?: string[];
+  tags?: string[];
 }
 
 export interface JsonExportPayload {
@@ -112,14 +106,8 @@ export const budgetRecordToJsonExportBudget = (record: BudgetExportRecord): Json
   };
   if (record.start_date !== null) base.start_date = record.start_date;
   if (record.end_date !== null) base.end_date = record.end_date;
-  // The `.length > 0` checks are what make these casts sound: they're the
-  // sole place the NonEmptyArray invariant is established.
-  if (record.categories.length > 0) {
-    base.categories = record.categories as NonEmptyArray<string>;
-  }
-  if (record.tags.length > 0) {
-    base.tags = record.tags as NonEmptyArray<string>;
-  }
+  if (record.categories.length > 0) base.categories = record.categories;
+  if (record.tags.length > 0) base.tags = record.tags;
   return withOptionalDescription(base, record.description);
 };
 
