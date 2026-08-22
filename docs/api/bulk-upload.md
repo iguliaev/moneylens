@@ -27,6 +27,7 @@ A JSON object containing optional sections for bulk data import.
 - `categories` (optional): Array of category objects
 - `bank_accounts` (optional): Array of bank account objects
 - `tags` (optional): Array of tag objects
+- `budgets` (optional): Array of budget objects
 - `transactions` (optional): Array of transaction objects
 
 **Authentication**: Requires authenticated user (via `auth.uid()`)
@@ -42,6 +43,7 @@ interface BulkUploadPayload {
   categories?: CategoryInput[];
   bank_accounts?: BankAccountInput[];
   tags?: TagInput[];
+  budgets?: BudgetInput[];
   transactions?: TransactionInput[];
 }
 ```
@@ -139,6 +141,58 @@ interface TagInput {
 - If any element is missing `name`, the **whole batch** is rejected with:
   `insert_tags: one or more items are missing required field "name"` (SQLSTATE `P0001`)
 
+### Budget Input Schema
+
+```typescript
+interface BudgetInput {
+  name: string;                      // Required
+  type: "earn" | "spend" | "save";  // Required
+  target_amount: number;             // Required, > 0
+  description?: string | null;       // Optional
+  start_date?: string | null;        // Optional (YYYY-MM-DD)
+  end_date?: string | null;          // Optional (YYYY-MM-DD)
+  categories?: string[];             // Optional — category names/paths to link
+  tags?: string[];                   // Optional — tag names to link
+}
+```
+
+**Constraints:**
+- `name`, `type`, `target_amount`: all required. `target_amount` must be a positive number
+  (the `budgets.target_amount` `CHECK` constraint).
+- Duplicate detection: `(user_id, name)` among the user's non-deleted budgets
+  - If duplicate exists, it's silently skipped (ON CONFLICT DO NOTHING) — including its
+    `categories`/`tags` links, which are only ever added for a budget this call actually
+    inserts, never merged into an existing one
+- `description`: Optional
+- `start_date` / `end_date`: Optional. If both are present, `start_date` must be `<=` `end_date`
+  (a `budgets` table `CHECK` constraint)
+- `categories`: Optional array of category references, resolved with the **same two-form
+  convention as a transaction's own `category` field** (see
+  [Transaction Input Schema](#transaction-input-schema) below): a `"Parent/Child"` path resolves
+  an exact nested leaf unambiguously, a bare name resolves only against the user's root-level
+  leaf categories for the budget's `type`. Unlike a transaction's category lookup, this
+  resolution **requires a live category** (`deleted_at IS NULL`) — a soft-deleted category is
+  never reused, consistent with `CategoryInput.parent`'s auto-vivify rule above. Each reference
+  may point at a category included in the same payload's `categories` section, since categories
+  are inserted before budgets.
+- `tags`: Optional array of bare tag names, resolved the same way a transaction's `tags` are —
+  against the user's live tags, including ones added in the same payload's `tags` section (tags
+  are inserted before budgets)
+
+**Validation:**
+- `name`, `type`, and `target_amount` are required for every element in the array
+- If any element is missing one of these, the **whole batch** is rejected with:
+  `insert_budgets: one or more items are missing required fields "name", "type", or "target_amount"`
+- If any element has an invalid `type`, the whole batch is rejected with:
+  `insert_budgets: invalid transaction_type: <value>`
+- Unlike categories/bank_accounts/tags, a budget's `categories`/`tags` resolution failures also
+  reject the **whole batch** (not just that row) — see the Budget Errors table below for the
+  exact messages
+- These are validation errors (SQLSTATE `P0001`, except the `target_amount`/date-range `CHECK`
+  constraints, which surface as a sanitized error — see
+  [Error Response](#error-response) below) and, where `P0001`, are surfaced to the client with
+  their exact message unchanged
+
 ### Transaction Input Schema
 
 ```typescript
@@ -207,6 +261,7 @@ interface TransactionInput {
   "categories_inserted": 5,
   "bank_accounts_inserted": 3,
   "tags_inserted": 8,
+  "budgets_inserted": 2,
   "transactions_inserted": 100
 }
 ```
@@ -218,6 +273,7 @@ interface TransactionInput {
 - `categories_inserted`: Number of categories actually inserted (duplicates skipped)
 - `bank_accounts_inserted`: Number of bank accounts actually inserted
 - `tags_inserted`: Number of tags actually inserted
+- `budgets_inserted`: Number of budgets actually inserted (duplicates skipped)
 - `transactions_inserted`: Number of transactions inserted
 
 ### Error Response
@@ -296,6 +352,7 @@ const { data, error } = await supabase.rpc('bulk_upload_data', {
   "categories_inserted": 2,
   "bank_accounts_inserted": 0,
   "tags_inserted": 0,
+  "budgets_inserted": 0,
   "transactions_inserted": 0
 }
 ```
@@ -337,11 +394,48 @@ const { data, error } = await supabase.rpc('bulk_upload_data', {
   "categories_inserted": 0,
   "bank_accounts_inserted": 0,
   "tags_inserted": 0,
+  "budgets_inserted": 0,
   "transactions_inserted": 2
 }
 ```
 
-### Example 3: Complete Upload (All Sections)
+### Example 3: Upload Budgets Only
+
+**Request:**
+```typescript
+const payload = {
+  budgets: [
+    {
+      name: "Groceries budget",
+      type: "spend",
+      target_amount: 400,
+      description: "Monthly groceries",
+      start_date: "2026-01-01",
+      end_date: "2026-12-31",
+      categories: ["Food/Eating out"],
+      tags: ["essentials"]
+    }
+  ]
+};
+
+const { data, error } = await supabase.rpc('bulk_upload_data', {
+  p_payload: payload
+});
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "categories_inserted": 0,
+  "bank_accounts_inserted": 0,
+  "tags_inserted": 0,
+  "budgets_inserted": 1,
+  "transactions_inserted": 0
+}
+```
+
+### Example 4: Complete Upload (All Sections)
 
 **Request:**
 ```typescript
@@ -358,6 +452,9 @@ const payload = {
   tags: [
     { name: "essentials" },
     { name: "work-related" }
+  ],
+  budgets: [
+    { name: "Groceries budget", type: "spend", target_amount: 400, categories: ["Groceries"] }
   ],
   transactions: [
     {
@@ -390,11 +487,12 @@ const { data, error } = await supabase.rpc('bulk_upload_data', {
   "categories_inserted": 3,
   "bank_accounts_inserted": 2,
   "tags_inserted": 2,
+  "budgets_inserted": 1,
   "transactions_inserted": 2
 }
 ```
 
-### Example 4: Empty Payload
+### Example 5: Empty Payload
 
 **Request:**
 ```typescript
@@ -410,11 +508,12 @@ const { data, error } = await supabase.rpc('bulk_upload_data', {
   "categories_inserted": 0,
   "bank_accounts_inserted": 0,
   "tags_inserted": 0,
+  "budgets_inserted": 0,
   "transactions_inserted": 0
 }
 ```
 
-### Example 5: Validation Error (Invalid Category Type)
+### Example 6: Validation Error (Invalid Category Type)
 
 **Request:**
 ```typescript
@@ -440,7 +539,7 @@ error.code === 'P0001';
 error.details === null;
 ```
 
-### Example 6: Validation Error (Missing Required Field)
+### Example 7: Validation Error (Missing Required Field)
 
 **Request:**
 ```typescript
@@ -465,7 +564,7 @@ error.code === 'P0001';
 error.details === null;
 ```
 
-### Example 7: Per-Row Transaction Validation Error
+### Example 8: Per-Row Transaction Validation Error
 
 **Request:**
 ```typescript
@@ -490,7 +589,7 @@ const rows = JSON.parse(error.details);
 // rows === [{ index: 1, error: 'Missing required field: date' }]
 ```
 
-### Example 8: Sanitized Unexpected Error
+### Example 9: Sanitized Unexpected Error
 
 An unexpected DB error (anything not covered by the app's explicit validation) never surfaces
 raw Postgres text. For a failed transaction row this looks like:
@@ -540,6 +639,18 @@ except where noted.
 |---|---|---|
 | `P0001` | `insert_tags: one or more items are missing required field "name"` | Any element in `tags` is missing `name` |
 | *original code* | `"insert_tags failed"` | Any other DB error — sanitized |
+
+### Budget Errors (whole batch, not per-row)
+
+| Code | Message | Cause |
+|---|---|---|
+| `P0001` | `insert_budgets: one or more items are missing required fields "name", "type", or "target_amount"` | Any element in `budgets` is missing `name`, `type`, and/or `target_amount` |
+| `P0001` | `insert_budgets: invalid transaction_type: <value>` | Any element's `type` isn't `earn`/`spend`/`save` |
+| `P0001` | `insert_budgets: category "<name>" not found as a root-level category for type "<type>"` | A bare `categories` entry doesn't resolve to a live root-level leaf category for that budget's type |
+| `P0001` | `insert_budgets: category parent "<parent>" not found for type "<type>"` | A `"Parent/Child"` `categories` entry: no live root category matches `<parent>` for that type |
+| `P0001` | `insert_budgets: category "<parent>/<child>" not found` | A `"Parent/Child"` `categories` entry: parent found, but no matching live child under it |
+| `P0001` | `insert_budgets: tag "<name>" not found` | A `tags` entry doesn't match any of the user's live tags |
+| *original code* | `"insert_budgets failed"` | Any other DB error — sanitized. This includes a non-positive `target_amount` or an invalid `start_date`/`end_date` range, both of which fail a table `CHECK` constraint (SQLSTATE `23514`) rather than an explicit validation check |
 
 ### Transaction Errors (per row — read from `JSON.parse(error.details)`)
 
@@ -615,6 +726,7 @@ Testing with realistic payloads:
 | Categories | ON CONFLICT DO NOTHING | Second upload skips duplicates |
 | Bank Accounts | ON CONFLICT DO NOTHING | Second upload skips duplicates |
 | Tags | ON CONFLICT DO NOTHING | Second upload skips duplicates |
+| Budgets | ON CONFLICT DO NOTHING (by name) | Second upload skips duplicates; a skipped budget's `categories`/`tags` links are left untouched |
 | Transactions | Always insert | Second upload creates duplicates |
 
 **Use case**: Safe to retry with same payload on network errors or timeout.
@@ -705,12 +817,14 @@ A: The upload fails atomically with a clear error message before any changes.
 **Q: Can I use this for data exports?**  
 A: This function only imports. Export is available separately from Settings > Import &
 Export (CSV and JSON), using the same `"Parent/Child"` category path convention described
-above so exported JSON round-trips cleanly back through this API. JSON export additionally
-includes a top-level `categories` section (using the `parent` field described above) listing
-every distinct category used by the exported transactions, so a JSON export is always
-self-contained and re-importable into an empty account in a single call — including nested
-categories.
+above so exported JSON round-trips cleanly back through this API. JSON export includes the
+full `categories`/`bank_accounts`/`tags`/`budgets` library (not just what's used by the
+exported transactions), so a JSON export is always self-contained and re-importable into an
+empty account in a single call — including nested categories and each budget's linked
+categories/tags. Because `bulk_upload_data` never updates existing rows (see Idempotency
+above), re-importing into a *non-empty* account isn't itself a restore — pair it with the
+`reset_user_data` RPC (Settings > Danger Zone) first: reset, then import.
 
 ---
 
-**Last Updated**: August 10, 2026
+**Last Updated**: August 22, 2026
