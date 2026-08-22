@@ -32,7 +32,11 @@ function createSupabaseMock({
       table === errorTable
         ? Promise.resolve({ data: null, error: { message: `${table} failed` } })
         : Promise.resolve({ data: tableData[table] ?? [], error: null });
-    return { select: () => result };
+    // budget_categories/budget_tags are paginated via .range(); every other
+    // table here is fetched in one shot, so .range() just resolves to the
+    // same single-page result. Promises are objects, so a .range() method
+    // can be attached directly without breaking the plain-await path.
+    return { select: () => Object.assign(result, { range: () => result }) };
   };
   return { from } as unknown as SupabaseClient;
 }

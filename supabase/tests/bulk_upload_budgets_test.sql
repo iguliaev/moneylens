@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(23);
+select plan(29);
 
 select tests.create_supabase_user('budget_user1@test.com');
 select tests.create_supabase_user('budget_user2@test.com');
@@ -22,6 +22,7 @@ select tests.create_supabase_user('budget_user11@test.com');
 select tests.create_supabase_user('budget_user12@test.com');
 select tests.create_supabase_user('budget_user13@test.com');
 select tests.create_supabase_user('budget_user14@test.com');
+select tests.create_supabase_user('budget_user15@test.com');
 
 -- Test 1: Insert a new budget with no categories/tags
 select tests.authenticate_as('budget_user1@test.com');
@@ -72,13 +73,33 @@ SELECT throws_like(
   'Invalid enum value should raise invalid transaction_type error'
 );
 
--- Test 7: target_amount <= 0 fails the budgets.target_amount CHECK constraint,
--- sanitized to a fixed message with the original SQLSTATE preserved.
-SELECT throws_ok(
+-- Test 7: target_amount <= 0 is pre-validated and raises a friendly,
+-- budget-naming P0001 error rather than the sanitized CHECK-constraint one.
+SELECT throws_like(
   $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"ZeroAmount","type":"spend","target_amount":0}]'::jsonb) $$,
-  '23514',
-  'insert_budgets failed',
-  'Non-positive target_amount is sanitized to a fixed message, original SQLSTATE preserved'
+  '%target_amount for budget "ZeroAmount" must be greater than 0%',
+  'Non-positive target_amount raises a friendly, budget-naming error'
+);
+
+-- Test 7b: non-numeric target_amount raises a friendly error
+SELECT throws_like(
+  $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"NaNAmount","type":"spend","target_amount":"abc"}]'::jsonb) $$,
+  '%target_amount for budget "NaNAmount" is not a valid number%',
+  'Non-numeric target_amount raises a friendly error'
+);
+
+-- Test 7c: malformed start_date raises a friendly error
+SELECT throws_like(
+  $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"BadDate","type":"spend","target_amount":10,"start_date":"not-a-date"}]'::jsonb) $$,
+  '%start_date for budget "BadDate" is not a valid date%',
+  'Malformed start_date raises a friendly error'
+);
+
+-- Test 7d: start_date after end_date raises a friendly error
+SELECT throws_like(
+  $$ SELECT insert_budgets(tests.get_supabase_uid('budget_user3@test.com'), '[{"name":"BackwardsRange","type":"spend","target_amount":10,"start_date":"2026-06-01","end_date":"2026-01-01"}]'::jsonb) $$,
+  '%start_date must be on or before end_date for budget "BackwardsRange"%',
+  'start_date after end_date raises a friendly error'
 );
 
 -- Test 8: Budget with a bare root-leaf category name links it
@@ -131,6 +152,50 @@ SELECT ok(
       AND b.name = 'Food budget' AND c.name = 'Eating out'
   ),
   'Budget linked to the nested "Parent/Child" category'
+);
+
+-- Test 9b: A bare category name matching a root category that HAS children
+-- (a parent, not a leaf) still resolves — budgets, unlike transactions, can
+-- legitimately target a parent category, since the budgets UI's picker
+-- offers every category of the type, not just leaves.
+select tests.authenticate_as('budget_user15@test.com');
+DO $$
+DECLARE v_parent uuid;
+BEGIN
+  INSERT INTO public.categories (user_id, type, name)
+  VALUES (tests.get_supabase_uid('budget_user15@test.com'), 'spend', 'Food')
+  RETURNING id INTO v_parent;
+  INSERT INTO public.categories (user_id, type, name, parent_id)
+  VALUES (tests.get_supabase_uid('budget_user15@test.com'), 'spend', 'Eating out', v_parent);
+END $$;
+
+SELECT is(
+  insert_budgets(tests.get_supabase_uid('budget_user15@test.com'),
+    '[{"name":"Food budget (parent)","type":"spend","target_amount":300,"categories":["Food"]}]'::jsonb),
+  1,
+  'Budget with bare name matching a non-leaf (parent) category: 1 budget inserted'
+);
+
+SELECT ok(
+  EXISTS(
+    SELECT 1 FROM public.budget_categories bc
+    JOIN public.budgets b ON b.id = bc.budget_id
+    JOIN public.categories c ON c.id = bc.category_id
+    WHERE b.user_id = tests.get_supabase_uid('budget_user15@test.com')
+      AND b.name = 'Food budget (parent)' AND c.name = 'Food' AND c.parent_id IS NULL
+  ),
+  'Budget linked to the bare-name parent category, not its child'
+);
+
+SELECT ok(
+  NOT EXISTS(
+    SELECT 1 FROM public.budget_categories bc
+    JOIN public.budgets b ON b.id = bc.budget_id
+    JOIN public.categories c ON c.id = bc.category_id
+    WHERE b.user_id = tests.get_supabase_uid('budget_user15@test.com')
+      AND b.name = 'Food budget (parent)' AND c.name = 'Eating out'
+  ),
+  'Budget is not accidentally linked to the child category'
 );
 
 -- Test 10: Bare category name not found raises a whole-batch error

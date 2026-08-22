@@ -157,24 +157,28 @@ interface BudgetInput {
 ```
 
 **Constraints:**
-- `name`, `type`, `target_amount`: all required. `target_amount` must be a positive number
-  (the `budgets.target_amount` `CHECK` constraint).
+- `name`, `type`, `target_amount`: all required. `target_amount` must be a plain positive number
+  (pre-validated; also backed by the `budgets.target_amount` `CHECK` constraint).
 - Duplicate detection: `(user_id, name)` among the user's non-deleted budgets
   - If duplicate exists, it's silently skipped (ON CONFLICT DO NOTHING) — including its
     `categories`/`tags` links, which are only ever added for a budget this call actually
     inserts, never merged into an existing one
 - `description`: Optional
-- `start_date` / `end_date`: Optional. If both are present, `start_date` must be `<=` `end_date`
-  (a `budgets` table `CHECK` constraint)
-- `categories`: Optional array of category references, resolved with the **same two-form
-  convention as a transaction's own `category` field** (see
-  [Transaction Input Schema](#transaction-input-schema) below): a `"Parent/Child"` path resolves
-  an exact nested leaf unambiguously, a bare name resolves only against the user's root-level
-  leaf categories for the budget's `type`. Unlike a transaction's category lookup, this
-  resolution **requires a live category** (`deleted_at IS NULL`) — a soft-deleted category is
-  never reused, consistent with `CategoryInput.parent`'s auto-vivify rule above. Each reference
-  may point at a category included in the same payload's `categories` section, since categories
-  are inserted before budgets.
+- `start_date` / `end_date`: Optional. Each, if present, must be a plain `YYYY-MM-DD` date
+  (pre-validated). If both are present, `start_date` must be `<=` `end_date` (pre-validated; also
+  backed by a `budgets` table `CHECK` constraint)
+- `categories`: Optional array of category references. A `"Parent/Child"` path resolves an exact
+  nested leaf unambiguously; a bare name resolves against **any** of the user's root-level
+  categories for the budget's `type` — parent or leaf, since a budget (unlike a transaction) can
+  legitimately target a parent category — the budgets UI's category picker offers every category
+  of the type, not just leaves. This resolution also **requires a live category**
+  (`deleted_at IS NULL`) — a soft-deleted category is never reused, consistent with
+  `CategoryInput.parent`'s auto-vivify rule above. Each reference may point at a category included
+  in the same payload's `categories` section, since categories are inserted before budgets.
+  (This uses the same `"Parent/Child"`-vs-bare-name convention as a transaction's own `category`
+  field — see [Transaction Input Schema](#transaction-input-schema) below — but is not
+  guaranteed to stay behaviorally identical to it; the bare-name leaf restriction in particular
+  is intentionally different today and either side could diverge further independently.)
 - `tags`: Optional array of bare tag names, resolved the same way a transaction's `tags` are —
   against the user's live tags, including ones added in the same payload's `tags` section (tags
   are inserted before budgets)
@@ -185,13 +189,13 @@ interface BudgetInput {
   `insert_budgets: one or more items are missing required fields "name", "type", or "target_amount"`
 - If any element has an invalid `type`, the whole batch is rejected with:
   `insert_budgets: invalid transaction_type: <value>`
+- `target_amount` and `start_date`/`end_date` are validated up front, before any row is inserted,
+  and name the offending budget — see the Budget Errors table below for the exact messages
 - Unlike categories/bank_accounts/tags, a budget's `categories`/`tags` resolution failures also
   reject the **whole batch** (not just that row) — see the Budget Errors table below for the
   exact messages
-- These are validation errors (SQLSTATE `P0001`, except the `target_amount`/date-range `CHECK`
-  constraints, which surface as a sanitized error — see
-  [Error Response](#error-response) below) and, where `P0001`, are surfaced to the client with
-  their exact message unchanged
+- These are validation errors (SQLSTATE `P0001`) and are surfaced to the client with their exact
+  message unchanged — see [Error Response](#error-response) below
 
 ### Transaction Input Schema
 
@@ -646,11 +650,16 @@ except where noted.
 |---|---|---|
 | `P0001` | `insert_budgets: one or more items are missing required fields "name", "type", or "target_amount"` | Any element in `budgets` is missing `name`, `type`, and/or `target_amount` |
 | `P0001` | `insert_budgets: invalid transaction_type: <value>` | Any element's `type` isn't `earn`/`spend`/`save` |
-| `P0001` | `insert_budgets: category "<name>" not found as a root-level category for type "<type>"` | A bare `categories` entry doesn't resolve to a live root-level leaf category for that budget's type |
+| `P0001` | `insert_budgets: target_amount for budget "<name>" is not a valid number` | `target_amount` isn't a plain number |
+| `P0001` | `insert_budgets: target_amount for budget "<name>" must be greater than 0` | `target_amount` is zero or negative |
+| `P0001` | `insert_budgets: start_date for budget "<name>" is not a valid date (expected YYYY-MM-DD)` | `start_date` isn't a plain `YYYY-MM-DD` date |
+| `P0001` | `insert_budgets: end_date for budget "<name>" is not a valid date (expected YYYY-MM-DD)` | `end_date` isn't a plain `YYYY-MM-DD` date |
+| `P0001` | `insert_budgets: start_date must be on or before end_date for budget "<name>"` | Both dates present, but `start_date` is after `end_date` |
+| `P0001` | `insert_budgets: category "<name>" not found as a root-level category for type "<type>"` | A bare `categories` entry doesn't resolve to a live root-level category (parent or leaf) for that budget's type |
 | `P0001` | `insert_budgets: category parent "<parent>" not found for type "<type>"` | A `"Parent/Child"` `categories` entry: no live root category matches `<parent>` for that type |
 | `P0001` | `insert_budgets: category "<parent>/<child>" not found` | A `"Parent/Child"` `categories` entry: parent found, but no matching live child under it |
 | `P0001` | `insert_budgets: tag "<name>" not found` | A `tags` entry doesn't match any of the user's live tags |
-| *original code* | `"insert_budgets failed"` | Any other DB error — sanitized. This includes a non-positive `target_amount` or an invalid `start_date`/`end_date` range, both of which fail a table `CHECK` constraint (SQLSTATE `23514`) rather than an explicit validation check |
+| *original code* | `"insert_budgets failed"` | Any other, unforeseen DB error — sanitized, original SQLSTATE preserved on `error.code` |
 
 ### Transaction Errors (per row — read from `JSON.parse(error.details)`)
 

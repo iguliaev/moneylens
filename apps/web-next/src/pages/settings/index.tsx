@@ -74,7 +74,7 @@ const parseUploadFile = (fileContent: string): BulkUploadPayload => {
     return { transactions: parsed };
   }
 
-  // Handle object format: { categories: [...], bank_accounts: [...], tags: [...], transactions: [...] }
+  // Handle object format: { categories: [...], bank_accounts: [...], tags: [...], budgets: [...], transactions: [...] }
   if (typeof parsed === "object" && parsed !== null) {
     const obj = parsed as Record<string, unknown>;
     return {
@@ -83,6 +83,7 @@ const parseUploadFile = (fileContent: string): BulkUploadPayload => {
         ? obj.bank_accounts
         : undefined,
       tags: Array.isArray(obj.tags) ? obj.tags : undefined,
+      budgets: Array.isArray(obj.budgets) ? obj.budgets : undefined,
       transactions: Array.isArray(obj.transactions)
         ? obj.transactions
         : undefined,
@@ -90,7 +91,7 @@ const parseUploadFile = (fileContent: string): BulkUploadPayload => {
   }
 
   throw new Error(
-    "JSON must be an array of transactions or an object with optional sections: categories, bank_accounts, tags, transactions"
+    "JSON must be an array of transactions or an object with optional sections: categories, bank_accounts, tags, budgets, transactions"
   );
 };
 
@@ -101,6 +102,7 @@ const getUploadSummary = (payload: BulkUploadPayload): string => {
   if (payload.bank_accounts?.length)
     parts.push(`${payload.bank_accounts.length} bank accounts`);
   if (payload.tags?.length) parts.push(`${payload.tags.length} tags`);
+  if (payload.budgets?.length) parts.push(`${payload.budgets.length} budgets`);
   if (payload.transactions?.length)
     parts.push(`${payload.transactions.length} transactions`);
   return parts.join(", ") || "No data";
@@ -172,10 +174,11 @@ const BulkUploadSection = () => {
         !payload.categories?.length &&
         !payload.bank_accounts?.length &&
         !payload.tags?.length &&
+        !payload.budgets?.length &&
         !payload.transactions?.length
       ) {
         setFileError(
-          "JSON must contain at least one of: categories, bank_accounts, tags, or transactions."
+          "JSON must contain at least one of: categories, bank_accounts, tags, budgets, or transactions."
         );
         return;
       }
@@ -239,8 +242,8 @@ const BulkUploadSection = () => {
   return (
     <Card title="Bulk Upload" extra={<FileTextOutlined />}>
       <Paragraph type="secondary">
-        Upload a JSON file containing categories, bank accounts, tags, and/or
-        transactions. Max file size: 1MB.
+        Upload a JSON file containing categories, bank accounts, tags,
+        budgets, and/or transactions. Max file size: 1MB.
       </Paragraph>
 
       <Space direction="vertical" style={{ width: "100%" }} size="middle">
@@ -298,6 +301,11 @@ const BulkUploadSection = () => {
                 ) : null}
                 {result.tags_inserted ? (
                   <List.Item>• {result.tags_inserted} tags inserted</List.Item>
+                ) : null}
+                {result.budgets_inserted ? (
+                  <List.Item>
+                    • {result.budgets_inserted} budgets inserted
+                  </List.Item>
                 ) : null}
                 {result.transactions_inserted ? (
                   <List.Item>

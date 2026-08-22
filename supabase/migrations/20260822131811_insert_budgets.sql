@@ -15,17 +15,24 @@
 --     "tags": ["essentials"]                     -- optional
 --   }
 --
--- Category/tag resolution follows the same conventions already established
--- elsewhere in this schema rather than inventing new ones:
+-- Category/tag resolution mostly follows the conventions already
+-- established elsewhere in this schema, with one deliberate difference:
 --   - `categories` entries use the same two-form convention as a
 --     transaction's own `category` field (bulk_insert_transactions,
 --     20260729212856_bulk_insert_hierarchical_category_path.sql):
 --     "Parent/Child" resolves an exact nested leaf unambiguously; a bare
---     name resolves only against root-level (parent_id IS NULL) LEAF
---     categories. Both forms require a LIVE (deleted_at IS NULL) category —
---     stricter than bulk_insert_transactions (which doesn't filter
---     deleted_at on category lookups), matching insert_categories' existing
---     "soft-deleted categories are never reused" stance instead of that gap.
+--     name resolves against any root-level (parent_id IS NULL) category —
+--     parent or leaf. This is intentionally looser than
+--     bulk_insert_transactions (whose bare-name form matches only root-level
+--     LEAF categories): a budget, unlike a transaction, can legitimately
+--     target a parent category (the budgets UI's category picker offers
+--     every category of the type, not just leaves), so restricting bare
+--     names to leaves here would make some budgets un-round-trippable
+--     through export/import. Both forms require a LIVE (deleted_at IS NULL)
+--     category — stricter than bulk_insert_transactions (which doesn't
+--     filter deleted_at on category lookups), matching insert_categories'
+--     existing "soft-deleted categories are never reused" stance instead of
+--     that gap.
 --   - `tags` entries are bare names, matched against that user's LIVE tags
 --     (deleted_at IS NULL), same as bulk_insert_transactions' tag check but
 --     with the deleted_at filter added for the same reason as above.
@@ -52,6 +59,7 @@ SET search_path = '' AS $$
 DECLARE
   v_missing_count int;
   v_invalid_type text;
+  v_bad_name text;
   v_inserted_count int := 0;
   v_elem jsonb;
   v_type public.transaction_type;
@@ -101,6 +109,61 @@ BEGIN
 
   IF v_invalid_type IS NOT NULL THEN
     RAISE EXCEPTION 'insert_budgets: invalid transaction_type: %', v_invalid_type;
+  END IF;
+
+  -- target_amount must be a plain positive number: budgets.target_amount has
+  -- CHECK (target_amount > 0), which would otherwise surface as a generic
+  -- sanitized "insert_budgets failed" (see the WHEN others branch below)
+  -- instead of a message naming the offending budget.
+  SELECT elem->>'name' INTO v_bad_name
+  FROM jsonb_array_elements(p_budgets) AS elem
+  WHERE (elem->>'target_amount') !~ '^-?[0-9]+(\.[0-9]+)?$'
+  LIMIT 1;
+
+  IF v_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: target_amount for budget "%" is not a valid number', v_bad_name;
+  END IF;
+
+  SELECT elem->>'name' INTO v_bad_name
+  FROM jsonb_array_elements(p_budgets) AS elem
+  WHERE (elem->>'target_amount')::numeric <= 0
+  LIMIT 1;
+
+  IF v_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: target_amount for budget "%" must be greater than 0', v_bad_name;
+  END IF;
+
+  -- start_date/end_date, if present, must be plain ISO dates and, together,
+  -- satisfy budgets' CHECK (start_date <= end_date) for the same reason.
+  SELECT elem->>'name' INTO v_bad_name
+  FROM jsonb_array_elements(p_budgets) AS elem
+  WHERE (elem->>'start_date') IS NOT NULL
+    AND (elem->>'start_date') !~ '^\d{4}-\d{2}-\d{2}$'
+  LIMIT 1;
+
+  IF v_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: start_date for budget "%" is not a valid date (expected YYYY-MM-DD)', v_bad_name;
+  END IF;
+
+  SELECT elem->>'name' INTO v_bad_name
+  FROM jsonb_array_elements(p_budgets) AS elem
+  WHERE (elem->>'end_date') IS NOT NULL
+    AND (elem->>'end_date') !~ '^\d{4}-\d{2}-\d{2}$'
+  LIMIT 1;
+
+  IF v_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: end_date for budget "%" is not a valid date (expected YYYY-MM-DD)', v_bad_name;
+  END IF;
+
+  SELECT elem->>'name' INTO v_bad_name
+  FROM jsonb_array_elements(p_budgets) AS elem
+  WHERE (elem->>'start_date') IS NOT NULL
+    AND (elem->>'end_date') IS NOT NULL
+    AND (elem->>'start_date')::date > (elem->>'end_date')::date
+  LIMIT 1;
+
+  IF v_bad_name IS NOT NULL THEN
+    RAISE EXCEPTION 'insert_budgets: start_date must be on or before end_date for budget "%"', v_bad_name;
   END IF;
 
   FOR v_elem IN SELECT * FROM jsonb_array_elements(p_budgets)
@@ -160,15 +223,11 @@ BEGIN
           ELSE
             SELECT c.id INTO v_cat_id
             FROM public.categories c
-            LEFT JOIN public.category_hierarchy ch
-              ON ch.ancestor_id = c.id AND ch.depth = 1
             WHERE c.user_id = p_user_id
               AND c.type = v_type
               AND c.name = v_cat_raw
               AND c.parent_id IS NULL
               AND c.deleted_at IS NULL
-            GROUP BY c.id
-            HAVING COUNT(ch.descendant_id) = 0
             LIMIT 1;
 
             IF v_cat_id IS NULL THEN
@@ -214,7 +273,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION insert_budgets IS
-  'Batch-insert budgets for a user, ON CONFLICT DO NOTHING for duplicates (by name, among non-deleted budgets). Optional "categories" (bare root-leaf name or "Parent/Child" path) and "tags" (bare name) entries are resolved against that user''s live rows and linked via budget_categories/budget_tags for newly-inserted budgets only.';
+  'Batch-insert budgets for a user, ON CONFLICT DO NOTHING for duplicates (by name, among non-deleted budgets). Optional "categories" (bare root-level name, parent or leaf, or "Parent/Child" path) and "tags" (bare name) entries are resolved against that user''s live rows and linked via budget_categories/budget_tags for newly-inserted budgets only.';
 
 -- Wire budgets into bulk_upload_data, after tags (so categories/tags added
 -- earlier in the same payload are available for budget category/tag
