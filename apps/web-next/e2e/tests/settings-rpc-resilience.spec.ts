@@ -27,7 +27,7 @@ test.describe("Settings RPC resilience", () => {
     await loginUser(page, testUser.email, testUser.password);
   });
 
-  test("bulk upload shows RPC failure details", async ({ page }) => {
+  test("import shows RPC failure details", async ({ page }) => {
     await page.route("**/rest/v1/rpc/bulk_upload_data", async (route) => {
       await route.fulfill({
         status: 500,
@@ -49,7 +49,7 @@ test.describe("Settings RPC resilience", () => {
       "../fixtures/valid-bulk-upload.json"
     );
     await page.locator("input[type='file']").setInputFiles(fixturePath);
-    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
+    await page.getByRole("button", { name: /^import$/i, exact: true }).click();
 
     const errorAlert = page
       .getByRole("tabpanel", { name: /import.*export/i })

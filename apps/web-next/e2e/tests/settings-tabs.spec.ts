@@ -53,7 +53,7 @@ test.describe("Settings Tabs", () => {
     await expect(currencyCard.getByRole("combobox")).toBeVisible();
   });
 
-  test("import and export tab shows bulk upload section", async ({ page }) => {
+  test("import and export tab shows import section", async ({ page }) => {
     await page.goto("/settings");
 
     // Click on Import & Export tab
@@ -63,8 +63,7 @@ test.describe("Settings Tabs", () => {
     // Tab should be active
     await expect(importExportTab).toHaveAttribute("aria-selected", "true");
 
-    // Should see bulk upload section
-    await expect(page.getByText(/bulk upload/i)).toBeVisible();
+    // Should see the import section
     await expect(page.getByText(/upload a json file/i)).toBeVisible();
     await expect(
       page.getByRole("button", { name: /select json file/i })
@@ -102,7 +101,7 @@ test.describe("Settings Tabs", () => {
     const importExportTab = page.getByRole("tab", { name: /import.*export/i });
     await importExportTab.click();
     await expect(importExportTab).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText(/bulk upload/i)).toBeVisible();
+    await expect(page.getByText(/upload a json file/i)).toBeVisible();
     await expect(page.getByText(/choose the currency/i)).not.toBeVisible();
 
     // Switch to Danger Zone

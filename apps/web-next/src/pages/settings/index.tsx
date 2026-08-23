@@ -209,7 +209,7 @@ const BulkUploadSection = () => {
       }
 
       if (!data) {
-        throw new Error("Bulk upload returned no result");
+        throw new Error("Import returned no result");
       }
 
       setResult(data);
@@ -217,14 +217,14 @@ const BulkUploadSection = () => {
       setPreview(null);
       openNotification?.({
         type: "success",
-        message: "Upload completed successfully",
+        message: "Import completed successfully",
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : "Import failed";
       setFileError(message);
       openNotification?.({
         type: "error",
-        message: "Failed to upload data",
+        message: "Failed to import data",
         description: message,
       });
     } finally {
@@ -240,7 +240,7 @@ const BulkUploadSection = () => {
   };
 
   return (
-    <Card title="Bulk Upload" extra={<FileTextOutlined />}>
+    <Card title="Import" extra={<FileTextOutlined />}>
       <Paragraph type="secondary">
         Upload a JSON file containing categories, bank accounts, tags,
         budgets, and/or transactions. Max file size: 1MB.
@@ -279,14 +279,14 @@ const BulkUploadSection = () => {
             disabled={fileList.length === 0 || isUploading}
             loading={isUploading}
           >
-            {isUploading ? "Uploading..." : "Upload"}
+            {isUploading ? "Importing..." : "Import"}
           </Button>
           <Button onClick={handleClear}>Clear</Button>
         </Space>
 
         {result?.success && (
           <Alert
-            message="Upload Successful"
+            message="Import Successful"
             description={
               <List size="small">
                 {result.categories_inserted ? (
