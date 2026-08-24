@@ -2,6 +2,7 @@ import {
   BaseRecord,
   useInvalidate,
   type CrudFilters,
+  type CrudSort,
   type ConditionalFilter,
   type LogicalFilter,
 } from "@refinedev/core";
@@ -28,7 +29,7 @@ import {
 } from "antd";
 import { FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   TRANSACTION_TYPE_LABELS,
@@ -37,6 +38,19 @@ import {
 import { formatAmount, DATE_PICKER_INPUT_FORMATS } from "../../utility";
 import { formatDisplayDate } from "../../utility/dateDisplay";
 import { useTransactionEmptyState, TableSkeleton } from "../../components";
+
+// Postgres doesn't guarantee stable ordering among rows that tie on the
+// active sort field (e.g. several transactions on the same date) across
+// separate paginated queries — the query plan can differ between page
+// sizes, so a tied row can silently vanish from every page at one page
+// size while still showing at another (see docs/improvement-roadmap.md
+// "Known Bugs"). Always append `id` as a secondary sort key so pagination
+// is fully deterministic, regardless of which column is actively sorted.
+const withIdTieBreaker = (sorters: CrudSort[]): CrudSort[] => {
+  const withoutId = sorters.filter((s) => s.field !== "id");
+  const order = withoutId[0]?.order ?? "desc";
+  return [...withoutId, { field: "id", order }];
+};
 
 const commonSelectOptions = {
   sorters: [{ field: "name", order: "asc" as const }],
@@ -168,11 +182,18 @@ export const TransactionList = () => {
   const navigate = useNavigate();
   const { token } = useToken();
 
-  const { tableProps, filters, setFilters, setCurrentPage } = useTable({
+  const {
+    tableProps,
+    filters,
+    setFilters,
+    setCurrentPage,
+    sorters,
+    setSorters,
+  } = useTable({
     syncWithLocation: true,
     resource: "transactions_with_details",
     sorters: {
-      initial: [{ field: "date", order: "desc" }],
+      initial: withIdTieBreaker([{ field: "date", order: "desc" }]),
     },
     filters: {
       initial: [
@@ -180,6 +201,19 @@ export const TransactionList = () => {
       ],
     },
   });
+
+  // The `initial` tie-breaker above only applies on a fresh mount with no
+  // sorters already in the URL. `syncWithLocation` also restores sorters
+  // directly from the URL (a reload, or a link shared after only `date`
+  // had been persisted) and from the Table's own onChange (e.g. clicking
+  // a column header, or just paging — AntD resends whatever it considers
+  // the "current" sorter on every interaction) — neither of those paths
+  // goes through `initial`, so normalize here too, on every change.
+  useEffect(() => {
+    if (!sorters.some((s) => s.field === "id")) {
+      setSorters(withIdTieBreaker(sorters));
+    }
+  }, [sorters, setSorters]);
   const transactionType =
     (getDefaultFilter("type", filters, "eq") as string) ??
     TRANSACTION_TYPES.SPEND;

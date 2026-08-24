@@ -1006,6 +1006,108 @@ test.describe("Transactions", () => {
     }
   });
 
+  test("every transaction on a tied sort date appears exactly once when paging at page size 10", async ({
+    page,
+  }) => {
+    // Regression test: Postgres doesn't guarantee stable ordering among rows
+    // that tie on the active sort field (here: several transactions sharing
+    // one date) across separate paginated queries. Without a secondary sort
+    // key, a tied row can silently vanish from every page at one page size
+    // while still showing at another (reported in production 2026-08-24).
+    const ts = Date.now();
+    const notePrefix = `pagetie-${ts}-`;
+    const total = 22;
+    const sameDate = e2eCurrentMonthDate(15);
+
+    const { data: groceriesCategory, error: groceriesCategoryError } =
+      await supabaseAdmin
+        .from("categories")
+        .select("id")
+        .eq("user_id", testUser.userId)
+        .eq("type", "spend")
+        .eq("name", "Groceries")
+        .single();
+    if (groceriesCategoryError || !groceriesCategory?.id) {
+      throw new Error(
+        `Failed to resolve Groceries category: ${
+          groceriesCategoryError?.message ?? "missing category id"
+        }`
+      );
+    }
+
+    const { data: mainAccount, error: mainAccountError } = await supabaseAdmin
+      .from("bank_accounts")
+      .select("id")
+      .eq("user_id", testUser.userId)
+      .eq("name", "Main Account")
+      .single();
+    if (mainAccountError || !mainAccount?.id) {
+      throw new Error(
+        `Failed to resolve Main Account: ${
+          mainAccountError?.message ?? "missing bank account id"
+        }`
+      );
+    }
+
+    const now = new Date().toISOString();
+    const rows = Array.from({ length: total }).map((_, index) => ({
+      user_id: testUser.userId,
+      date: sameDate,
+      type: "spend" as const,
+      amount: 10 + index,
+      category: "Groceries",
+      category_id: groceriesCategory.id,
+      bank_account_id: mainAccount.id,
+      notes: `${notePrefix}${index + 1}`,
+      created_at: now,
+      updated_at: now,
+    }));
+
+    const { error: insertError } = await supabaseAdmin
+      .from("transactions")
+      .insert(rows);
+    if (insertError) {
+      throw new Error(
+        `Failed to seed same-date transactions: ${insertError.message}`
+      );
+    }
+
+    await page.goto(
+      "/transactions?" +
+        "pageSize=10&currentPage=1" +
+        "&sorters[0][field]=date&sorters[0][order]=desc" +
+        "&filters[0][field]=type&filters[0][operator]=eq&filters[0][value]=spend"
+    );
+    await page.waitForLoadState("networkidle");
+
+    const noteCells = page
+      .locator("td")
+      .filter({ hasText: new RegExp(notePrefix) });
+
+    const seenNotes = new Set<string>();
+    const pageCount = Math.ceil(total / 10);
+    for (let p = 1; p <= pageCount; p++) {
+      if (p > 1) {
+        // Wait for the table content itself to change, not just for the
+        // network to go idle — the pagination click's refetch can resolve
+        // before React re-renders, which would otherwise read stale rows.
+        const firstBefore = await noteCells.first().textContent();
+        await page
+          .locator(".ant-pagination-item")
+          .filter({ hasText: new RegExp(`^${p}$`) })
+          .first()
+          .click();
+        await expect(noteCells.first()).not.toHaveText(firstBefore ?? "", {
+          timeout: 5000,
+        });
+      }
+      const cells = await noteCells.allTextContents();
+      for (const text of cells) seenNotes.add(text.trim());
+    }
+
+    expect(seenNotes.size).toBe(total);
+  });
+
   test("switching transaction type clears active list filters", async ({
     page,
   }) => {
