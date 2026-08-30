@@ -1009,15 +1009,24 @@ test.describe("Transactions", () => {
   test("every transaction on a tied sort date appears exactly once when paging at page size 10", async ({
     page,
   }) => {
-    // Regression test: Postgres doesn't guarantee stable ordering among rows
-    // that tie on the active sort field (here: several transactions sharing
-    // one date) across separate paginated queries. Without a secondary sort
-    // key, a tied row can silently vanish from every page at one page size
-    // while still showing at another (reported in production 2026-08-24).
+    // Regression test for a production bug (2026-08-24): without a
+    // fully-deterministic ORDER BY, successive LIMIT/OFFSET pages over rows
+    // that tie on the active sort field (here: many transactions sharing one
+    // date) aren't guaranteed consistent, so a tied row can be skipped or
+    // duplicated between pages — vanishing at one page size but not another.
+    // The fix appends `created_at, id` as tie-breakers on every list query.
+    // This test pins three things: (1) the outgoing request actually carries
+    // those tie-breakers, (2) all tied rows appear exactly once across pages,
+    // (3) the primary `date` sort still dominates the tie-breakers.
     const ts = Date.now();
-    const notePrefix = `pagetie-${ts}-`;
-    const total = 22;
-    const sameDate = e2eCurrentMonthDate(15);
+    const tiedPrefix = `pagetie-${ts}-`;
+    const olderPrefix = `pageold-${ts}-`;
+    const tiedCount = 22;
+    const olderCount = 5;
+    const spendTotal = tiedCount + olderCount;
+    const expectedPages = Math.ceil(spendTotal / 10);
+    const tiedDate = e2eCurrentMonthDate(15);
+    const olderDate = e2eCurrentMonthDate(8);
 
     const { data: groceriesCategory, error: groceriesCategoryError } =
       await supabaseAdmin
@@ -1049,19 +1058,39 @@ test.describe("Transactions", () => {
       );
     }
 
-    const now = new Date().toISOString();
-    const rows = Array.from({ length: total }).map((_, index) => ({
+    // The tied rows share one date and one created_at (so only `id` breaks
+    // the tie among them). The older-date rows are given a *newer* created_at
+    // than the tied rows: with the correct `date desc, created_at desc, id
+    // desc` ordering they still sort last (older date wins), but a regression
+    // that promoted the tie-breakers ahead of `date` would surface them
+    // first — which assertion (3) below catches.
+    const tiedCreatedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const olderCreatedAt = new Date().toISOString();
+    const baseRow = {
       user_id: testUser.userId,
-      date: sameDate,
       type: "spend" as const,
-      amount: 10 + index,
       category: "Groceries",
       category_id: groceriesCategory.id,
       bank_account_id: mainAccount.id,
-      notes: `${notePrefix}${index + 1}`,
-      created_at: now,
-      updated_at: now,
-    }));
+    };
+    const rows = [
+      ...Array.from({ length: tiedCount }, (_, i) => ({
+        ...baseRow,
+        date: tiedDate,
+        amount: 10 + i,
+        notes: `${tiedPrefix}${i + 1}`,
+        created_at: tiedCreatedAt,
+        updated_at: tiedCreatedAt,
+      })),
+      ...Array.from({ length: olderCount }, (_, i) => ({
+        ...baseRow,
+        date: olderDate,
+        amount: 100 + i,
+        notes: `${olderPrefix}${i + 1}`,
+        created_at: olderCreatedAt,
+        updated_at: olderCreatedAt,
+      })),
+    ];
 
     const { error: insertError } = await supabaseAdmin
       .from("transactions")
@@ -1072,6 +1101,17 @@ test.describe("Transactions", () => {
       );
     }
 
+    // Capture the `order` param of every transactions_with_details fetch so
+    // we can assert the tie-breaker is really sent, independent of whether
+    // Postgres happens to return a stable order for this small a dataset.
+    const orderParams: string[] = [];
+    page.on("request", (request) => {
+      const url = request.url();
+      if (!url.includes("/transactions_with_details")) return;
+      const order = new URL(url).searchParams.get("order");
+      if (order) orderParams.push(order);
+    });
+
     await page.goto(
       "/transactions?" +
         "pageSize=10&currentPage=1" +
@@ -1080,32 +1120,80 @@ test.describe("Transactions", () => {
     );
     await page.waitForLoadState("networkidle");
 
-    const noteCells = page
-      .locator("td")
-      .filter({ hasText: new RegExp(notePrefix) });
+    // (0) Isolation / precondition: exactly the 27 seeded spend rows exist,
+    // so the page count is what we expect and the walk below covers them all.
+    // A stale row from a prior test would push this past `expectedPages`.
+    await expect(page.locator(".ant-pagination-item").last()).toHaveText(
+      String(expectedPages)
+    );
 
-    const seenNotes = new Set<string>();
-    const pageCount = Math.ceil(total / 10);
-    for (let p = 1; p <= pageCount; p++) {
+    const tiedCells = page
+      .locator("td")
+      .filter({ hasText: new RegExp(tiedPrefix) });
+    const anySeedCell = page
+      .locator("td")
+      .filter({ hasText: new RegExp(`${tiedPrefix}|${olderPrefix}`) });
+
+    // (3) Primary sort dominance: the very first row is a tied-date row, not
+    // one of the newer-created_at older-date rows.
+    await expect(anySeedCell.first()).toHaveText(new RegExp(tiedPrefix));
+
+    // Everything captured from here on is a paginated fetch — those are the
+    // queries that exhibited the production bug, so every one must carry the
+    // full tie-breaker (the initial mount is allowed one transient
+    // `date.desc` request from the pre-fix-style URL before normalization).
+    const ordersBeforePaging = orderParams.length;
+
+    const seen: string[] = [];
+    for (let p = 1; p <= expectedPages; p++) {
+      const expectedTiedOnPage = Math.max(
+        0,
+        Math.min(tiedCount - (p - 1) * 10, 10)
+      );
       if (p > 1) {
-        // Wait for the table content itself to change, not just for the
-        // network to go idle — the pagination click's refetch can resolve
-        // before React re-renders, which would otherwise read stale rows.
-        const firstBefore = await noteCells.first().textContent();
+        // The tied rows sort by `id desc` (random UUID) within the shared
+        // date, so page N's rows bear no numeric relation to page N-1's —
+        // but they must be a *different* set. Wait for the first cell's text
+        // to actually change (not just for the URL / active-page indicator,
+        // which update before React commits the new rows), then confirm the
+        // whole page rendered.
+        const firstBefore = await tiedCells.first().textContent();
+        expect(firstBefore).toBeTruthy();
         await page
           .locator(".ant-pagination-item")
           .filter({ hasText: new RegExp(`^${p}$`) })
           .first()
           .click();
-        await expect(noteCells.first()).not.toHaveText(firstBefore ?? "", {
-          timeout: 5000,
-        });
+        await expect(page.locator(".ant-pagination-item-active")).toHaveText(
+          String(p)
+        );
+        await page.waitForURL(new RegExp(`currentPage=${p}\\b`));
+        await expect(tiedCells.first()).not.toHaveText(firstBefore ?? "");
       }
-      const cells = await noteCells.allTextContents();
-      for (const text of cells) seenNotes.add(text.trim());
+      await expect(tiedCells).toHaveCount(expectedTiedOnPage);
+      seen.push(...(await tiedCells.allTextContents()).map((t) => t.trim()));
     }
 
-    expect(seenNotes.size).toBe(total);
+    // (1) The tie-breaker was actually sent: every paginated fetch uses the
+    // full ordering, and the mount normalization produced it too. Without
+    // this the test could pass purely because Postgres happened to return a
+    // stable order for so small a dataset.
+    const fullOrder = "date.desc,created_at.desc,id.desc";
+    const paginationOrders = orderParams.slice(ordersBeforePaging);
+    expect(paginationOrders.length).toBeGreaterThan(0);
+    for (const order of paginationOrders) {
+      expect(order).toBe(fullOrder);
+    }
+    expect(orderParams).toContain(fullOrder);
+    // The only tolerated non-full ordering is a single transient `date.desc`
+    // from the pre-fix-style URL on mount, before the normalization effect.
+    expect(orderParams.every((o) => o === fullOrder || o === "date.desc")).toBe(
+      true
+    );
+
+    // (2) Every tied row seen exactly once — no skips, no duplicates.
+    expect(seen.length).toBe(tiedCount);
+    expect(new Set(seen).size).toBe(tiedCount);
   });
 
   test("switching transaction type clears active list filters", async ({

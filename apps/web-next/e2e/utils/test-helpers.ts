@@ -295,12 +295,18 @@ export async function cleanupReferenceDataForUser(userId: string) {
   }
 }
 
-// Delete all transactions for a given user
+// Delete all transactions for a given user. This runs in afterEach and is
+// load-bearing for test isolation (several tests assume a known row count),
+// so a failed delete must surface rather than be swallowed.
 export async function cleanupTransactionsForUser(userId: string) {
-  try {
-    await supabaseAdmin.from("transactions").delete().eq("user_id", userId);
-  } catch {
-    // noop
+  const { error } = await supabaseAdmin
+    .from("transactions")
+    .delete()
+    .eq("user_id", userId);
+  if (error) {
+    throw new Error(
+      `Failed to delete transactions for user ${userId}: ${error.message}`
+    );
   }
 }
 

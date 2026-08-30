@@ -16,6 +16,7 @@ import {
   TagField,
   FilterDropdown,
   getDefaultFilter,
+  mapAntdSorterToCrudSorting,
 } from "@refinedev/antd";
 import {
   Table,
@@ -26,6 +27,7 @@ import {
   InputNumber,
   Button,
   theme,
+  type TableProps,
 } from "antd";
 import { FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -39,17 +41,34 @@ import { formatAmount, DATE_PICKER_INPUT_FORMATS } from "../../utility";
 import { formatDisplayDate } from "../../utility/dateDisplay";
 import { useTransactionEmptyState, TableSkeleton } from "../../components";
 
-// Postgres doesn't guarantee stable ordering among rows that tie on the
-// active sort field (e.g. several transactions on the same date) across
-// separate paginated queries — the query plan can differ between page
-// sizes, so a tied row can silently vanish from every page at one page
-// size while still showing at another (see docs/improvement-roadmap.md
-// "Known Bugs"). Always append `id` as a secondary sort key so pagination
-// is fully deterministic, regardless of which column is actively sorted.
-const withIdTieBreaker = (sorters: CrudSort[]): CrudSort[] => {
-  const withoutId = sorters.filter((s) => s.field !== "id");
-  const order = withoutId[0]?.order ?? "desc";
-  return [...withoutId, { field: "id", order }];
+const DEFAULT_SORTERS: CrudSort[] = [{ field: "date", order: "desc" }];
+
+// Without a fully-deterministic ORDER BY, successive LIMIT/OFFSET pages over
+// a set of rows that tie on the active sort field (several transactions
+// sharing a date, say) aren't guaranteed to be consistent with each other,
+// so a tied row can be skipped or duplicated between pages — it then appears
+// to vanish at one page size but not another (production bug 2026-08-24,
+// fixed in #274; regression test: transactions.spec.ts "every transaction on
+// a tied sort date appears exactly once…"). Append `created_at, id` as final
+// sort keys on every query: `created_at` keeps same-date rows newest-first
+// (matching the `date desc` default), and `id` (the table's PK) guarantees a
+// total order so pagination is deterministic whatever column is sorted on.
+const TIE_BREAKER_FIELDS = ["created_at", "id"] as const;
+type TieBreakerField = (typeof TIE_BREAKER_FIELDS)[number];
+
+const hasTieBreaker = (sorters: CrudSort[]): boolean =>
+  sorters.some((s) => TIE_BREAKER_FIELDS.includes(s.field as TieBreakerField));
+
+const withTieBreakers = (sorters: CrudSort[]): CrudSort[] => {
+  const primary = sorters.filter(
+    (s) => !TIE_BREAKER_FIELDS.includes(s.field as TieBreakerField)
+  );
+  // A cleared sort (AntD's 3rd header click yields an empty sorter) falls
+  // back to the default `date desc` view rather than a bare tie-breaker
+  // order — `id` is a random UUID, so `id`-only would shuffle the list.
+  const base = primary.length > 0 ? primary : DEFAULT_SORTERS;
+  const order = base[0].order;
+  return [...base, ...TIE_BREAKER_FIELDS.map((field) => ({ field, order }))];
 };
 
 const commonSelectOptions = {
@@ -193,7 +212,7 @@ export const TransactionList = () => {
     syncWithLocation: true,
     resource: "transactions_with_details",
     sorters: {
-      initial: withIdTieBreaker([{ field: "date", order: "desc" }]),
+      initial: withTieBreakers(DEFAULT_SORTERS),
     },
     filters: {
       initial: [
@@ -202,18 +221,36 @@ export const TransactionList = () => {
     },
   });
 
-  // The `initial` tie-breaker above only applies on a fresh mount with no
-  // sorters already in the URL. `syncWithLocation` also restores sorters
-  // directly from the URL (a reload, or a link shared after only `date`
-  // had been persisted) and from the Table's own onChange (e.g. clicking
-  // a column header, or just paging — AntD resends whatever it considers
-  // the "current" sorter on every interaction) — neither of those paths
-  // goes through `initial`, so normalize here too, on every change.
+  // Interactive sort changes are normalized in `handleTableChange` before
+  // they ever reach `setSorters`. This effect only covers the one path that
+  // bypasses both `initial` and `onChange`: `syncWithLocation` restoring
+  // `sorters` straight from a URL saved before the tie-breaker existed (an
+  // old reload or shared link). It converges in one pass — once the
+  // tie-breaker is appended, `hasTieBreaker` is true and it's a no-op.
   useEffect(() => {
-    if (!sorters.some((s) => s.field === "id")) {
-      setSorters(withIdTieBreaker(sorters));
+    if (sorters.length > 0 && !hasTieBreaker(sorters)) {
+      setSorters(withTieBreakers(sorters));
     }
   }, [sorters, setSorters]);
+
+  // AntD re-emits the full sorter state on every column-header click, but it
+  // only knows about the visible columns — never `created_at`/`id` — so
+  // refine's own `onChange` would call `setSorters` without the tie-breaker
+  // and fire one non-deterministic paginated query before anything could
+  // correct it. Intercept the sort action and inject the tie-breaker
+  // synchronously; delegate paginate/filter actions to refine untouched.
+  const handleTableChange: NonNullable<TableProps<BaseRecord>["onChange"]> = (
+    pagination,
+    tableFilters,
+    sorter,
+    extra
+  ) => {
+    if (extra.action === "sort") {
+      setSorters(withTieBreakers(mapAntdSorterToCrudSorting(sorter)));
+      return;
+    }
+    tableProps.onChange?.(pagination, tableFilters, sorter, extra);
+  };
   const transactionType =
     (getDefaultFilter("type", filters, "eq") as string) ??
     TRANSACTION_TYPES.SPEND;
@@ -299,6 +336,7 @@ export const TransactionList = () => {
       ) : (
         <Table
           {...tableProps}
+          onChange={handleTableChange}
           rowKey="id"
           locale={{ emptyText: transactionEmptyState }}
         >
