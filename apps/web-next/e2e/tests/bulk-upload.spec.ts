@@ -12,7 +12,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-test.describe("Bulk Upload", () => {
+test.describe("Import", () => {
   let testUser: { email: string; password: string; userId: string };
 
   test.beforeAll(async () => {
@@ -65,13 +65,13 @@ test.describe("Bulk Upload", () => {
     await expect(page.getByText(/3 transactions/i)).toBeVisible();
 
     // Click upload button
-    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
+    await page.getByRole("button", { name: /^import$/i, exact: true }).click();
 
     // Verify success alert appears
     await expect(
       page
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") })
+        .filter({ hasText: new RegExp("Import Successful", "i") })
     ).toBeVisible();
 
     // Verify counts are shown in success message
@@ -150,7 +150,7 @@ test.describe("Bulk Upload", () => {
 
     // Upload button should be disabled
     await expect(
-      page.getByRole("button", { name: /^upload$/i, exact: true })
+      page.getByRole("button", { name: /^import$/i, exact: true })
     ).toBeDisabled();
   });
 
@@ -171,7 +171,7 @@ test.describe("Bulk Upload", () => {
     await expect(page.getByText(/Preview:.*1 categories/i)).toBeVisible();
 
     // Click upload button
-    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
+    await page.getByRole("button", { name: /^import$/i, exact: true }).click();
 
     // Error alert should appear
     await expect(
@@ -182,11 +182,11 @@ test.describe("Bulk Upload", () => {
     await expect(
       page
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") })
+        .filter({ hasText: new RegExp("Import Successful", "i") })
     ).not.toBeVisible();
   });
 
-  test("bulk upload rejects transaction rows referencing parent categories", async ({
+  test("import rejects transaction rows referencing parent categories", async ({
     page,
   }) => {
     const ts = Date.now();
@@ -235,7 +235,7 @@ test.describe("Bulk Upload", () => {
     await expect(page.getByText(/Preview:.*1 transactions/i)).toBeVisible();
 
     // Click upload
-    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
+    await page.getByRole("button", { name: /^import$/i, exact: true }).click();
 
     // Error alert should appear (parent category rejected)
     await expect(
@@ -251,7 +251,7 @@ test.describe("Bulk Upload", () => {
     expect(txns).toHaveLength(0);
   });
 
-  test("bulk upload creates a nested category via the parent field and resolves it for a same-payload transaction", async ({
+  test("import creates a nested category via the parent field and resolves it for a same-payload transaction", async ({
     page,
   }) => {
     const ts = Date.now();
@@ -283,12 +283,12 @@ test.describe("Bulk Upload", () => {
     await expect(page.getByText(/Preview:.*1 categories/i)).toBeVisible();
     await expect(page.getByText(/1 transactions/i)).toBeVisible();
 
-    await page.getByRole("button", { name: /^upload$/i, exact: true }).click();
+    await page.getByRole("button", { name: /^import$/i, exact: true }).click();
 
     await expect(
       page
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") })
+        .filter({ hasText: new RegExp("Import Successful", "i") })
     ).toBeVisible();
 
     // 2 categories inserted: the auto-created parent + the explicit child

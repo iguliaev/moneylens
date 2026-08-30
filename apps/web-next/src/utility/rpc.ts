@@ -24,6 +24,21 @@ interface TagInput {
   description?: string | null;
 }
 
+interface BudgetInput {
+  name: string;
+  type: Database["public"]["Enums"]["transaction_type"];
+  target_amount: number;
+  description?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  /**
+   * Bare root-leaf category name, or a "Parent/Child" path for a nested
+   * category — same convention as a transaction's own `category` field.
+   */
+  categories?: string[];
+  tags?: string[];
+}
+
 interface BulkTransactionInput {
   date: string;
   type: Database["public"]["Enums"]["transaction_type"];
@@ -38,6 +53,7 @@ export interface BulkUploadPayload {
   categories?: CategoryInput[];
   bank_accounts?: BankAccountInput[];
   tags?: TagInput[];
+  budgets?: BudgetInput[];
   transactions?: BulkTransactionInput[];
 }
 
@@ -47,6 +63,7 @@ export interface BulkUploadResult {
   categories_inserted?: number;
   bank_accounts_inserted?: number;
   tags_inserted?: number;
+  budgets_inserted?: number;
   transactions_inserted?: number;
 }
 

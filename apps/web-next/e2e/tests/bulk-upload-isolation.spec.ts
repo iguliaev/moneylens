@@ -14,7 +14,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-test.describe("Bulk Upload Data Isolation", () => {
+test.describe("Import Data Isolation", () => {
   let userA: { email: string; password: string; userId: string };
   let userB: { email: string; password: string; userId: string };
 
@@ -52,11 +52,11 @@ test.describe("Bulk Upload Data Isolation", () => {
     await pageA.getByRole("tab", { name: /import.*export/i }).click();
 
     await pageA.locator("input[type='file']").setInputFiles(fixturePath);
-    await pageA.getByRole("button", { name: /^upload$/i, exact: true }).click();
+    await pageA.getByRole("button", { name: /^import$/i, exact: true }).click();
     await expect(
       pageA
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") })
+        .filter({ hasText: new RegExp("Import Successful", "i") })
     ).toBeVisible();
 
     // Verify User A's data exists in database with correct user_id
@@ -91,11 +91,11 @@ test.describe("Bulk Upload Data Isolation", () => {
     await pageB.getByRole("tab", { name: /import.*export/i }).click();
 
     await pageB.locator("input[type='file']").setInputFiles(fixturePath);
-    await pageB.getByRole("button", { name: /^upload$/i, exact: true }).click();
+    await pageB.getByRole("button", { name: /^import$/i, exact: true }).click();
     await expect(
       pageB
         .getByRole("alert")
-        .filter({ hasText: new RegExp("Upload Successful", "i") })
+        .filter({ hasText: new RegExp("Import Successful", "i") })
     ).toBeVisible();
 
     // Verify User B's data exists in database with correct user_id

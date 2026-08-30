@@ -1,7 +1,7 @@
 # JSON export/import as full system restore — design note & compatibility assessment
 
 **Date:** 2026-08-10
-**Status:** Not started (design decision + assessment only; no implementation tasks below have landed)
+**Status:** Items 1-5 implemented (2026-08-22); items 6-7 (product decision on a guided restore feature, and its e2e coverage) remain open
 **Source:** Follow-up to [`2026-08-01-json-category-hierarchy-import-export.md`](2026-08-01-json-category-hierarchy-import-export.md) and PR #266 (JSON export now includes the full `categories`/`bank_accounts`/`tags` library with descriptions, not just names derived from exported transactions).
 **Scope:** Lock in the requirement that a JSON export, paired with a fresh/reset account, must reproduce the entire account state — not just transactions. Assess whether the schema this implies is compatible with the schema already used for `bulk_upload_data`, whose payloads today come from two producers: this app's own JSON export, and the separate `moneylens-converter-rs` utility (ODS → JSON). CSV export is explicitly out of scope — it has never carried anything but transaction rows and isn't expected to.
 
@@ -9,6 +9,7 @@
 
 <!-- Newest entry first. One entry per session, even sessions with no code progress. -->
 
+- **2026-08-22** — Implemented items 1-5 of the implementation order below (schema through docs), closing the budgets gap named on 2026-08-10. New migration `20260822131811_insert_budgets.sql` adds `insert_budgets(p_user_id, p_budgets)` — same whole-batch-validation, ON CONFLICT DO NOTHING shape as `insert_categories`/`insert_bank_accounts`/`insert_tags` — and wires it into `bulk_upload_data` (new `budgets` payload section, `budgets_inserted` in the result), inserted after categories/tags and before transactions so a budget can reference categories/tags added earlier in the same payload. `BudgetInput.categories` reuses the transaction `category` field's exact two-form convention (bare root-leaf name or `"Parent/Child"` path) rather than inventing a new one, but is stricter about live rows: unlike `bulk_insert_transactions`'s category lookup (which doesn't filter `deleted_at`), `insert_budgets` requires `deleted_at IS NULL` on every category/tag it links, matching `insert_categories`' existing "soft-deleted rows are never reused" stance. 21 new pgTAP assertions (`supabase/tests/bulk_upload_budgets_test.sql`); `supabase test db` and `npm run test:unit` both green. `exportMetadata.ts` now also fetches `budgets_with_linked` + the `budget_categories`/`budget_tags` junction tables, resolving each link's category/tag id against the same live id maps built for the `categories`/`tags` sections (a link to a since-soft-deleted category/tag is silently dropped, not exported) — `jsonExport.ts`'s `JsonExportPayload` gained a `budgets` array following the established optional-description convention. Re-checked `../moneylens-converter-rs` for any new budget-related code before writing this entry — still zero references, so per this doc's own "revised rule going forward," nothing needed porting (ODS has no budget data; this stays a structural gap, not a lagging-sync one). **Not done**: item 6 (a single guided reset+import "Restore" product feature) and item 7 (its e2e coverage) — those remain open product decisions, not attempted this session. `docs/api/bulk-upload.md` was updated in place (new `Budget Input Schema` section, `Budget Errors` table, a new Example 3, renumbered Examples 4-9, `Last Updated` bumped) rather than left to drift.
 - **2026-08-10** — Verified the compatibility assessment below directly against `moneylens-converter-rs`'s source (`../moneylens-converter-rs` on disk), rather than relying on the user's description alone. Conclusion unchanged (no conflict), but two things updated: (1) `description` is emitted as an explicit `"description": null`, not omitted — corrected below, doesn't change the compatibility conclusion; (2) the two repos turned out to already be coordinated in practice — `moneylens-converter-rs` has its own tracked, completed plan (`docs/plans/bulk-upload-category-parent-compat.md`, PR #8) that ported this repo's `2026-08-01` `CategoryInput.parent` addition. Reframed the "rule to hold going forward" accordingly.
 - **2026-08-10** — Doc created at the user's request, alongside a compatibility assessment (see below). No code changes in this session. Captures a real gap: budgets have no representation anywhere in `bulk_upload_data` or JSON export today.
 
@@ -28,9 +29,9 @@ This reframes what "the JSON export/import schema" is for. It has, so far, evolv
 | Categories | type, name, description, parent | same (`CategoryInput.parent` added 2026-08-01) | Yes |
 | Bank accounts | name, description | name, description | Yes |
 | Tags | name, description | name, description | Yes |
-| Budgets | **not exported** | **no `budgets` section exists in `bulk_upload_data` at all** | **No — full gap** |
+| Budgets | name, type, target_amount, description, dates, linked category/tag names | same, via new `insert_budgets` (2026-08-22) | Yes |
 
-Budgets (`budgets` table: `name`, `type`, `target_amount`, `start_date`, `end_date`, `description`, plus many-to-many links to categories via `budget_categories` and tags via `budget_tags`) have no representation on either side. This is the one place the "everything survives the round trip" goal is not met, and it's a gap in both directions (export doesn't emit them, import has nowhere to put them).
+Budgets (`budgets` table: `name`, `type`, `target_amount`, `start_date`, `end_date`, `description`, plus many-to-many links to categories via `budget_categories` and tags via `budget_tags`) previously had no representation on either side. As of 2026-08-22 (see Progress Log), both sides implement it: JSON export includes a `budgets` array with each budget's linked categories (as bare/`"Parent/Child"` names) and tags, and `bulk_upload_data` accepts a matching `budgets` section via the new `insert_budgets` helper.
 
 **Also worth naming as a restore-semantics gap, not a schema gap:** `bulk_upload_data` never upserts — `transactions_inserted` is "always insert" per `docs/api/bulk-upload.md`'s Idempotency table, and categories/bank_accounts/tags are `ON CONFLICT DO NOTHING` (skip, not update). So "restore" isn't a property of the import call in isolation — re-importing into a non-empty account creates duplicate transactions. The existing Danger Zone `resetUserData` RPC (wired up in `apps/web-next/src/pages/settings/index.tsx`) is what makes a JSON export a true restore: the supported restore workflow is **reset, then import**, not "import" alone. If this doc's requirement is taken literally as a product feature (a single "Restore from backup" button), that pairing needs to be explicit in the UI, not just an implied two-step manual process.
 
@@ -53,13 +54,13 @@ Budgets (`budgets` table: `name`, `type`, `target_amount`, `start_date`, `end_da
 
 ## Implementation order
 
-Nothing in this doc has been implemented yet — this session was documentation only, at the user's request. Future work, if picked up:
+Items 1-5 implemented 2026-08-22 (see Progress Log). Remaining:
 
-- [ ] 1. Design a `budgets` section for both JSON export and `bulk_upload_data` (new `BudgetInput` with `name`, `type`, `target_amount`, `start_date?`, `end_date?`, `description?`, `categories?: string[]`, `tags?: string[]` — resolved the same way transactions resolve `category`/`bank_account`/`tags`, against the same-payload `categories`/`tags` sections or existing live rows)
-- [ ] 2. Migration: new `insert_budgets` helper (mirroring `insert_categories`/`insert_bank_accounts`/`insert_tags`) plus wiring into `bulk_upload_data`, with pgTAP coverage
-- [ ] 3. `apps/web-next/src/utility/exportMetadata.ts`: fetch budgets (+ linked category/tag names) from `budgets_with_linked` (already exists, per `database.types.ts`) alongside the existing three metadata queries
-- [ ] 4. `apps/web-next/src/utility/jsonExport.ts`: add `budgets` to `JsonExportPayload`, following the same "full library, optional description" shape as categories/bank_accounts/tags
-- [ ] 5. `docs/api/bulk-upload.md`: document `BudgetInput`, its validation/error messages, and update the "full restore" framing in the FAQ
+- [x] 1. Design a `budgets` section for both JSON export and `bulk_upload_data` (new `BudgetInput` with `name`, `type`, `target_amount`, `start_date?`, `end_date?`, `description?`, `categories?: string[]`, `tags?: string[]` — resolved the same way transactions resolve `category`/`bank_account`/`tags`, against the same-payload `categories`/`tags` sections or existing live rows)
+- [x] 2. Migration: new `insert_budgets` helper (mirroring `insert_categories`/`insert_bank_accounts`/`insert_tags`) plus wiring into `bulk_upload_data`, with pgTAP coverage
+- [x] 3. `apps/web-next/src/utility/exportMetadata.ts`: fetch budgets (+ linked category/tag names) from `budgets_with_linked` (already exists, per `database.types.ts`) alongside the existing three metadata queries
+- [x] 4. `apps/web-next/src/utility/jsonExport.ts`: add `budgets` to `JsonExportPayload`, following the same "full library, optional description" shape as categories/bank_accounts/tags
+- [x] 5. `docs/api/bulk-upload.md`: document `BudgetInput`, its validation/error messages, and update the "full restore" framing in the FAQ
 - [ ] 6. Decide whether "restore" becomes an explicit product feature (a single guided reset+import flow in Settings) or stays the current implicit two-step (manual reset, then manual import) — this is a product decision, not purely technical, and belongs in its own plan if pursued
 - [ ] 7. If pursuing item 6, add e2e coverage for the full round trip: export everything → reset → import → diff against a snapshot taken before reset
 
@@ -69,15 +70,15 @@ Nothing in this doc has been implemented yet — this session was documentation 
 - `apps/web-next/src/utility/jsonExport.ts`, `exportMetadata.ts` — export side
 - `apps/web-next/src/utility/rpc.ts` — `BulkUploadPayload`/`CategoryInput`/etc. TypeScript types, `resetUserData`
 - `apps/web-next/src/pages/settings/index.tsx` — Import & Export UI, Danger Zone reset UI
-- `supabase/migrations/` — wherever `insert_categories`/`insert_bank_accounts`/`insert_tags`/`bulk_upload_data` currently live, for the future `insert_budgets` addition
+- `supabase/migrations/20260822131811_insert_budgets.sql` — `insert_budgets` + the `bulk_upload_data` wiring
+- `supabase/tests/bulk_upload_budgets_test.sql` — pgTAP coverage for `insert_budgets`
 - Database: `budgets`, `budget_categories`, `budget_tags`, `budgets_with_linked` (view)
 - `../moneylens-converter-rs/src/payload/types.rs`, `builder.rs` — the other `bulk_upload_data` producer; check these whenever the payload schema changes here
 - `../moneylens-converter-rs/docs/plans/bulk-upload-category-parent-compat.md` — precedent for how a schema addition here (`CategoryInput.parent`) got ported to the converter
 
 ## Verification plan
 
-For this session: no code changed; verification was reading `moneylens-converter-rs`'s source directly to confirm the compatibility assessment (see Progress Log). For future work items above, once picked up:
-1. `supabase test db` — new pgTAP coverage for `insert_budgets`
-2. `cd apps/web-next && npm run test:unit` — updated `jsonExport.test.ts`/`exportMetadata.test.ts`
-3. Manual: export JSON from an account with at least one budget (linked to a category and a tag), reset the account, re-import the export, confirm the budget and its links reappear identically
-4. ~~Re-confirm the compatibility assessment above by locating and reading `moneylens-converter-rs`'s actual output schema~~ — done this session (2026-08-10), see Progress Log and the Compatibility assessment section above. Re-verify again only if `moneylens-converter-rs`'s payload shape changes.
+1. `supabase test db` — new pgTAP coverage for `insert_budgets` — **done 2026-08-22, all green** (`supabase/tests/bulk_upload_budgets_test.sql`, 23 assertions)
+2. `cd apps/web-next && npm run test:unit` — updated `jsonExport.test.ts`/`exportMetadata.test.ts` — **done 2026-08-22, 56/56 passing**; `npm run check-types` also clean
+3. Manual: export JSON from an account with at least one budget (linked to a category and a tag), reset the account, re-import the export, confirm the budget and its links reappear identically — **not yet done this session**; the pgTAP/unit coverage above exercises the same logic end-to-end at the function level, but a real UI-driven round trip hasn't been clicked through
+4. ~~Re-confirm the compatibility assessment above by locating and reading `moneylens-converter-rs`'s actual output schema~~ — done 2026-08-10 (see Progress Log). Re-checked again 2026-08-22 before adding `budgets` — still zero references in that repo, confirming the gap is structural (no ODS budget data) rather than something to port. Re-verify again only if `moneylens-converter-rs`'s payload shape changes.

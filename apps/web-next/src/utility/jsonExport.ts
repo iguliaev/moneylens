@@ -2,6 +2,7 @@ import type { Database } from "../types/database.types";
 import type { TransactionExportRow } from "./exportTransactions";
 import type {
   BankAccountExportRecord,
+  BudgetExportRecord,
   CategoryExportRecord,
   ExportMetadata,
   TagExportRecord,
@@ -36,10 +37,22 @@ export interface JsonExportTag {
   description?: string;
 }
 
+export interface JsonExportBudget {
+  name: string;
+  type: Database["public"]["Enums"]["transaction_type"];
+  target_amount: number;
+  description?: string;
+  start_date?: string;
+  end_date?: string;
+  categories?: string[];
+  tags?: string[];
+}
+
 export interface JsonExportPayload {
   categories: JsonExportCategory[];
   bank_accounts: JsonExportBankAccount[];
   tags: JsonExportTag[];
+  budgets: JsonExportBudget[];
   transactions: JsonExportTransaction[];
 }
 
@@ -84,6 +97,19 @@ export const bankAccountRecordToJsonExportBankAccount = (
 
 export const tagRecordToJsonExportTag = (record: TagExportRecord): JsonExportTag =>
   withOptionalDescription({ name: record.name }, record.description);
+
+export const budgetRecordToJsonExportBudget = (record: BudgetExportRecord): JsonExportBudget => {
+  const base: JsonExportBudget = {
+    name: record.name,
+    type: record.type,
+    target_amount: record.target_amount,
+  };
+  if (record.start_date !== null) base.start_date = record.start_date;
+  if (record.end_date !== null) base.end_date = record.end_date;
+  if (record.categories.length > 0) base.categories = record.categories;
+  if (record.tags.length > 0) base.tags = record.tags;
+  return withOptionalDescription(base, record.description);
+};
 
 const categoryKey = (category: Pick<JsonExportCategory, "type" | "parent" | "name">): string =>
   JSON.stringify([category.type, category.parent ?? null, category.name]);
@@ -166,6 +192,7 @@ export const buildJsonExport = (
     categories: sortJsonExportCategories(categories),
     bank_accounts: sortByName(bankAccounts),
     tags: sortByName(tags),
+    budgets: sortByName(metadata.budgets.map(budgetRecordToJsonExportBudget)),
     transactions: rows.map(transactionToJsonExportRow),
   };
   return JSON.stringify(payload, null, 2);
