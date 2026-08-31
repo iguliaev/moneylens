@@ -34,23 +34,46 @@ async function openTransactionsSettingsTab(page: Page) {
 }
 
 /**
- * Picks an option, then waits for the shell to show it before returning.
+ * Resolves once a defaults write has been acknowledged by PostgREST: the
+ * default type goes to `user_settings`, a per-type category/bank account to
+ * `user_transaction_defaults`, both via an upsert (POST).
  *
- * These Selects have no optimistic local state — their displayed value comes
- * straight from the query result, which only updates once the write has been
- * confirmed and refetched. Against local Supabase that round trip is fast
- * enough to hide behind Playwright's normal action waits, but against a
- * remote preview deployment it isn't: firing the next select (or navigating
- * away) before this one's write has actually landed races the write. This
- * helper makes that round trip an explicit, awaited step instead of an
- * implicit assumption.
+ * This wait is load-bearing. The settings-grid Selects are `value`-controlled,
+ * but `valueIfStillAvailable` hands AntD `undefined` until the default is
+ * persisted and refetched — and AntD treats `value={undefined}` as
+ * uncontrolled, so a freshly clicked option paints from internal state
+ * *before* the upsert round-trips. Asserting only on the rendered value
+ * therefore returns while the request is still in flight; the next
+ * `page.goto()` / `page.reload()` then aborts it and the default never lands
+ * (reproduced against staging: the bank-account POST shows as aborted, and
+ * the Create form has nothing to prefill).
+ */
+function waitForDefaultsWrite(page: Page) {
+  return page.waitForResponse(
+    (res) =>
+      /\/rest\/v1\/(user_transaction_defaults|user_settings)(\?|$)/.test(
+        res.url()
+      ) &&
+      res.request().method() === "POST" &&
+      res.ok(),
+    { timeout: 15000 }
+  );
+}
+
+/**
+ * Picks an option, waits for its write to actually reach the database, then
+ * waits for the shell to reflect it. Both steps matter: the write wait keeps a
+ * following navigation from aborting the request, the shell wait keeps the
+ * assertion honest about what the user sees.
  */
 async function setDefaultAndConfirm(
   page: Page,
   comboboxName: string,
   optionTitle: string
 ) {
+  const written = waitForDefaultsWrite(page);
   await selectFromVisibleAntdDropdown(page, comboboxName, optionTitle);
+  await written;
   await expect(selectShell(page, comboboxName)).toContainText(optionTitle, {
     timeout: 15000,
   });
@@ -172,7 +195,9 @@ test.describe("Transaction Defaults", () => {
 
     const shell = selectShell(page, "Default category for Earn");
     await shell.hover();
+    const cleared = waitForDefaultsWrite(page);
     await shell.locator(".ant-select-clear").click({ force: true });
+    await cleared;
     await expect(shell).not.toContainText("Salary", { timeout: 15000 });
 
     await page.reload();
