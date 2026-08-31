@@ -1004,6 +1004,10 @@ export type Database = {
         Args: { p_bank_accounts: Json; p_user_id: string }
         Returns: number
       }
+      insert_budgets: {
+        Args: { p_budgets: Json; p_user_id: string }
+        Returns: number
+      }
       insert_categories: {
         Args: { p_categories: Json; p_user_id: string }
         Returns: number
