@@ -33,47 +33,64 @@ async function openTransactionsSettingsTab(page: Page) {
   await expect(page.locator(".ant-spin-blur")).toHaveCount(0);
 }
 
+type DefaultsTable = "user_settings" | "user_transaction_defaults";
+
 /**
- * Resolves once a defaults write has been acknowledged by PostgREST: the
- * default type goes to `user_settings`, a per-type category/bank account to
- * `user_transaction_defaults`, both via an upsert (POST).
+ * Resolves once the matching defaults upsert has been acknowledged by
+ * PostgREST. The default type is written to `user_settings`, a per-type
+ * category/bank account to `user_transaction_defaults`; supabase-js sends both
+ * as `POST /rest/v1/<table>?on_conflict=...`.
  *
- * This wait is load-bearing. The settings-grid Selects are `value`-controlled,
- * but `valueIfStillAvailable` hands AntD `undefined` until the default is
- * persisted and refetched — and AntD treats `value={undefined}` as
- * uncontrolled, so a freshly clicked option paints from internal state
- * *before* the upsert round-trips. Asserting only on the rendered value
- * therefore returns while the request is still in flight; the next
- * `page.goto()` / `page.reload()` then aborts it and the default never lands
- * (reproduced against staging: the bank-account POST shows as aborted, and
- * the Create form has nothing to prefill).
+ * This wait is load-bearing. `DefaultValueSelect` is handed
+ * `value={valueIfStillAvailable(...)}`, which stays `undefined` until the
+ * write has been persisted and refetched (the plain type Select does the same
+ * via `value={defaultType ?? undefined}`). While that prop is `undefined`
+ * rc-select falls back to its own internal state, so a freshly clicked option
+ * paints immediately — before the upsert round-trips. Asserting only on the
+ * rendered value therefore returns while the request is still in flight; the
+ * next `page.goto()` / `page.reload()` then aborts it and the write never
+ * lands (seen against staging: the last defaults POST before the navigation
+ * shows as aborted, and the Create form has nothing to prefill).
+ *
+ * Any status is matched so a failed upsert fails fast at the call site with
+ * the real code, instead of hanging until the timeout.
  */
-function waitForDefaultsWrite(page: Page) {
+function waitForDefaultsWrite(page: Page, table: DefaultsTable) {
   return page.waitForResponse(
     (res) =>
-      /\/rest\/v1\/(user_transaction_defaults|user_settings)(\?|$)/.test(
-        res.url()
-      ) &&
-      res.request().method() === "POST" &&
-      res.ok(),
+      new RegExp(`/rest/v1/${table}(\\?|$)`).test(res.url()) &&
+      res.request().method() === "POST",
     { timeout: 15000 }
   );
 }
 
 /**
  * Picks an option, waits for its write to actually reach the database, then
- * waits for the shell to reflect it. Both steps matter: the write wait keeps a
+ * waits for the shell to reflect it. Both waits matter: the write wait keeps a
  * following navigation from aborting the request, the shell wait keeps the
  * assertion honest about what the user sees.
+ *
+ * Assumes the option is not already selected — AntD fires no `onChange` when
+ * you re-pick the current value, so no upsert would go out and the write wait
+ * would hang until its timeout.
  */
 async function setDefaultAndConfirm(
   page: Page,
   comboboxName: string,
   optionTitle: string
 ) {
-  const written = waitForDefaultsWrite(page);
-  await selectFromVisibleAntdDropdown(page, comboboxName, optionTitle);
-  await written;
+  const table: DefaultsTable =
+    comboboxName === "Default transaction type"
+      ? "user_settings"
+      : "user_transaction_defaults";
+  // Promise.all, not a bare pending promise: if the select throws, the
+  // waitForResponse promise still gets awaited here rather than rejecting
+  // unhandled at fixture teardown.
+  const [res] = await Promise.all([
+    waitForDefaultsWrite(page, table),
+    selectFromVisibleAntdDropdown(page, comboboxName, optionTitle),
+  ]);
+  expect(res.ok(), `defaults upsert failed: ${res.status()}`).toBe(true);
   await expect(selectShell(page, comboboxName)).toContainText(optionTitle, {
     timeout: 15000,
   });
@@ -112,14 +129,18 @@ test.describe("Transaction Defaults", () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    await supabaseAdmin
+    // Isolation depends on both writes landing — a swallowed failure leaks the
+    // previous test's defaults into this one.
+    const { error: defaultsError } = await supabaseAdmin
       .from("user_transaction_defaults")
       .delete()
       .eq("user_id", testUser.userId);
-    await supabaseAdmin
+    expect(defaultsError, defaultsError?.message).toBeNull();
+    const { error: settingsError } = await supabaseAdmin
       .from("user_settings")
       .update({ default_transaction_type: null })
       .eq("user_id", testUser.userId);
+    expect(settingsError, settingsError?.message).toBeNull();
     await loginUser(page, testUser.email, testUser.password);
   });
 
@@ -195,13 +216,21 @@ test.describe("Transaction Defaults", () => {
 
     const shell = selectShell(page, "Default category for Earn");
     await shell.hover();
-    const cleared = waitForDefaultsWrite(page);
-    await shell.locator(".ant-select-clear").click({ force: true });
-    await cleared;
+    // Clearing routes through the same setDefaultsForType upsert (POST).
+    const [clearRes] = await Promise.all([
+      waitForDefaultsWrite(page, "user_transaction_defaults"),
+      shell.locator(".ant-select-clear").click({ force: true }),
+    ]);
+    expect(clearRes.ok(), `clear upsert failed: ${clearRes.status()}`).toBe(
+      true
+    );
     await expect(shell).not.toContainText("Salary", { timeout: 15000 });
 
-    await page.reload();
-    await page.getByRole("tab", { name: /^transactions$/i }).click();
+    // Reload through the helper: it waits out the grid's loading spinner, so
+    // the negative assertion runs against loaded data. A bare reload resolves
+    // the locator while the Select is still empty, passing this check before a
+    // still-persisted "Salary" could reappear.
+    await openTransactionsSettingsTab(page);
     await expect(
       selectShell(page, "Default category for Earn")
     ).not.toContainText("Salary");
@@ -228,7 +257,11 @@ test.describe("Transaction Defaults", () => {
     const expectedDate = `${String(today.getDate()).padStart(2, "0")}/${String(
       today.getMonth() + 1
     ).padStart(2, "0")}/${today.getFullYear()}`;
-    await expect(page.getByLabel("Date")).toHaveValue(expectedDate);
+    // First assertion after the create-page nav — needs the same cold-chain
+    // headroom as expectPrefilledOnCreatePage (see its docstring).
+    await expect(page.getByLabel("Date")).toHaveValue(expectedDate, {
+      timeout: 20000,
+    });
 
     await expectPrefilledOnCreatePage(selectShell(page, "* Type"), /spend/i);
     await expectPrefilledOnCreatePage(
@@ -302,6 +335,14 @@ test.describe("Transaction Defaults", () => {
     await expect(selectShell(page, "* Bank Account")).toContainText(
       "Secondary Account"
     );
+
+    // Re-check once the network settles: a late defaults refetch or a
+    // late-arriving options list re-runs the prefill effect, and its
+    // "only fill an empty field" guard is exactly what this test verifies.
+    await page.waitForLoadState("networkidle");
+    await expect(selectShell(page, "* Bank Account")).toContainText(
+      "Secondary Account"
+    );
   });
 
   test("a soft-deleted default is ignored rather than shown as a raw id", async ({
@@ -313,23 +354,37 @@ test.describe("Transaction Defaults", () => {
 
     // The FK is ON DELETE SET NULL, which never fires for a soft delete — the
     // defaults row keeps pointing at a category the UI no longer lists.
-    await supabaseAdmin
+    const { error: softDeleteError } = await supabaseAdmin
       .from("categories")
       .update({ deleted_at: new Date().toISOString() })
       .eq("user_id", testUser.userId)
       .eq("name", "Groceries");
+    expect(softDeleteError, softDeleteError?.message).toBeNull();
 
     await page.goto("/transactions/create");
+    // The prefill effect only runs once the type is set and its category
+    // options have loaded. Anchor on both so the negative assertions below
+    // test a settled form instead of passing on the empty first render.
+    await Promise.all([
+      page.waitForResponse(
+        (res) =>
+          /\/rest\/v1\/categories_with_usage\?.*type=eq\.spend/.test(
+            res.url()
+          ) && res.request().method() === "GET"
+      ),
+      expectPrefilledOnCreatePage(selectShell(page, "* Type"), /spend/i),
+    ]);
 
     const category = selectShell(page, "* Category");
     await expect(category).not.toContainText("Groceries");
     await expect(category).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}/i);
 
     // Restore for the remaining tests in the file
-    await supabaseAdmin
+    const { error: restoreError } = await supabaseAdmin
       .from("categories")
       .update({ deleted_at: null })
       .eq("user_id", testUser.userId)
       .eq("name", "Groceries");
+    expect(restoreError, restoreError?.message).toBeNull();
   });
 });
