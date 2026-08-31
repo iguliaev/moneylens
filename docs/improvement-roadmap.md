@@ -107,5 +107,4 @@ Gaps identified against `docs/superpowers/specs/2026-04-18-testing-coverage-plan
 ## Known Architectural Tradeoffs
 
 - A handful of direct Supabase calls (`utility/rpc.ts`, `utility/userSettings.ts`) bypass Refine's data provider — accepted, since these are RPC/upsert calls Refine's data layer doesn't support, not a scattered pattern across pages.
-- Dual tag storage: `transactions.tags TEXT[]` column still exists (`20260201164000_baseline_from_schemas.sql`) alongside the newer `transaction_tags` join table it was superseded by. Flagged in `specs/2026-04-18-backend-db-plan.md` as deliberately deferred — high effort, medium risk to remove.
 - `liveProvider` is configured in `App.tsx` and passed to `<Refine>`, but no component actually uses it (`useSubscription`/live mode) — either wire up real-time dashboard updates or remove the dead config.

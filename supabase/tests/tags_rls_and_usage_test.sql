@@ -1,46 +1,11 @@
 -- tags_rls_and_usage_test.sql
--- Validates tags RLS, uniqueness, updated_at, usage view, and safe-delete RPC
+-- Validates tags RLS, uniqueness, updated_at, the junction-based usage view,
+-- and the safe-delete RPC. Tag usage is tracked via transaction_tags now that
+-- the legacy transactions.tags array column has been dropped
+-- (20260831190631_drop_legacy_transaction_denormalized_columns.sql).
 
 begin;
-select plan(15);
-
--- Override delete_tag_safe to emit a result row (ok, in_use_count)
-create or replace function public.delete_tag_safe(p_tag_id uuid)
-returns table(ok boolean, in_use_count bigint)
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_uid uuid := auth.uid();
-  v_name text;
-  v_in_use_count bigint;
-begin
-  if v_uid is null then
-    raise exception 'Not authenticated' using errcode = '28000';
-  end if;
-
-  select name into v_name
-  from public.tags
-  where id = p_tag_id and user_id = v_uid;
-
-  if v_name is null then
-    raise exception 'Tag not found' using errcode = 'P0002';
-  end if;
-
-  select count(*)::bigint into v_in_use_count
-  from public.transactions tr
-  where tr.user_id = v_uid
-    and array_position(tr.tags, v_name) is not null;
-
-  if v_in_use_count > 0 then
-    return query select false as ok, v_in_use_count as in_use_count;
-  end if;
-
-  delete from public.tags where id = p_tag_id and user_id = v_uid;
-  return query select true as ok, 0::bigint as in_use_count;
-end;
-$$;
+select plan(11);
 
 -- Create and authenticate a dedicated user
 select tests.create_supabase_user('tag_user1@test.com');
@@ -81,18 +46,27 @@ select throws_like(
   'unique(user_id, name) enforced'
 );
 
--- 6) usage: create a transaction that uses fun
-select tests.authenticate_as('tag_user1@test.com');
-select lives_ok($$
-  insert into public.transactions (user_id, date, type, amount, tags, bank_account)
-  values (auth.uid(), '2025-08-01', 'spend', 10, array['fun'], 'Dummy')
-$$, 'insert tx with fun tag');
+-- 6) usage: create a transaction and link the 'fun' tag via the junction table
+select lives_ok(
+  $$ insert into public.transactions (user_id, date, type, amount)
+     values (auth.uid(), '2025-08-01', 'spend', 10) $$,
+  'insert transaction'
+);
+select lives_ok(
+  $$ insert into public.transaction_tags (transaction_id, tag_id)
+     select t.id, g.id
+     from public.transactions t
+     cross join public.tags g
+     where t.user_id = auth.uid() and t.amount = 10
+       and g.user_id = auth.uid() and g.name = 'fun' $$,
+  'link fun tag to transaction via transaction_tags'
+);
 
--- 7) view shows usage counts
+-- 7) view shows junction-based usage counts
 select bag_eq(
   $$ select name, in_use_count from public.tags_with_usage where user_id = auth.uid() order by name $$,
   $$ values ('fun', 1::bigint), ('groceries', 0::bigint) $$,
-  'tags_with_usage shows reference counts'
+  'tags_with_usage shows reference counts from transaction_tags'
 );
 
 -- 8) safe delete: in-use tag cannot be deleted
@@ -109,35 +83,11 @@ select row_eq(
   'delete_tag_safe returns ok=true for unused tag'
 );
 
--- 10) enforcement trigger: inserting unknown tag should fail
-select throws_like(
-  $$ insert into public.transactions (user_id, date, type, amount, tags, bank_account)
-     values (auth.uid(), '2025-08-02', 'spend', 5, array['unknown_tag'], 'Dummy') $$,
-  '%Unknown tag for this user:%',
-  'rejects unknown tag'
-);
-
--- 11) enforcement trigger: updating tags to unknown should fail
--- add a new known tag, then try to change to an unknown one
-select lives_ok($$ insert into public.tags (name) values ('books') $$, 'add books tag');
-select lives_ok($$ insert into public.transactions (user_id, date, type, amount, tags, bank_account)
-  values (auth.uid(), '2025-08-03', 'spend', 8, array['books'], 'Dummy') $$, 'insert tx with books');
-select throws_like(
-  $$ update public.transactions set tags = array['nope'] where amount = 8 $$,
-  '%Unknown tag for this user:%',
-  'update to unknown tag fails'
-);
-
--- 12) enforcement allows null/empty arrays
-select lives_ok(
-  $$ insert into public.transactions (user_id, date, type, amount, tags, bank_account)
-     values (auth.uid(), '2025-08-04', 'spend', 3, null, 'Dummy') $$,
-  'allows null tags'
-);
-select lives_ok(
-  $$ insert into public.transactions (user_id, date, type, amount, tags, bank_account)
-     values (auth.uid(), '2025-08-05', 'spend', 4, array[]::text[], 'Dummy') $$,
-  'allows empty tags'
+-- 10) soft-deleted tag no longer appears in tags_with_usage
+select is(
+  (select count(*) from public.tags_with_usage where user_id = auth.uid() and name = 'groceries'),
+  0::bigint,
+  'soft-deleted tag is filtered out of tags_with_usage'
 );
 
 select * from finish();

@@ -78,11 +78,17 @@ SELECT extensions.results_eq(
   'Insert with tags succeeds'
 );
 
--- Verify tags stored correctly (pick the inserted row)
-SELECT extensions.is(
-  (SELECT tags FROM public.transactions WHERE date = '2025-10-17' AND user_id = tests.get_supabase_uid('user1@test.com')),
-  ARRAY['essentials', 'monthly']::text[],
-  'Tags stored correctly as array'
+-- Verify tags linked correctly via the transaction_tags junction (pick the inserted row)
+SELECT extensions.bag_eq(
+  $$
+    SELECT tg.name
+    FROM public.transaction_tags tt
+    JOIN public.tags tg ON tg.id = tt.tag_id
+    JOIN public.transactions t ON t.id = tt.transaction_id
+    WHERE t.date = '2025-10-17' AND t.user_id = tests.get_supabase_uid('user1@test.com')
+  $$,
+  $$ VALUES ('essentials'), ('monthly') $$,
+  'Tags linked correctly via transaction_tags'
 );
 
 -- Test 3: Missing Required Field Error

@@ -169,7 +169,13 @@ No migration needed for this item.
 
 ---
 
-### 2.6 Dual Tag Storage Inconsistency (`tags TEXT[]` vs `transaction_tags`)
+### 2.6 Dual Tag Storage Inconsistency (`tags TEXT[]` vs `transaction_tags`) ✅ Done
+
+**Resolved** by `docs/superpowers/plans/2026-08-31-drop-legacy-transaction-columns.md`: the
+`transactions.category` / `transactions.bank_account` / `transactions.tags` legacy columns were
+dropped in `20260831190631_drop_legacy_transaction_denormalized_columns.sql`, `tags_with_usage`
+was rewired to count via `transaction_tags`, and the unused `sum_transactions_amount` RPC was
+removed. `transaction_tags` is now the sole source of truth for tag usage.
 
 **What**  
 The `transactions` table retains a legacy `tags TEXT[]` column. The new system uses the `transaction_tags` junction table. Two views use each approach:
@@ -306,7 +312,7 @@ This makes the dashboard live without any page reload.
 | ~~2.2~~ | ~~Testing~~ | ~~Edge-case tests for `view_monthly_tagged_type_totals`~~ | — | — | ✅ Done — PR [#151](https://github.com/iguliaev/moneylens/pull/151) |
 | ~~2.3~~ | ~~Correctness~~ | ~~`delete_bank_account_safe` / `delete_tag_safe` RETURN NEXT bug~~ | — | — | ✅ Done — PR [#147](https://github.com/iguliaev/moneylens/pull/147) |
 | ~~2.5~~ | ~~Correctness~~ | ~~CHECK constraint on `transactions.amount`~~ | — | — | _Removed — negative amounts intentional_ |
-| 2.6 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
+| ~~2.6~~ | ~~Correctness~~ | ~~Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`)~~ | — | — | ✅ Done — see `plans/2026-08-31-drop-legacy-transaction-columns.md` |
 | ~~3.1~~ | ~~Data Model~~ | ~~Add `user_settings` table for currency + RLS~~ | — | — | ✅ Done — PR [#149](https://github.com/iguliaev/moneylens/pull/149) |
 | 3.2 | Data Model | Document `budgets` nullable date semantics | Low | None | 🟢 Low |
 | 4.1 | Real-time | Wire Supabase Realtime into dashboard `usePeriodStats` | Medium | None | 🟡 Medium |
@@ -322,4 +328,4 @@ This makes the dashboard live without any page reload.
 5. ~~**2.2 — Tag view edge-case tests**~~ ✅ Done (PR #151)
 6. ~~**1.2 — `budgets_with_linked` view rewrite**~~ ✅ Done (PR #152)
 7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
-8. **2.6 — Dual tag storage resolution** (requires full audit, do last)
+8. ~~**2.6 — Dual tag storage resolution**~~ ✅ Done (see `plans/2026-08-31-drop-legacy-transaction-columns.md`)

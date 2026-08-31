@@ -1,7 +1,7 @@
 # Drop legacy `transactions` denormalized columns — implementation plan
 
 **Date:** 2026-08-31
-**Status:** Not started
+**Status:** Implemented on branch `drop-legacy-transaction-columns` (pending PR). Pre-flight prod audit (step 1) still owed — see Progress Log.
 **Issue:** _(not yet filed — worth one GitHub issue for the whole plan if we want "Closes #N" on the PR)_
 **Source:** Research done 2026-08-31 (this doc). Related prior write-ups:
 - `docs/superpowers/specs/2026-04-18-backend-db-plan.md` §2.6 (dual tag storage)
@@ -16,6 +16,8 @@ Out — no change to the FK columns (`category_id`, `bank_account_id`), the `tra
 
 <!-- Newest entry first. One entry per session, even sessions with no code progress. -->
 
+- **2026-08-31 (impl)** — Implemented on branch `drop-legacy-transaction-columns`. Migration `20260831190631_drop_legacy_transaction_denormalized_columns.sql` drops the trigger/function `enforce_known_tags`, the unused `sum_transactions_amount` RPC, the three per-type views `transactions_spend`/`transactions_earn`/`transactions_save` (**not in the original plan** — found via `pg_depend`; they still `SELECT COALESCE(t.category, c.name)` etc. and have zero readers anywhere, so dropped rather than rewritten), redefines `tags_with_usage` onto the `transaction_tags` junction, redefines `bulk_insert_transactions` without the `tags` dual-write, then `ALTER TABLE ... DROP COLUMN category, bank_account, tags`. Seeds rewritten to attach one junction tag per seeded transaction (random pick via `ORDER BY random() LIMIT 1`, since an inline random array index re-evaluated per candidate row only linked ~65%). pgTAP: deleted `sum_transactions_amount_fn_test.sql`, rewrote `tags_rls_and_usage_test.sql` (11 tests, junction-based), stripped legacy columns from `transactions_rls_test.sql` / `reset_user_data_test.sql` / `aggregation_logic_test.sql`, trimmed the dead user2 tag CTE + stale `enforce_known_tags` comments from `budget_progress_test.sql` / `aggregation_logic_test.sql`, and fixed `bulk_insert_test.sql` test 2 (was `SELECT tags FROM transactions` — **the plan wrongly said this file was clean**). `supabase test db` green, `supabase db reset` clean, `npm run check-types` + `npm run lint` clean. Types regenerated (`types.gen.ts` −189 lines) and `database.types.ts` hand-synced via prettier. Docs updated (this file, `docs/domain/transactions.md`, `docs/improvement-roadmap.md`, backend-db-plan §2.6, deep-code-review §1 follow-up note).
+- **2026-08-31 (still owed)** — Step 1 pre-flight audit against **production** (`SELECT count(*) ... WHERE tags/category/bank_account IS NOT NULL`) was **not run** — the sandbox blocked the outbound psql connection to the prod host. Must be run by a human before merge/deploy; if `tags` is non-zero, a backfill-into-`transaction_tags` migration has to land first.
 - **2026-08-31** — Plan created from research. Not started. Key finding: `category` and `bank_account` (TEXT) have zero live dependencies and are safe to drop outright; `tags` (TEXT[]) has 5 live dependents (`tags_with_usage` view, `enforce_known_tags` trigger, `bulk_insert_transactions`, `sum_transactions_amount`, dev seed) that must be changed in the same migration/PR.
 
 ---
@@ -161,13 +163,13 @@ Optional tidy: narrow `transactions/edit.tsx` `select: "*, transaction_tags(tag_
 
 ## Implementation order
 
-- [ ] 1. Pre-flight audit on **production**: `SELECT count(*) FROM public.transactions WHERE tags IS NOT NULL AND array_length(tags, 1) > 0;` and the same for `category IS NOT NULL` / `bank_account IS NOT NULL`. Expect 0. If non-zero for `tags`, backfill into `transaction_tags` in a prior migration before proceeding.
-- [ ] 2. Write the migration (§1) — trigger/function drops, RPC drop, `tags_with_usage` redefine, `bulk_insert_transactions` redefine, `ALTER TABLE ... DROP COLUMN` last.
-- [ ] 3. `supabase db reset` locally; confirm it applies clean.
-- [ ] 4. Rewrite `supabase/seeds/transactions.sql` (§2); re-reset and eyeball seeded data in the app (tag filters, tags list usage counts).
-- [ ] 5. Update pgTAP tests (§3); `supabase test db` green.
-- [ ] 6. Regenerate + hand-sync types (§4); `npm run check-types` + `npm run lint` green in `apps/web-next`.
-- [ ] 7. Update docs (§5).
+- [ ] 1. Pre-flight audit on **production**: `SELECT count(*) FROM public.transactions WHERE tags IS NOT NULL AND array_length(tags, 1) > 0;` and the same for `category IS NOT NULL` / `bank_account IS NOT NULL`. Expect 0. If non-zero for `tags`, backfill into `transaction_tags` in a prior migration before proceeding. **NOT DONE — sandbox blocked the prod psql connection; a human must run this before merge.**
+- [x] 2. Write the migration (§1) — trigger/function drops, RPC drop, per-type view drops (added), `tags_with_usage` redefine, `bulk_insert_transactions` redefine, `ALTER TABLE ... DROP COLUMN` last.
+- [x] 3. `supabase db reset` locally; applies clean.
+- [x] 4. Rewrite `supabase/seeds/transactions.sql` (§2); re-reset, verified 100 txns / 100 `transaction_tags` rows (one tag each).
+- [x] 5. Update pgTAP tests (§3) — plus `bulk_insert_test.sql` (missed by the plan); `supabase test db` green.
+- [x] 6. Regenerate + hand-sync types (§4); `npm run check-types` + `npm run lint` green in `apps/web-next`.
+- [x] 7. Update docs (§5).
 - [ ] 8. Run affected e2e specs (§ Verification).
 - [ ] 9. PR via the `create-pull-request` skill.
 
