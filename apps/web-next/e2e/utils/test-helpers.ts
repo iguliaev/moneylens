@@ -566,7 +566,9 @@ export async function seedTransactionsForUser(
     .eq("user_id", userId);
 
   if (catQueryError) {
-    console.error(`Failed to query categories for ${prefix}:`, catQueryError);
+    throw new Error(
+      `Failed to query categories for ${prefix}: ${catQueryError.message}`
+    );
   }
 
   // Get tag IDs for the user (to associate with transactions for Top Tags panel)
@@ -576,13 +578,26 @@ export async function seedTransactionsForUser(
     .eq("user_id", userId);
 
   if (tagQueryError) {
-    console.error(`Failed to query tags for ${prefix}:`, tagQueryError);
+    throw new Error(
+      `Failed to query tags for ${prefix}: ${tagQueryError.message}`
+    );
   }
 
   const spendCat = categories?.find((c) => c.type === "spend");
   const earnCat = categories?.find((c) => c.type === "earn");
   const saveCat = categories?.find((c) => c.type === "save");
   const tag1 = tags?.find((t) => t.name === `${prefix}-tag1`);
+
+  // category_id is nullable, so a missing lookup would otherwise seed a
+  // categoryless transaction and only surface as a confusing assertion failure
+  // in an unrelated test later.
+  if (!spendCat?.id || !earnCat?.id || !saveCat?.id) {
+    throw new Error(
+      `Missing seeded categories for ${prefix} (spend/earn/save): ${JSON.stringify(
+        categories
+      )}`
+    );
+  }
 
   const transactions = [
     {

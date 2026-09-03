@@ -1,10 +1,16 @@
 
 -- Seed transactions. Tags are attached via the transaction_tags junction table
--- (the legacy transactions.tags / transactions.bank_account columns were dropped
--- in 20260831190631_drop_legacy_transaction_denormalized_columns.sql). Each
--- seeded transaction gets one randomly-picked tag from the same per-type pool
--- that used to populate the array literal; seeds/tags.sql guarantees those tag
--- rows exist for user@example.com.
+-- (the legacy denormalized transactions.{category,bank_account,tags} columns were
+-- dropped in 20260831190631_drop_legacy_transaction_denormalized_columns.sql).
+--
+-- Each seeded transaction gets one randomly-picked tag from the same per-type
+-- pool that used to populate the array literal. The pool names below must stay
+-- in sync with seeds/tags.sql, which inserts these rows for user@example.com and
+-- runs first (seeds load in lexical filename order). The JOIN LATERAL is an
+-- inner join: if a name here has no matching tag row, that transaction is
+-- silently created with no tag link. Also note the `tg.user_id = ins.user_id`
+-- predicate is load-bearing, not just a filter -- without the correlation the
+-- subquery is evaluated once and every transaction gets the same tag.
 
 -- Seed transactions for 'spend' type
 WITH ins AS (

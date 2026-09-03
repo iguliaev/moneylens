@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(15);
 
 -- Create test supabase users
 select tests.create_supabase_user('user1@test.com');
@@ -164,6 +164,13 @@ select results_eq(
     array[0::bigint],
     'Deleting the owning auth user should cascade-delete their transactions'
 );
+
+-- Tests 13-15: the legacy denormalized columns dropped in
+-- 20260831190631_drop_legacy_transaction_denormalized_columns.sql stay gone.
+-- Guards against a future migration re-introducing a denormalized column.
+select hasnt_column('public', 'transactions', 'category',      'transactions.category (legacy TEXT) is gone');
+select hasnt_column('public', 'transactions', 'bank_account',  'transactions.bank_account (legacy TEXT) is gone');
+select hasnt_column('public', 'transactions', 'tags',          'transactions.tags (legacy TEXT[]) is gone');
 
 select * from finish();
 

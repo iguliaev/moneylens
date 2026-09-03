@@ -51,7 +51,7 @@ Swap `resource: "tags"` → `"tags_with_usage"` and `resource: "bank_accounts"` 
 
 **Out of scope, intentionally:** `transactions/show.tsx` (category/bank-account `useOne` lookups) — showing a soft-deleted entity's historical name on an already-created transaction is correct behavior, not a bug; switching it to the `_with_usage` view would break that.
 
-**Known follow-up — ✅ done:** `tags_with_usage.in_use_count` used to aggregate via the legacy `transactions.tags TEXT[]` column (`UNNEST`) rather than the `transaction_tags` junction table the actual RPCs write to, so it was effectively always 0. Fixed as part of `docs/superpowers/plans/2026-08-31-drop-legacy-transaction-columns.md` — the view now counts via `transaction_tags`, and the legacy `transactions.category` / `bank_account` / `tags` columns were dropped in `20260831190631_drop_legacy_transaction_denormalized_columns.sql`.
+**Known follow-up — ✅ done:** `tags_with_usage.in_use_count` used to aggregate via the legacy `transactions.tags TEXT[]` column (`UNNEST`) rather than the `transaction_tags` junction table the actual RPCs write to, so for any transaction written through the atomic/bulk RPCs it undercounted (expected ~0 for real data; the production row count is audited before the drop merges). Fixed as part of `docs/superpowers/plans/2026-08-31-drop-legacy-transaction-columns.md` — the view now counts via `transaction_tags`, and the legacy `transactions.category` / `bank_account` / `tags` columns were dropped in `20260831190631_drop_legacy_transaction_denormalized_columns.sql`.
 
 ---
 

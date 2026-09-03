@@ -7,27 +7,29 @@
 -- were rewritten onto category_id joins (20260627120000, 20260627130740), so
 -- they are dropped outright.
 --
--- tags (TEXT[]) still had live dependents that are rewired here first, in order,
--- before the column drop:
+-- tags (TEXT[]) still had live dependents. They are rewired here before the
+-- column drop, in the order the steps below apply them:
 --   1. enforce_known_tags() + trigger  -- validated NEW.tags; no longer meaningful
 --      (bulk_insert_transactions does its own per-tag existence check and the
 --      atomic create/update RPCs validate tag ownership).
 --   2. sum_transactions_amount(...)    -- unused RPC (no caller in apps/web-next);
 --      its p_bank_account / p_tags_any / p_tags_all params filtered on the legacy
 --      columns. Dropped rather than rewritten since nothing calls it.
---   3. tags_with_usage view            -- computed in_use_count from UNNEST(tr.tags),
---      which is effectively always 0 in prod because nothing writes the array.
---      Redefined to count via the transaction_tags junction (mirrors
---      delete_tag_safe's counting), making the Tags list usage count correct.
---   4. bulk_insert_transactions(jsonb) -- dual-wrote transactions.tags alongside
---      the transaction_tags rows. The transactions.tags write is removed; the
---      transaction_tags insert and every other check are unchanged.
---   5. transactions_spend / transactions_earn / transactions_save views --
+--   3. transactions_spend / transactions_earn / transactions_save views --
 --      per-type views whose SELECT list still exposed COALESCE(t.category, c.name),
 --      COALESCE(t.bank_account, b.name) and t.tags. They have no reader anywhere
---      (apps/web-next, e2e, other views/functions) — only stale generated-type
---      entries — so they are dropped rather than rewritten. (Not called out in
+--      (apps/web-next, e2e, other views/functions) -- only stale generated-type
+--      entries -- so they are dropped rather than rewritten. (Not called out in
 --      the plan; discovered via pg_depend during implementation.)
+--   4. tags_with_usage view            -- computed in_use_count from UNNEST(tr.tags).
+--      Nothing has written that array since bulk_insert_transactions stopped being
+--      the write path, so the count is expected to be ~0 for real data (the
+--      production row count is audited before merge -- see the plan's step 1).
+--      Redefined to count via the transaction_tags junction (mirrors
+--      delete_tag_safe's counting), making the Tags list usage count correct.
+--   5. bulk_insert_transactions(jsonb) -- dual-wrote transactions.tags alongside
+--      the transaction_tags rows. The transactions.tags write is removed; the
+--      transaction_tags insert and every other check are unchanged.
 --
 -- See docs/superpowers/plans/2026-08-31-drop-legacy-transaction-columns.md.
 
