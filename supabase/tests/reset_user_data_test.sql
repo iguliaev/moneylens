@@ -56,25 +56,23 @@ with ids as (
     (select id from public.bank_accounts where name = 'Checking' limit 1) as checking_ba,
     auth.uid() as uid
 )
-insert into public.transactions (user_id, date, type, amount, category_id, bank_account_id, tags)
-select 
+insert into public.transactions (user_id, date, type, amount, category_id, bank_account_id)
+select
   uid,
   current_date - interval '1 day',
   'spend'::public.transaction_type,
   50.00,
   grocery_cat,
-  checking_ba,
-  array['essential', 'recurring']
+  checking_ba
 from ids
 union all
-select 
+select
   uid,
   current_date,
   'earn'::public.transaction_type,
   5000.00,
   salary_cat,
-  checking_ba,
-  array['monthly']
+  checking_ba
 from ids;
 
 -- ===== User 2: Create their own data (should not be affected) =====
@@ -92,15 +90,14 @@ with ids as (
     (select id from public.bank_accounts where name = 'Monzo' limit 1) as monzo_ba,
     auth.uid() as uid
 )
-insert into public.transactions (user_id, date, type, amount, category_id, bank_account_id, tags)
-select 
+insert into public.transactions (user_id, date, type, amount, category_id, bank_account_id)
+select
   uid,
   current_date,
   'spend'::public.transaction_type,
   15.50,
   transport_cat,
-  monzo_ba,
-  array['work']
+  monzo_ba
 from ids;
 
 -- ===== Test 1: User 1 has data before reset =====

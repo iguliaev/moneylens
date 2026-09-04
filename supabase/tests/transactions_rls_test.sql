@@ -2,20 +2,11 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(15);
 
 -- Create test supabase users
 select tests.create_supabase_user('user1@test.com');
 select tests.create_supabase_user('user2@test.com');
-
--- Seed tags needed by tests
-insert into public.tags (user_id, name)
-values
-    (tests.get_supabase_uid('user1@test.com'), 'test'),
-    (tests.get_supabase_uid('user1@test.com'), 'groceries'),
-    (tests.get_supabase_uid('user1@test.com'), 'stocks'),
-    (tests.get_supabase_uid('user2@test.com'), 'salary'),
-    (tests.get_supabase_uid('user2@test.com'), 'groceries');
 
 -- Seed a category per user for the category-ownership tests
 insert into public.categories (user_id, type, name)
@@ -29,10 +20,10 @@ select id as user1_cat_id from public.categories
     where user_id = tests.get_supabase_uid('user1@test.com') and name = 'user1-cat' \gset
 
 -- Create test transactions
-insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account) values
-    (gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), current_date, 'spend', 'test', 100.00, array['test'], 'Test transaction', 'Test Bank'),
-    (gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), current_date, 'earn', 'salary', 200.00, array['salary'], 'Salary payment', 'Test Bank'),
-    (gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), current_date - interval '1 day', 'save', 'investment', 150.00, array['stocks'], 'Investment in stocks', 'Test Bank');
+insert into transactions (id, user_id, date, type, amount, notes) values
+    (gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), current_date, 'spend', 100.00, 'Test transaction'),
+    (gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), current_date, 'earn', 200.00, 'Salary payment'),
+    (gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), current_date - interval '1 day', 'save', 150.00, 'Investment in stocks');
 
 
 -- as User 1
@@ -49,16 +40,16 @@ select results_eq(
 
 -- Test 2: User 1 can create their own transaction
 select lives_ok(
-    $$insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account)
-      values (gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), current_date, 'spend', 'groceries', 50.00, array['groceries'], 'grocery shopping', 'test bank')$$,
+    $$insert into transactions (id, user_id, date, type, amount, notes)
+      values (gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), current_date, 'spend', 50.00, 'grocery shopping')$$,
     'User 1 should be able to create a new transaction'
 );
 
 
 -- Test 3: User 1 cannot insert a transaction for another user
 select throws_ok(
-        $$insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account)
-            values (gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), current_date, 'spend', 'groceries', 50.00, null, 'grocery shopping', 'test bank')$$,
+        $$insert into transactions (id, user_id, date, type, amount, notes)
+            values (gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), current_date, 'spend', 50.00, 'grocery shopping')$$,
     '42501',
     'new row violates row-level security policy for table "transactions"',
     'User 1 should not be able to insert a transaction for another user'
@@ -101,8 +92,8 @@ select lives_ok(
 
 -- Test 8: User 2 cannot set user_id to another user on insert
 select throws_ok(
-        $$insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account)
-            values (gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), current_date, 'spend', 'groceries', 50.00, null, 'grocery shopping', 'test bank')$$,
+        $$insert into transactions (id, user_id, date, type, amount, notes)
+            values (gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), current_date, 'spend', 50.00, 'grocery shopping')$$,
     '42501',
     'new row violates row-level security policy for table "transactions"',
     'User 2 should not be able to set user_id to another user on insert'
@@ -152,8 +143,8 @@ reset role;
 select set_config('request.jwt.claims', '', true);
 
 select throws_ok(
-        $$insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account)
-            values (gen_random_uuid(), null, current_date, 'spend', 'groceries', 50.00, null, 'no owner', 'test bank')$$,
+        $$insert into transactions (id, user_id, date, type, amount, notes)
+            values (gen_random_uuid(), null, current_date, 'spend', 50.00, 'no owner')$$,
     '23502',
     'null value in column "user_id" of relation "transactions" violates not-null constraint',
     'Inserting a transaction with a null user_id should violate the NOT NULL constraint'
@@ -163,8 +154,8 @@ select throws_ok(
 -- Test 12: deleting the owning auth user cascades to their transactions (S4)
 select tests.create_supabase_user('cascade_user@test.com');
 
-insert into transactions (id, user_id, date, type, category, amount, tags, notes, bank_account)
-values (gen_random_uuid(), tests.get_supabase_uid('cascade_user@test.com'), current_date, 'spend', 'groceries', 25.00, null, 'will cascade', 'test bank');
+insert into transactions (id, user_id, date, type, amount, notes)
+values (gen_random_uuid(), tests.get_supabase_uid('cascade_user@test.com'), current_date, 'spend', 25.00, 'will cascade');
 
 delete from auth.users where id = tests.get_supabase_uid('cascade_user@test.com');
 
@@ -173,6 +164,13 @@ select results_eq(
     array[0::bigint],
     'Deleting the owning auth user should cascade-delete their transactions'
 );
+
+-- Tests 13-15: the legacy denormalized columns dropped in
+-- 20260831190631_drop_legacy_transaction_denormalized_columns.sql stay gone.
+-- Guards against a future migration re-introducing a denormalized column.
+select hasnt_column('public', 'transactions', 'category',      'transactions.category (legacy TEXT) is gone');
+select hasnt_column('public', 'transactions', 'bank_account',  'transactions.bank_account (legacy TEXT) is gone');
+select hasnt_column('public', 'transactions', 'tags',          'transactions.tags (legacy TEXT[]) is gone');
 
 select * from finish();
 

@@ -29,16 +29,10 @@ select tests.create_supabase_user('bp_u2@test.com');
 
 with
   -- ── Tags ──────────────────────────────────────────────────────────────────
-  -- Tags for user1 (groceries used for tag-linked budget tests).
-  -- Tags for user2 also seeded to avoid enforce_known_tags errors for user2 txs.
+  -- Tag for user1 (groceries used for tag-linked budget tests).
   t_u1_groceries as (
     insert into public.tags (user_id, name)
     values (tests.get_supabase_uid('bp_u1@test.com'), 'groceries')
-    returning id
-  ),
-  t_u2_groceries as (
-    insert into public.tags (user_id, name)
-    values (tests.get_supabase_uid('bp_u2@test.com'), 'groceries')
     returning id
   ),
 

@@ -20,9 +20,7 @@ exists to organize.
 | `deleted_at` | timestamptz, nullable | Soft delete. |
 | `created_at` / `updated_at` | timestamptz | |
 
-Table: `public.transactions`. Two columns, `category` (text) and `bank_account` (text), still
-exist on the table and are marked `-- Obsolete field, do not use` in the schema — they predate
-`category_id`/`bank_account_id` and are not read or written by current code.
+Table: `public.transactions`.
 
 Read model for the UI: `public.transactions_with_details`, which resolves `category_name`,
 `category_parent_name`, `category_type`, `bank_account_name`, `tag_ids`, and `tag_names` in one
