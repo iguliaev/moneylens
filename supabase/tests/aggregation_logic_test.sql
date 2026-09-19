@@ -9,7 +9,7 @@ select tests.create_supabase_user('user1@test.com');
 select tests.create_supabase_user('user2@test.com');
 
 
--- Seed required tags for each user to satisfy enforce_known_tags trigger
+-- Seed tags for each user; linked to transactions via transaction_tags below
 insert into public.tags (user_id, name)
 values
   (tests.get_supabase_uid('user1@test.com'), 'groceries'),
@@ -52,21 +52,21 @@ WITH
     RETURNING id
   ),
   txn_data AS (
-    INSERT INTO transactions (id, user_id, date, type, category_id, amount, notes, bank_account)
+    INSERT INTO transactions (id, user_id, date, type, category_id, amount, notes)
     (
-    SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-08-01'::date, 'spend'::transaction_type, cat_food_user1.id, 100.00, 'Lunch', 'Test Bank' FROM cat_food_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-08-02'::date, 'spend'::transaction_type, cat_food_user1.id, 50.00, 'Dinner', 'Test Bank' FROM cat_food_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-08-03'::date, 'earn'::transaction_type, cat_salary_user1.id, 1000.00, 'August Salary', 'Test Bank' FROM cat_salary_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-08-04'::date, 'save'::transaction_type, cat_vacation_user1.id, 150.00, 'Vacation', 'Test Bank' FROM cat_vacation_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-07-01'::date, 'spend'::transaction_type, cat_food_user1.id, 100.00, 'Lunch', 'Test Bank' FROM cat_food_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-06-02'::date, 'spend'::transaction_type, cat_food_user1.id, 50.00, 'Dinner', 'Test Bank' FROM cat_food_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-05-03'::date, 'earn'::transaction_type, cat_salary_user1.id, 1000.00, 'August Salary', 'Test Bank' FROM cat_salary_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-04-03'::date, 'earn'::transaction_type, cat_salary_user1.id, 1000.00, 'May Salary', 'Test Bank' FROM cat_salary_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-04-04'::date, 'save'::transaction_type, cat_vacation_user1.id, 150.00, 'Vacation', 'Test Bank' FROM cat_vacation_user1
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), '2025-08-01'::date, 'spend'::transaction_type, cat_food_user2.id, 200.00, 'Lunch', 'Test Bank' FROM cat_food_user2
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), '2025-08-02'::date, 'spend'::transaction_type, cat_food_user2.id, 100.00, 'Dinner', 'Test Bank' FROM cat_food_user2
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), '2025-08-03'::date, 'earn'::transaction_type, cat_salary_user2.id, 2000.00, 'August Salary', 'Test Bank' FROM cat_salary_user2
-    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), '2025-08-04'::date, 'save'::transaction_type, cat_vacation_user2.id, 150.00, 'Vacation', 'Test Bank' FROM cat_vacation_user2
+    SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-08-01'::date, 'spend'::transaction_type, cat_food_user1.id, 100.00, 'Lunch' FROM cat_food_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-08-02'::date, 'spend'::transaction_type, cat_food_user1.id, 50.00, 'Dinner' FROM cat_food_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-08-03'::date, 'earn'::transaction_type, cat_salary_user1.id, 1000.00, 'August Salary' FROM cat_salary_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-08-04'::date, 'save'::transaction_type, cat_vacation_user1.id, 150.00, 'Vacation' FROM cat_vacation_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-07-01'::date, 'spend'::transaction_type, cat_food_user1.id, 100.00, 'Lunch' FROM cat_food_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-06-02'::date, 'spend'::transaction_type, cat_food_user1.id, 50.00, 'Dinner' FROM cat_food_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-05-03'::date, 'earn'::transaction_type, cat_salary_user1.id, 1000.00, 'August Salary' FROM cat_salary_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-04-03'::date, 'earn'::transaction_type, cat_salary_user1.id, 1000.00, 'May Salary' FROM cat_salary_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user1@test.com'), '2025-04-04'::date, 'save'::transaction_type, cat_vacation_user1.id, 150.00, 'Vacation' FROM cat_vacation_user1
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), '2025-08-01'::date, 'spend'::transaction_type, cat_food_user2.id, 200.00, 'Lunch' FROM cat_food_user2
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), '2025-08-02'::date, 'spend'::transaction_type, cat_food_user2.id, 100.00, 'Dinner' FROM cat_food_user2
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), '2025-08-03'::date, 'earn'::transaction_type, cat_salary_user2.id, 2000.00, 'August Salary' FROM cat_salary_user2
+    UNION ALL SELECT gen_random_uuid(), tests.get_supabase_uid('user2@test.com'), '2025-08-04'::date, 'save'::transaction_type, cat_vacation_user2.id, 150.00, 'Vacation' FROM cat_vacation_user2
     )
     RETURNING id, user_id, notes
   )

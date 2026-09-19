@@ -169,26 +169,22 @@ No migration needed for this item.
 
 ---
 
-### 2.6 Dual Tag Storage Inconsistency (`tags TEXT[]` vs `transaction_tags`)
+### 2.6 Dual Tag Storage Inconsistency (`tags TEXT[]` vs `transaction_tags`) ✅ Done
 
-**What**  
-The `transactions` table retains a legacy `tags TEXT[]` column. The new system uses the `transaction_tags` junction table. Two views use each approach:
-- `tags_with_usage` unnests `transactions.tags` (legacy array) to compute `in_use_count`
-- `view_monthly_tagged_type_totals` joins via `transaction_tags` (new junction table)
+**Resolved** by `docs/superpowers/plans/2026-08-31-drop-legacy-transaction-columns.md`: the
+`transactions.category` / `transactions.bank_account` / `transactions.tags` legacy columns were
+dropped in `20260831190631_drop_legacy_transaction_denormalized_columns.sql`, `tags_with_usage`
+was rewired to count via `transaction_tags`, and the unused `sum_transactions_amount` RPC was
+removed. `transaction_tags` becomes the sole source of truth for tag usage once that migration
+merges (a pre-merge production audit confirms no legacy `tags` array data needs backfilling
+first).
 
-This means `in_use_count` on a tag could be wrong if some transactions still rely on the legacy array but have no entry in `transaction_tags` (or vice versa).
-
-**Why it matters**  
-Correctness of the "in use" badge on the Tags list page, and potential silent discrepancies between what the chart shows and what the tags list shows.
-
-**How to implement**  
-1. Audit: count rows where `transaction_tags` has entries that don't match `transactions.tags` text array, and vice versa.
-2. Decide on canonical source of truth: recommend `transaction_tags` (normalized, references known tag IDs).
-3. Migrate any legacy `tags TEXT[]` data into `transaction_tags` entries, then deprecate the column or keep it as a denormalized cache (clearly documented).
-4. Update `tags_with_usage` to use `transaction_tags` instead of unnesting `transactions.tags`.
-5. Eventually mark `transactions.tags` as `-- deprecated` and add a migration to drop it once data is confirmed migrated.
-
-**Risk:** Medium — data migration needed. All existing app code that reads/writes the `tags TEXT[]` column must be audited and updated in the same change set.
+**Original problem (for history):** `transactions` carried a legacy `tags TEXT[]` column
+alongside the `transaction_tags` junction. `tags_with_usage` computed `in_use_count` by
+unnesting the array while `view_monthly_tagged_type_totals` joined the junction, so the "in use"
+badge on the Tags list could disagree with the charts — and with `delete_tag_safe`, which was
+already junction-based. The fix was to make the junction canonical and drop the array (plus the
+two obsolete `category` / `bank_account` text columns riding along with it).
 
 ---
 
@@ -306,7 +302,7 @@ This makes the dashboard live without any page reload.
 | ~~2.2~~ | ~~Testing~~ | ~~Edge-case tests for `view_monthly_tagged_type_totals`~~ | — | — | ✅ Done — PR [#151](https://github.com/iguliaev/moneylens/pull/151) |
 | ~~2.3~~ | ~~Correctness~~ | ~~`delete_bank_account_safe` / `delete_tag_safe` RETURN NEXT bug~~ | — | — | ✅ Done — PR [#147](https://github.com/iguliaev/moneylens/pull/147) |
 | ~~2.5~~ | ~~Correctness~~ | ~~CHECK constraint on `transactions.amount`~~ | — | — | _Removed — negative amounts intentional_ |
-| 2.6 | Correctness | Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`) | High | Medium | 🟡 Medium |
+| ~~2.6~~ | ~~Correctness~~ | ~~Resolve dual tag storage (`tags TEXT[]` vs `transaction_tags`)~~ | — | — | ✅ Done — see `plans/2026-08-31-drop-legacy-transaction-columns.md` |
 | ~~3.1~~ | ~~Data Model~~ | ~~Add `user_settings` table for currency + RLS~~ | — | — | ✅ Done — PR [#149](https://github.com/iguliaev/moneylens/pull/149) |
 | 3.2 | Data Model | Document `budgets` nullable date semantics | Low | None | 🟢 Low |
 | 4.1 | Real-time | Wire Supabase Realtime into dashboard `usePeriodStats` | Medium | None | 🟡 Medium |
@@ -322,4 +318,4 @@ This makes the dashboard live without any page reload.
 5. ~~**2.2 — Tag view edge-case tests**~~ ✅ Done (PR #151)
 6. ~~**1.2 — `budgets_with_linked` view rewrite**~~ ✅ Done (PR #152)
 7. **4.1 — Dashboard real-time subscriptions** (UX improvement)
-8. **2.6 — Dual tag storage resolution** (requires full audit, do last)
+8. ~~**2.6 — Dual tag storage resolution**~~ ✅ Done (see `plans/2026-08-31-drop-legacy-transaction-columns.md`)
