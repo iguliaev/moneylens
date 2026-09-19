@@ -11,13 +11,15 @@
 ### Site URL
 - Production: `https://moneylens-mocha.vercel.app/`
 - Staging: `https://moneylens-git-main-igor-guliaevs-projects.vercel.app/`
-- Local development: `http://localhost:3000`
+- Local development: `http://localhost:5173` (set in `supabase/config.toml`)
 
 ### Additional Redirect URLs
-- Add any allowed redirect destinations that your application uses (for example):
-  - `https://moneylens-mocha.vercel.app/`
-  - `https://moneylens-git-main-igor-guliaevs-projects.vercel.app/`
-  - `http://localhost:3000`
+- Password reset redirects to `<origin>/update-password` (see `authProvider.forgotPassword`), so each environment needs that exact URL:
+  - Production: `https://moneylens-mocha.vercel.app/update-password`
+  - Staging: `https://moneylens-git-main-igor-guliaevs-projects.vercel.app/update-password`
+  - Local: `http://localhost:5173/update-password` (already in `supabase/config.toml`)
+- Only the stable staging `git-main` URL is allow-listed. Per-deployment Vercel preview URLs are not, so password reset can't be completed on a preview deployment (the reset e2e spec skips itself there).
+- If a `redirectTo` is not on this list, Supabase silently falls back to the Site URL instead of erroring — the symptom is landing on the dashboard/login instead of the new-password form.
 
 
 ## Why These URLs?

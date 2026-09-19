@@ -321,16 +321,24 @@ function App() {
                         />
                       }
                     />
-                    <Route
-                      path="/update-password"
-                      element={
+                  </Route>
+                  {/*
+                    Outside the guard above on purpose: the recovery link signs the
+                    user in before landing here, and NavigateToResource would bounce
+                    an authenticated user off the form before they can set a password.
+                  */}
+                  <Route
+                    path="/update-password"
+                    element={
+                      <>
+                        <EnvironmentBanner />
                         <AuthPage
                           type="updatePassword"
                           title={<ProjectTitle full />}
                         />
-                      }
-                    />
-                  </Route>
+                      </>
+                    }
+                  />
                   <Route
                     element={
                       <Authenticated key="catch-all">
