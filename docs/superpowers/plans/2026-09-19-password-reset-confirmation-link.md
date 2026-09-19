@@ -7,6 +7,7 @@
 
 ## Progress Log
 
+- **2026-09-19** — Pre-flight (step 1) results from the user: **staging** Site URL `https://moneylens-git-main-igor-guliaevs-projects.vercel.app`, Redirect URLs empty, recovery template still uses `/auth/confirm?token_hash=…`, **no custom SMTP**. **Prod** Site URL `https://moneylens-mocha.vercel.app`, Redirect URLs empty, recovery template contents not yet reported (paste was empty), magic-link template not reported for either project. New risk §2.6: with no custom SMTP, Supabase's built-in sender only delivers to project team members and is limited to 2 emails/hour, so real users may not receive reset emails at all, independent of the link bug.
 - **2026-09-19** — Decisions recorded: (1) staging allow-lists only the stable `git-main` URL, no Vercel preview wildcard; (2) magic-link template gets the same `{{ .ConfirmationURL }}` change. Consequence noted in §2.3 — the hosted-staging CI e2e can't exercise the redirect on per-deployment preview URLs, so the reset spec is local-only in CI. Pre-flight (step 1) handed to the user. Not started.
 - **2026-09-19** — Plan created. Not started. Branch `fix/password-reset-confirmation-link` has the roadmap entry commit only.
 
@@ -26,6 +27,8 @@
    **Decision (2026-09-19): allow-list only the stable `git-main` staging URL, no preview wildcard.** `playwright.yml` sets `BASE_URL` to the per-deployment preview URL, which won't be allow-listed, so on hosted staging Supabase would fall back to the Site URL and the reset spec would fail there. Therefore the reset spec runs locally only: `test.skip` when `BASE_URL` isn't a local origin (same pattern as the register test's `test.skip(!!process.env.CI, …)`). Hosted staging is covered by the manual real-email check in step 8.
 4. **Hosted templates aren't read from the repo.** The dashboard copy must be updated by hand for staging and prod, after the redirect allow-list is in place. Emails already sent with `/auth/confirm` links stay broken (they were already broken).
 5. **One-time link + email scanners.** The `/auth/v1/verify` link is consumed on GET; a pre-fetching scanner can burn it. Accepted trade-off (see roadmap entry); revisit only if users report "link expired".
+
+6. **Built-in SMTP only delivers to team members.** Staging and prod have no custom SMTP. Per Supabase's SMTP docs: "Unless you configure a custom SMTP server for your project, Supabase Auth will refuse to deliver messages to addresses that are not part of the project's team", with "a low rate-limit of 2 messages per hour". The reporter received the email, presumably because their address is on the team. Any other real user would get nothing, so fixing the link alone won't make password reset work for them. Needs a decision: set up custom SMTP (at least for prod) as part of, or right after, this fix. Tracked as a separate item in the roadmap; not implemented in this plan.
 
 ## 3. Implementation order
 
