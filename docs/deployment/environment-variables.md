@@ -4,7 +4,7 @@
 
 ### SITE_URL
 - Description: Base URL of your application, used for email redirects and templates.
-- Local: `http://localhost:3000`
+- Local: `http://localhost:5173` (hard-coded as `site_url` in `supabase/config.toml`; the env var is no longer read locally)
 - Staging: `https://moneylens-git-main-igor-guliaevs-projects.vercel.app/`
 - Production: `https://moneylens-mocha.vercel.app/`
 - Used by: Supabase Auth for generating redirect links in magic link and password reset emails.
@@ -20,4 +20,4 @@
 
 ## Notes & Validation
 - Ensure `SITE_URL` is set correctly in production; email links are generated using this value.
-- For local development set `SITE_URL=http://localhost:3000` before starting Supabase so email links point to your dev site.
+- Local development needs no `SITE_URL`: `supabase/config.toml` sets `site_url` and the `/update-password` redirect for `http://localhost:5173`. Hosted staging/production Site URL and Redirect URLs are set in the Supabase dashboard.

@@ -5,7 +5,7 @@
 ### Configuration
 - [ ] `SITE_URL` environment variable set to the production URL (e.g. `https://moneylens.app`)
 - [ ] Email templates updated in Supabase dashboard (or configured via `config.toml`)
-- [ ] Redirect URLs configured in Supabase dashboard
+- [ ] Redirect URLs configured in Supabase dashboard, including `<origin>/update-password` (add this **before** updating the templates)
 - [ ] Custom SMTP configured (recommended for production deliverability)
 - [ ] All tests passing in staging environment
 
@@ -32,7 +32,7 @@
 
 
 ## Post-Deployment (First 24 Hours)
-- [ ] Monitor error logs for `/auth/confirm` endpoint
+- [ ] Monitor Supabase Auth logs for failed `/verify` calls (expired/used recovery tokens)
 - [ ] Check email delivery rates and bounce/complaint metrics
 - [ ] Monitor user support tickets related to auth emails
 - [ ] Track password reset completion rate and magic link success rate
@@ -60,3 +60,4 @@ If critical issues are discovered during or after deployment:
 - Use staging to validate all changes before production deployment.
 - When using a hosted Supabase instance, some template changes must be made in the dashboard rather than config files.
 - Ensure `SITE_URL` and allowed redirect URLs are configured before sending production emails to avoid broken links.
+- Recovery/magic-link emails use `{{ .ConfirmationURL }}` (Supabase-hosted verify link). There is no `/auth/confirm` route in the SPA.
