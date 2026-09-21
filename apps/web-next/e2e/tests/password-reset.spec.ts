@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
 import {
   createTestUser,
   deleteTestUser,
@@ -8,11 +9,36 @@ import {
 
 const NEW_PASSWORD = "NewPassword456!";
 
-const isLocalOrigin = (baseURL: string | undefined) => {
-  if (!baseURL) return false;
-  const { hostname } = new URL(baseURL);
-  return hostname === "localhost" || hostname === "127.0.0.1";
+// The only app origin whose /update-password is in the local Supabase
+// redirect allow-list (supabase/config.toml).
+const ALLOW_LISTED_ORIGIN = "http://localhost:5173";
+
+const hostnameOf = (url: string | undefined) => {
+  try {
+    return new URL(url ?? "").hostname;
+  } catch {
+    return undefined;
+  }
 };
+
+// What decides whether the redirect works is the Supabase project's
+// allow-list, not just where the app runs: CI can serve the app locally while
+// pointing at hosted staging Supabase, which doesn't allow-list our origin.
+const canRunResetFlow = (baseURL: string | undefined) =>
+  baseURL !== undefined &&
+  new URL(baseURL).origin === ALLOW_LISTED_ORIGIN &&
+  ["localhost", "127.0.0.1"].includes(
+    hostnameOf(process.env.VITE_SUPABASE_URL) ?? "",
+  );
+
+// Throwaway client for password probes: signing in on the shared service-role
+// client would make it act as that user for every later call in the worker.
+const anonClient = () =>
+  createClient(
+    process.env.VITE_SUPABASE_URL!,
+    process.env.VITE_SUPABASE_KEY!,
+    { auth: { persistSession: false } },
+  );
 
 // Builds the same link the "Reset Password" email button carries
 // ({{ .ConfirmationURL }}), without needing a mail server.
@@ -29,11 +55,12 @@ async function generateRecoveryLink(email: string, baseURL: string) {
 }
 
 test.describe("Password reset", () => {
-  // Hosted staging only allow-lists the stable git-main URL as a redirect
-  // target, so per-deployment preview URLs can't complete this flow.
+  // Hosted projects only allow-list their stable URL as a redirect target, so
+  // this flow can only be completed against local Supabase with the app on
+  // the allow-listed origin.
   test.skip(
-    ({ baseURL }) => !isLocalOrigin(baseURL),
-    "Recovery redirect is only allow-listed for local and stable staging URLs",
+    ({ baseURL }) => !canRunResetFlow(baseURL),
+    `Needs local Supabase and the app at ${ALLOW_LISTED_ORIGIN}`,
   );
 
   test("user can set a new password from a recovery link", async ({
@@ -63,7 +90,7 @@ test.describe("Password reset", () => {
       await expect(page).toHaveURL("/login");
 
       const { error: oldPasswordError } =
-        await supabaseAdmin.auth.signInWithPassword({ email, password });
+        await anonClient().auth.signInWithPassword({ email, password });
       expect(oldPasswordError).not.toBeNull();
 
       await loginUser(page, email, NEW_PASSWORD);
@@ -72,9 +99,9 @@ test.describe("Password reset", () => {
     }
   });
 
-  test("a recovery link that was already used does not sign anyone in", async ({
+  test("a recovery link that was already used is rejected and signs no one in", async ({
     page,
-    browser,
+    request,
     baseURL,
   }) => {
     const { email, userId } = await createTestUser("reset-reuse");
@@ -82,20 +109,18 @@ test.describe("Password reset", () => {
     try {
       const link = await generateRecoveryLink(email, baseURL!);
 
-      // First use consumes the one-time token
-      await page.goto(link);
-      await expect(page).toHaveURL(/\/update-password/);
+      // Consume the one-time token server-side, without creating a browser session
+      const first = await request.get(link, { maxRedirects: 0 });
+      expect(first.status()).toBe(303);
+      expect(first.headers()["location"]).toContain("#access_token=");
 
-      // Second use, from a fresh browser with no session, must not authenticate
-      const freshContext = await browser.newContext({ baseURL });
-      try {
-        const freshPage = await freshContext.newPage();
-        await freshPage.goto(link);
-        await freshPage.goto("/");
-        await expect(freshPage).toHaveURL(/\/login/);
-      } finally {
-        await freshContext.close();
-      }
+      // Using it again must be rejected by Supabase...
+      await page.goto(link);
+      await expect(page).toHaveURL(/error_code=otp_expired/);
+
+      // ...and must not have signed anyone in
+      await page.goto("/transactions");
+      await expect(page).toHaveURL(/\/login/);
     } finally {
       await deleteTestUser(userId);
     }
