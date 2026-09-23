@@ -196,10 +196,18 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# All 6 self-hostable auth flow templates (invite, confirmation, recovery,
+# magic_link, email_change, reauthentication) are customized. File names
+# match the flow's name in the Supabase dashboard's Templates tab, not the
+# `[auth.email.template.X]` section name below (that name is fixed by
+# GoTrue) — see docs/deployment/email-templates-setup.md.
+[auth.email.template.invite]
+subject = "You're Invited to MoneyLens"
+content_path = "./supabase/templates/invite-user.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm Your Email - MoneyLens"
+content_path = "./supabase/templates/confirm-your-signup.html"
 
 [auth.email.template.magic_link]
 subject = "Your Magic Link for MoneyLens"
@@ -207,7 +215,15 @@ content_path = "./supabase/templates/magic-link.html"
 
 [auth.email.template.recovery]
 subject = "Reset Your Password - MoneyLens"
-content_path = "./supabase/templates/recovery.html"
+content_path = "./supabase/templates/reset-password.html"
+
+[auth.email.template.email_change]
+subject = "Confirm Your New Email - MoneyLens"
+content_path = "./supabase/templates/change-email-address.html"
+
+[auth.email.template.reauthentication]
+subject = "{{ .Token }} is your MoneyLens verification code"
+content_path = "./supabase/templates/reauthentication.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

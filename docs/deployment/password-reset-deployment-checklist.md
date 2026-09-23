@@ -3,8 +3,10 @@
 ## Pre-Deployment
 
 ### Configuration
-- [ ] `SITE_URL` environment variable set to the production URL (e.g. `https://moneylens.app`)
-- [ ] Email templates updated in Supabase dashboard (or configured via `config.toml`)
+- [ ] Supabase dashboard **Site URL** set to the production URL (this is a dashboard setting, not
+      a Vercel/CI environment variable — see `environment-variables.md`)
+- [ ] All 6 email templates updated in the Supabase dashboard (see `email-templates-setup.md` for
+      the full list; configured locally via `config.toml`)
 - [ ] Redirect URLs configured in Supabase dashboard, including `<origin>/update-password` (add this **before** updating the templates)
 - [ ] Custom SMTP configured (recommended for production deliverability)
 - [ ] All tests passing in staging environment
@@ -18,7 +20,7 @@
 ### Testing
 - [ ] All local tests passing
 - [ ] Staging environment tested end-to-end
-- [ ] Email deliverability tested (Inbucket for dev, SMTP for staging/prod)
+- [ ] Email deliverability tested (Mailpit/Inbucket for dev, SMTP for staging/prod)
 - [ ] Mobile responsiveness verified
 - [ ] Accessibility checks completed
 
@@ -26,9 +28,12 @@
 ## Deployment Steps
 - [ ] Deploy backend configuration (update `supabase/config.toml` and templates if self-managed)
 - [ ] Restart Supabase services (for self-managed/local): `supabase stop && supabase start`
-- [ ] Deploy frontend code (Next.js) to your hosting provider
-- [ ] Verify production environment variables (SITE_URL, SMTP secrets) are set
-- [ ] Smoke test: Trigger a password reset and a magic link; confirm emails arrive and links work end-to-end
+- [ ] Deploy frontend code (the Vite SPA in `apps/web-next`) to Vercel
+- [ ] Verify the Supabase dashboard's Site URL/Redirect URLs and SMTP secrets are set for the
+      target environment (not Vercel env vars — see `environment-variables.md`)
+- [ ] Smoke test: trigger each of the 6 flows in `email-templates-setup.md` that the app actually
+      exposes (signup, password reset; invite/email-change/reauthentication if/when the app UI
+      uses them) and confirm emails arrive with working links/codes
 
 
 ## Post-Deployment (First 24 Hours)
@@ -58,6 +63,10 @@ If critical issues are discovered during or after deployment:
 
 ## Notes
 - Use staging to validate all changes before production deployment.
-- When using a hosted Supabase instance, some template changes must be made in the dashboard rather than config files.
-- Ensure `SITE_URL` and allowed redirect URLs are configured before sending production emails to avoid broken links.
-- Recovery/magic-link emails use `{{ .ConfirmationURL }}` (Supabase-hosted verify link). There is no `/auth/confirm` route in the SPA.
+- Hosted Supabase instances don't read `supabase/templates/` — all template changes must also be
+  made by hand in that project's dashboard (see `email-templates-setup.md`).
+- Ensure the dashboard's Site URL and allowed redirect URLs are configured before sending
+  production emails to avoid broken links (see `redirect-urls-setup.md`).
+- All link-based templates use `{{ .ConfirmationURL }}` (Supabase-hosted verify link); there is no
+  `/auth/confirm` route in the SPA. `reauthentication.html` is the one exception — it's a
+  `{{ .Token }}` code, not a link.
