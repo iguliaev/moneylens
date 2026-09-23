@@ -117,13 +117,14 @@ file_size_limit = "50MiB"
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-# Use environment variable substitution so the site URL and allowed redirects are
-# configurable per-environment (development/staging/production).
-# Example: SITE_URL=http://localhost:3000 (development)
-#          SITE_URL=https://moneylens.app (production)
-site_url = "env(SITE_URL)"
+# This file only configures the LOCAL stack (`supabase start`); hosted staging/production Site URL
+# and Redirect URLs are set in the Supabase dashboard (see docs/deployment/redirect-urls-setup.md).
+# Do not run `supabase config push` from here without reviewing this section first.
+# Vite dev server default (also Playwright's default BASE_URL).
+site_url = "http://localhost:5173"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["env(SITE_URL)"]
+# Password reset emails redirect to <origin>/update-password.
+additional_redirect_urls = ["http://localhost:5173/update-password"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # Path to JWT signing key. DO NOT commit your signing keys file to git.
@@ -195,10 +196,18 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# All 6 self-hostable auth flow templates (invite, confirmation, recovery,
+# magic_link, email_change, reauthentication) are customized. File names
+# match the flow's name in the Supabase dashboard's Templates tab, not the
+# `[auth.email.template.X]` section name below (that name is fixed by
+# GoTrue) — see docs/deployment/email-templates-setup.md.
+[auth.email.template.invite]
+subject = "You're Invited to MoneyLens"
+content_path = "./supabase/templates/invite-user.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm Your Email - MoneyLens"
+content_path = "./supabase/templates/confirm-your-signup.html"
 
 [auth.email.template.magic_link]
 subject = "Your Magic Link for MoneyLens"
@@ -206,7 +215,20 @@ content_path = "./supabase/templates/magic-link.html"
 
 [auth.email.template.recovery]
 subject = "Reset Your Password - MoneyLens"
-content_path = "./supabase/templates/recovery.html"
+content_path = "./supabase/templates/reset-password.html"
+
+[auth.email.template.email_change]
+subject = "Confirm Your New Email - MoneyLens"
+content_path = "./supabase/templates/change-email-address.html"
+
+[auth.email.template.reauthentication]
+# Deliberately doesn't put {{ .Token }} in the subject (unlike Supabase's own
+# default subject for this template) — subject lines are far more likely
+# than the body to be captured by SMTP relay/mail-gateway logs and shown in
+# lock-screen notification previews, which undermines the point of a
+# reauthentication code. The code stays in the body only.
+subject = "Your MoneyLens verification code"
+content_path = "./supabase/templates/reauthentication.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
