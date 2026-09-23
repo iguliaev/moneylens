@@ -222,7 +222,12 @@ subject = "Confirm Your New Email - MoneyLens"
 content_path = "./supabase/templates/change-email-address.html"
 
 [auth.email.template.reauthentication]
-subject = "{{ .Token }} is your MoneyLens verification code"
+# Deliberately doesn't put {{ .Token }} in the subject (unlike Supabase's own
+# default subject for this template) — subject lines are far more likely
+# than the body to be captured by SMTP relay/mail-gateway logs and shown in
+# lock-screen notification previews, which undermines the point of a
+# reauthentication code. The code stays in the body only.
+subject = "Your MoneyLens verification code"
 content_path = "./supabase/templates/reauthentication.html"
 
 [auth.sms]
