@@ -92,6 +92,13 @@ Surfaced by a 2026-07-18 project review (`docs/superpowers/plans/2026-07-18-proj
 
 ---
 
+## Email Infrastructure
+
+- [x] All 6 of Supabase's self-hostable auth email templates (confirm signup, invite, magic link, change email, reset password, reauthentication) are stored in `supabase/templates/` and redesigned to match the app's design system (brand palette, `borderRadius:10` cards/buttons, full logo lockup from `theme/tokens.ts`/`DESIGN.md`) — previously only 2 existed (unbranded, generic-default styling for the other 4) (#286). Applied to both the staging and prod Supabase dashboards by hand (hosted projects don't read `supabase/templates/`). See `docs/deployment/email-templates-setup.md`.
+- [x] Custom SMTP (Gmail) configured for staging and prod, replacing Supabase's built-in sender. Fixes two undocumented limits discovered while debugging the password reset bug above: the built-in sender only delivers to addresses on the Supabase project's team, and caps at 2 emails/hour — meaning any real user besides the project team got no email at all, independent of the link bug. See `docs/deployment/smtp-setup.md` for the account used and how to rotate/reconfigure it.
+
+---
+
 ## Phase 6: Test Coverage
 
 Gaps identified against `docs/superpowers/specs/2026-04-18-testing-coverage-plan.md`'s own priority matrix — some items shipped since that spec was written, these did not:
