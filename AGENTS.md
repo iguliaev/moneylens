@@ -116,6 +116,7 @@ Check these before starting work in the relevant area — don't guess at convent
 | [`docs/deployment/release-howto.md`](docs/deployment/release-howto.md) | Cutting a release, syncing `main` → `release` |
 | [`docs/deployment/environment-variables.md`](docs/deployment/environment-variables.md) | Env vars, secrets, Vercel config |
 | [`docs/deployment/email-templates-setup.md`](docs/deployment/email-templates-setup.md) | Auth email templates (Supabase hosted or self-managed) |
+| [`docs/deployment/smtp-setup.md`](docs/deployment/smtp-setup.md) | Custom SMTP (who sends auth emails, why, how to rotate/reconfigure) |
 | [`docs/deployment/redirect-urls-setup.md`](docs/deployment/redirect-urls-setup.md) | Auth redirect URL configuration |
 | [`docs/deployment/password-reset-deployment-checklist.md`](docs/deployment/password-reset-deployment-checklist.md) | Password reset / magic link flow changes |
 | [`docs/improvement-roadmap.md`](docs/improvement-roadmap.md) | Picking up the next planned improvement |
