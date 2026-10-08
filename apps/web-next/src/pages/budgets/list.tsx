@@ -77,6 +77,12 @@ export const BudgetList = () => {
           />
           <Table.Column dataIndex="tag_count" title="Tags" align="center" />
           <Table.Column
+            dataIndex="current_amount"
+            title="Current"
+            render={(value: number) => formatCurrency(value ?? 0, currency)}
+            align="right"
+          />
+          <Table.Column
             title="Progress"
             key="progress"
             align="center"
