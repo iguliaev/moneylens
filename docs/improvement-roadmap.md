@@ -44,6 +44,7 @@
 - [ ] Bank account balance tracking (running balance computed from transactions)
 - [x] Tag-based analytics page/section — `TagBar.tsx` (tag totals) in the dashboard Charts tab, plus a Usage Count column on `pages/tags/list.tsx` via `tags_with_usage`
 - [x] Export transactions to CSV with date range filter — Settings → Export card, `DatePicker.RangePicker` + presets, `csvExport.ts`/`exportTransactions.ts`
+- [x] Show each budget's current amount as its own column on the Budgets list (previously only the progress-bar percent was visible) — `pages/budgets/list.tsx` (#294)
 - [ ] Budget trajectory: "at this rate you'll exceed by day X"
 - [ ] Recurring transaction support (mark transactions as recurring, upcoming bills dashboard section)
 - [ ] User profile page (display name, currency preference, date format, avatar)
