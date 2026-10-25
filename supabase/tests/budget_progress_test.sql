@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(13);
 
 -- ── Users ────────────────────────────────────────────────────────────────────
 select tests.create_supabase_user('bp_u1@test.com');
@@ -26,6 +26,9 @@ select tests.create_supabase_user('bp_u2@test.com');
 --   b8  (spend, c8,             Sep-2025): tx8 $800 but budget deleted → not returned
 --   b9  (spend, c9,             Oct-2025): tx9 user1 $900; user2 has own budget → isolation
 --   b10 (spend, c10,            Nov-2025): tx10 $1000 but c10 soft-deleted → 0
+--   b11 (spend, c11 (parent),   Dec-2025): tx11 $150 filed under c11c (child) → matches via category_hierarchy → 150
+--   b12 (spend, c12 + c12c,     Jan-2026): tx12 $250 filed under c12c; b12 links BOTH c12 (parent) and
+--                                           c12c (child) → two hierarchy paths, UNION dedup → 250 not 500
 
 with
   -- ── Tags ──────────────────────────────────────────────────────────────────
@@ -48,6 +51,10 @@ with
   c8  as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c8')  returning id),
   c9  as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c9')  returning id),
   c10 as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c10') returning id),
+  c11  as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c11_parent') returning id),
+  c11c as (insert into public.categories (user_id, type, name, parent_id) select tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c11_child', c11.id from c11 returning id),
+  c12  as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c12_parent') returning id),
+  c12c as (insert into public.categories (user_id, type, name, parent_id) select tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c12_child', c12.id from c12 returning id),
   c_u2 as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u2@test.com'), 'spend', 'bp_c_u2') returning id),
 
   -- ── Budgets ───────────────────────────────────────────────────────────────
@@ -102,6 +109,19 @@ with
     values (tests.get_supabase_uid('bp_u1@test.com'), 'deleted-cat',   'spend', 500, '2025-11-01', '2025-11-30')
     returning id
   ),
+  b11 as (
+    -- test 11: budget linked to a PARENT category; tx filed under its CHILD
+    insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'parent-category', 'spend', 500, '2025-12-01', '2025-12-31')
+    returning id
+  ),
+  b12 as (
+    -- test 12: budget linked to BOTH a parent AND its own child; one tx under
+    -- the child must still be counted once (UNION dedup), not doubled
+    insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'parent-and-child-dedup', 'spend', 500, '2026-01-01', '2026-01-31')
+    returning id
+  ),
   b_u2 as (
     insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
     values (tests.get_supabase_uid('bp_u2@test.com'), 'u2-budget',     'spend', 500, '2025-10-01', '2025-10-31')
@@ -118,6 +138,9 @@ with
   bc8   as (insert into public.budget_categories (budget_id, category_id) select b8.id,  c8.id   from b8,  c8   returning budget_id),
   bc9   as (insert into public.budget_categories (budget_id, category_id) select b9.id,  c9.id   from b9,  c9   returning budget_id),
   bc10  as (insert into public.budget_categories (budget_id, category_id) select b10.id, c10.id  from b10, c10  returning budget_id),
+  bc11  as (insert into public.budget_categories (budget_id, category_id) select b11.id, c11.id  from b11, c11  returning budget_id),
+  bc12a as (insert into public.budget_categories (budget_id, category_id) select b12.id, c12.id  from b12, c12  returning budget_id),
+  bc12b as (insert into public.budget_categories (budget_id, category_id) select b12.id, c12c.id from b12, c12c returning budget_id),
   bc_u2 as (insert into public.budget_categories (budget_id, category_id) select b_u2.id, c_u2.id from b_u2, c_u2 returning budget_id),
 
   -- ── Budget-tag links ──────────────────────────────────────────────────────
@@ -213,12 +236,25 @@ with
     insert into public.transactions (user_id, date, type, category_id, amount)
     select tests.get_supabase_uid('bp_u1@test.com'), '2025-11-15', 'spend', c10.id, 1000.00 from c10
     returning id
+  ),
+  tx11 as (
+    -- test 11: spend filed under c11's CHILD → must match b11 via category_hierarchy
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2025-12-15', 'spend', c11c.id, 150.00 from c11c
+    returning id
+  ),
+  tx12 as (
+    -- test 12: spend filed under c12's CHILD; b12 links both c12 (parent) and
+    -- c12c (child) → must be counted ONCE via UNION dedup, not twice
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-01-15', 'spend', c12c.id, 250.00 from c12c
+    returning id
   )
 -- execute all CTEs
 select 1
-from bc1, bc3, bc4, bc5, bc6, bc7, bc8, bc9, bc10, bc_u2,
+from bc1, bc3, bc4, bc5, bc6, bc7, bc8, bc9, bc10, bc11, bc12a, bc12b, bc_u2,
      bt2, bt3, tt2, tt3,
-     tx1, tx2, tx3, tx4_in, tx4_out, tx5, tx7, tx8, tx9, tx_u2, tx10;
+     tx1, tx2, tx3, tx4_in, tx4_out, tx5, tx7, tx8, tx9, tx_u2, tx10, tx11, tx12;
 
 -- test 10 pre-condition: soft-delete c10 so the category link is excluded by the function
 update public.categories
@@ -299,6 +335,24 @@ select results_eq(
     $$ select current_amount from public.get_budget_progress() where name = 'deleted-cat' $$,
     array[0.00::numeric],
     'budget linked to a soft-deleted category returns current_amount = 0'
+);
+
+-- 11) Parent-linked budget: transaction filed under a CHILD category still counts
+-- (the core fix — category_hierarchy traversal, not an exact category_id match)
+select results_eq(
+    $$ select current_amount from public.get_budget_progress() where name = 'parent-category' $$,
+    array[150.00::numeric],
+    'budget linked to a parent category counts a transaction filed under its child category'
+);
+
+-- 12) Budget linked to BOTH a parent and its own child: the child's transaction
+-- matches two hierarchy paths (parent's depth-1 row, child's own depth-0 self
+-- row) but UNION's implicit DISTINCT collapses the duplicate tuple, so it is
+-- still counted exactly once (not doubled to 500.00)
+select results_eq(
+    $$ select current_amount from public.get_budget_progress() where name = 'parent-and-child-dedup' $$,
+    array[250.00::numeric],
+    'budget linked to both a parent and its own child category does not double-count a child transaction'
 );
 
 select * from finish();
