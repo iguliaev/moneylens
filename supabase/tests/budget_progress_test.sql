@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(27);
 
 -- ── Users ────────────────────────────────────────────────────────────────────
 select tests.create_supabase_user('bp_u1@test.com');
@@ -10,8 +10,8 @@ select tests.create_supabase_user('bp_u2@test.com');
 
 -- ── Setup ────────────────────────────────────────────────────────────────────
 -- All data is inserted before authenticate_as so it bypasses RLS.
--- Each budget uses a unique category AND a unique month to prevent
--- cross-budget contamination.
+-- Each user1 budget has its own date window so transactions cannot leak
+-- between budgets (some budgets deliberately share tags or a category).
 --
 -- Budget / transaction map:
 --   b1  (spend, c1,             Jan-2025): tx1 spend $100  → current_amount = 100
@@ -29,14 +29,28 @@ select tests.create_supabase_user('bp_u2@test.com');
 --   b11 (spend, c11 (parent),   Dec-2025): tx11 $150 filed under c11c (child) → matches via category_hierarchy → 150
 --   b12 (spend, c12 + c12c,     Jan-2026): tx12 $250 filed under c12c; b12 links BOTH c12 (parent) and
 --                                           c12c (child) → two hierarchy paths, counted once → 250 not 500
---   Categories and tags are combined with AND (OR within each set); an empty set is no constraint:
+--
+-- Categories and tags are combined with AND (OR within each set); an empty set is no constraint:
 --   b13 (spend, c13a + and_x,   Feb-2026): tx13_both $100 (c13a + and_x) counts; tx13_cat_only $10 and
 --                                           tx13_tag_only $1 each satisfy only one set → 100
 --   b14 (spend, c14a|c14b + and_x|and_y, Mar-2026): OR inside each set, AND between them:
 --                                           tx14a $20 (c14a,and_x) + tx14b $30 (c14b,and_y) count;
---                                           tx14c $5 (c14a, no tag), tx14d $7 (other cat, and_x) don't → 50
+--                                           tx14e $13 (c14a, BOTH tags) counts once;
+--                                           tx14c $5 (c14a, no tag), tx14d $7 (other cat, and_x) don't → 63
+--   b13 also has tx13_out $1000 satisfying both sets but outside its window → still 100
 --   b15 (spend, no links,       Apr-2026): tx15 $999 in window, but a budget with no live links → 0
 --   b16 (spend, soft-deleted tag only, May-2026): tx16 $888 tagged with it; no LIVE links → 0
+--   Liveness is judged per set; a dead set is empty = no constraint:
+--   b17 (spend, c17 + soft-deleted tag, Jun-2026): tx17a $40 in c17 untagged counts; tx17b $9
+--                                           (other cat, dead tag) doesn't → 40
+--   b18 (spend, soft-deleted c18 + and_x, Jul-2026): tx18a $60 (other cat, and_x) counts;
+--                                           tx18b $4 (other cat, no tag) doesn't → 60
+--   Open-ended date sides (each has its own category c19/c20/c21):
+--   b19 (end 2026-08-31 only):   $11 on the end date, $22 in 2020 count; $500 on 2026-09-01 doesn't → 33
+--   b20 (start 2026-10-01 only): $5 on the start date, $6 in 2036 count; $700 on 2026-09-30 doesn't → 11
+--   b21 (no dates):              $3 (2019) + $4 (2031) both count → 7
+--   b22 (spend, c22 parent + and_x, Nov-2026): tx22a $70 under child c22c + and_x counts;
+--                                           tx22b $2 under c22c, no tag, and tx22c $3 (other cat, and_x) don't → 70
 
 with
   -- ── Tags ──────────────────────────────────────────────────────────────────
@@ -67,12 +81,20 @@ with
   c14a  as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c14a')  returning id),
   c14b  as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c14b')  returning id),
   c_oth as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c_other') returning id),
+  c17   as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c17') returning id),
+  c18   as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c18') returning id),
+  c19   as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c19') returning id),
+  c20   as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c20') returning id),
+  c21   as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c21') returning id),
+  c22   as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c22_parent') returning id),
+  c22c  as (insert into public.categories (user_id, type, name, parent_id) select tests.get_supabase_uid('bp_u1@test.com'), 'spend', 'bp_c22_child', c22.id from c22 returning id),
   c_u2 as (insert into public.categories (user_id, type, name) values (tests.get_supabase_uid('bp_u2@test.com'), 'spend', 'bp_c_u2') returning id),
 
   -- ── Tags for the AND tests ────────────────────────────────────────────────
   t_x    as (insert into public.tags (user_id, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'and_x')    returning id),
   t_y    as (insert into public.tags (user_id, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'and_y')    returning id),
   t_dead as (insert into public.tags (user_id, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'and_dead') returning id),
+  t_dead2 as (insert into public.tags (user_id, name) values (tests.get_supabase_uid('bp_u1@test.com'), 'and_dead2') returning id),
 
   -- ── Budgets ───────────────────────────────────────────────────────────────
   b1 as (
@@ -87,7 +109,7 @@ with
   ),
   b3 as (
     insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
-    values (tests.get_supabase_uid('bp_u1@test.com'), 'dedup',         'spend', 500, '2025-03-01', '2025-03-31')
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'cat-and-tag',   'spend', 500, '2025-03-01', '2025-03-31')
     returning id
   ),
   b4 as (
@@ -159,6 +181,36 @@ with
     values (tests.get_supabase_uid('bp_u1@test.com'), 'dead-tag-only', 'spend', 500, '2026-05-01', '2026-05-31')
     returning id
   ),
+  b17 as (
+    insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'live-cat-dead-tag', 'spend', 500, '2026-06-01', '2026-06-30')
+    returning id
+  ),
+  b18 as (
+    insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'dead-cat-live-tag', 'spend', 500, '2026-07-01', '2026-07-31')
+    returning id
+  ),
+  b19 as (
+    insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'open-start',    'spend', 500, null, '2026-08-31')
+    returning id
+  ),
+  b20 as (
+    insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'open-end',      'spend', 500, '2026-10-01', null)
+    returning id
+  ),
+  b21 as (
+    insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'open-both',     'spend', 500, null, null)
+    returning id
+  ),
+  b22 as (
+    insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
+    values (tests.get_supabase_uid('bp_u1@test.com'), 'parent-and-tag', 'spend', 500, '2026-11-01', '2026-11-30')
+    returning id
+  ),
   b_u2 as (
     insert into public.budgets (user_id, name, type, target_amount, start_date, end_date)
     values (tests.get_supabase_uid('bp_u2@test.com'), 'u2-budget',     'spend', 500, '2025-10-01', '2025-10-31')
@@ -181,6 +233,12 @@ with
   bc13  as (insert into public.budget_categories (budget_id, category_id) select b13.id, c13a.id from b13, c13a returning budget_id),
   bc14a as (insert into public.budget_categories (budget_id, category_id) select b14.id, c14a.id from b14, c14a returning budget_id),
   bc14b as (insert into public.budget_categories (budget_id, category_id) select b14.id, c14b.id from b14, c14b returning budget_id),
+  bc17  as (insert into public.budget_categories (budget_id, category_id) select b17.id, c17.id from b17, c17 returning budget_id),
+  bc18  as (insert into public.budget_categories (budget_id, category_id) select b18.id, c18.id from b18, c18 returning budget_id),
+  bc19  as (insert into public.budget_categories (budget_id, category_id) select b19.id, c19.id from b19, c19 returning budget_id),
+  bc20  as (insert into public.budget_categories (budget_id, category_id) select b20.id, c20.id from b20, c20 returning budget_id),
+  bc21  as (insert into public.budget_categories (budget_id, category_id) select b21.id, c21.id from b21, c21 returning budget_id),
+  bc22  as (insert into public.budget_categories (budget_id, category_id) select b22.id, c22.id from b22, c22 returning budget_id),
   bc_u2 as (insert into public.budget_categories (budget_id, category_id) select b_u2.id, c_u2.id from b_u2, c_u2 returning budget_id),
 
   -- ── Budget-tag links ──────────────────────────────────────────────────────
@@ -191,7 +249,8 @@ with
     returning budget_id
   ),
   bt3 as (
-    -- b3 has BOTH a category (bc3) and a groceries tag for the dedup test
+    -- b3 links BOTH a category (bc3) and the groceries tag; its single transaction
+    -- satisfies both sets
     insert into public.budget_tags (budget_id, tag_id)
     select b3.id, t_u1_groceries.id from b3, t_u1_groceries
     returning budget_id
@@ -205,6 +264,9 @@ with
     select b16.id, t_dead.id from b16, t_dead
     returning budget_id
   ),
+  bt17 as (insert into public.budget_tags (budget_id, tag_id) select b17.id, t_dead2.id from b17, t_dead2 returning budget_id),
+  bt18 as (insert into public.budget_tags (budget_id, tag_id) select b18.id, t_x.id from b18, t_x returning budget_id),
+  bt22 as (insert into public.budget_tags (budget_id, tag_id) select b22.id, t_x.id from b22, t_x returning budget_id),
 
   -- ── Transactions ──────────────────────────────────────────────────────────
   tx1 as (
@@ -215,7 +277,7 @@ with
   ),
   tx2 as (
     -- test 2: spend in c2, tagged groceries → matches b2 via tag
-    -- c2 is NOT linked to any budget via category, so only the tag arm fires
+    -- b2 has no category links (empty set = no constraint), so only its tag set filters
     insert into public.transactions (user_id, date, type, category_id, amount)
     select tests.get_supabase_uid('bp_u1@test.com'), '2025-02-15', 'spend', c2.id, 200.00 from c2
     returning id
@@ -354,25 +416,109 @@ with
     select tests.get_supabase_uid('bp_u1@test.com'), '2026-05-10', 'spend', c_oth.id, 888.00 from c_oth
     returning id
   ),
-  tt16 as (insert into public.transaction_tags (transaction_id, tag_id) select tx16.id, t_dead.id from tx16, t_dead returning transaction_id)
+  tt16 as (insert into public.transaction_tags (transaction_id, tag_id) select tx16.id, t_dead.id from tx16, t_dead returning transaction_id),
+  tx13_out as (
+    -- satisfies b13's category AND tag sets but falls outside its Feb-2026 window → excluded
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-03-01', 'spend', c13a.id, 1000.00 from c13a
+    returning id
+  ),
+  tt13_out as (insert into public.transaction_tags (transaction_id, tag_id) select tx13_out.id, t_x.id from tx13_out, t_x returning transaction_id),
+  tx14e as (
+    -- carries BOTH of b14's tags → still counted once
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-03-14', 'spend', c14a.id, 13.00 from c14a
+    returning id
+  ),
+  tt14e_x as (insert into public.transaction_tags (transaction_id, tag_id) select tx14e.id, t_x.id from tx14e, t_x returning transaction_id),
+  tt14e_y as (insert into public.transaction_tags (transaction_id, tag_id) select tx14e.id, t_y.id from tx14e, t_y returning transaction_id),
+  tx17a as (
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-06-10', 'spend', c17.id, 40.00 from c17
+    returning id
+  ),
+  tx17b as (
+    -- only the dead tag matches, and the category set is live → excluded
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-06-11', 'spend', c_oth.id, 9.00 from c_oth
+    returning id
+  ),
+  tt17b as (insert into public.transaction_tags (transaction_id, tag_id) select tx17b.id, t_dead2.id from tx17b, t_dead2 returning transaction_id),
+  tx18a as (
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-07-10', 'spend', c_oth.id, 60.00 from c_oth
+    returning id
+  ),
+  tt18a as (insert into public.transaction_tags (transaction_id, tag_id) select tx18a.id, t_x.id from tx18a, t_x returning transaction_id),
+  tx18b as (
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-07-11', 'spend', c_oth.id, 4.00 from c_oth
+    returning id
+  ),
+  tx19 as (
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), d.dt::date, 'spend', c19.id, d.amt
+    from c19, (values ('2026-08-31', 11.00), ('2020-01-01', 22.00), ('2026-09-01', 500.00)) as d(dt, amt)
+    returning id
+  ),
+  tx20 as (
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), d.dt::date, 'spend', c20.id, d.amt
+    from c20, (values ('2026-10-01', 5.00), ('2036-01-01', 6.00), ('2026-09-30', 700.00)) as d(dt, amt)
+    returning id
+  ),
+  tx21 as (
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), d.dt::date, 'spend', c21.id, d.amt
+    from c21, (values ('2019-06-01', 3.00), ('2031-06-01', 4.00)) as d(dt, amt)
+    returning id
+  ),
+  tx22a as (
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-11-10', 'spend', c22c.id, 70.00 from c22c
+    returning id
+  ),
+  tt22a as (insert into public.transaction_tags (transaction_id, tag_id) select tx22a.id, t_x.id from tx22a, t_x returning transaction_id),
+  tx22b as (
+    -- under the child but untagged → fails the tag set
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-11-11', 'spend', c22c.id, 2.00 from c22c
+    returning id
+  ),
+  tx22c as (
+    -- tagged but outside the parent's subtree → fails the category set
+    insert into public.transactions (user_id, date, type, category_id, amount)
+    select tests.get_supabase_uid('bp_u1@test.com'), '2026-11-12', 'spend', c_oth.id, 3.00 from c_oth
+    returning id
+  ),
+  tt22c as (insert into public.transaction_tags (transaction_id, tag_id) select tx22c.id, t_x.id from tx22c, t_x returning transaction_id)
 -- execute all CTEs
 select 1
-from bc1, bc3, bc4, bc5, bc6, bc7, bc8, bc9, bc10, bc11, bc12a, bc12b, bc13, bc14a, bc14b, bc_u2,
-     bt2, bt3, bt13, bt14x, bt14y, bt16, tt2, tt3,
+from bc1, bc3, bc4, bc5, bc6, bc7, bc8, bc9, bc10, bc11, bc12a, bc12b, bc13, bc14a, bc14b,
+     bc17, bc18, bc19, bc20, bc21, bc22, bc_u2,
+     bt2, bt3, bt13, bt14x, bt14y, bt16, bt17, bt18, bt22, tt2, tt3,
      tx1, tx2, tx3, tx4_in, tx4_out, tx5, tx7, tx8, tx9, tx_u2, tx10, tx11, tx12,
-     tx13_both, tt13_both, tx13_cat_only, tx13_tag_only, tt13_tag_only,
-     tx14a, tt14a, tx14b, tt14b, tx14c, tx14d, tt14d, tx15, tx16, tt16,
+     tx13_both, tt13_both, tx13_cat_only, tx13_tag_only, tt13_tag_only, tx13_out, tt13_out,
+     tx14a, tt14a, tx14b, tt14b, tx14c, tx14d, tt14d, tx14e, tt14e_x, tt14e_y,
+     tx15, tx16, tt16, tx17a, tx17b, tt17b, tx18a, tt18a, tx18b, tx19, tx20, tx21,
+     tx22a, tt22a, tx22b, tx22c, tt22c,
      b15;
 
--- test 10 pre-condition: soft-delete c10 so the category link is excluded by the function
+-- test 10 pre-condition: soft-delete c10 so b10's only link is dead; b10 then has no live links
+-- and matches nothing (without that guard it would match all Nov-2025 spend)
 update public.categories
 set deleted_at = now()
 where user_id = tests.get_supabase_uid('bp_u1@test.com') and name = 'bp_c10';
 
--- test 16 pre-condition: soft-delete the only tag b16 links
+-- test 16 / 17 pre-condition: soft-delete the tags b16 (its only link) and b17 (its tag link) use
 update public.tags
 set deleted_at = now()
-where user_id = tests.get_supabase_uid('bp_u1@test.com') and name = 'and_dead';
+where user_id = tests.get_supabase_uid('bp_u1@test.com') and name in ('and_dead', 'and_dead2');
+
+-- test 18 pre-condition: soft-delete b18's only category
+update public.categories
+set deleted_at = now()
+where user_id = tests.get_supabase_uid('bp_u1@test.com') and name = 'bp_c18';
 
 -- ── Assertions ───────────────────────────────────────────────────────────────
 select tests.authenticate_as('bp_u1@test.com');
@@ -391,11 +537,11 @@ select results_eq(
     'tag-only budget counts transaction matched via tag'
 );
 
--- 3) Dedup: transaction matches via BOTH category AND tag links → counted once ($300 not $600)
+-- 3) Category + tag budget: a transaction satisfying both sets is counted once ($300 not $600)
 select results_eq(
-    $$ select current_amount from public.get_budget_progress() where name = 'dedup' $$,
+    $$ select current_amount from public.get_budget_progress() where name = 'cat-and-tag' $$,
     array[300.00::numeric],
-    'UNION deduplication prevents double-counting when transaction matches via both category and tag'
+    'budget linking a category and a tag counts a transaction satisfying both sets once'
 );
 
 -- 4) Date range: only the in-range transaction ($50) is counted; out-of-range ($999) excluded
@@ -451,7 +597,7 @@ select results_eq(
 );
 
 -- 11) Parent-linked budget: transaction filed under a CHILD category still counts
--- (the core fix — category_hierarchy traversal, not an exact category_id match)
+-- (category_hierarchy traversal, not an exact category_id match)
 select results_eq(
     $$ select current_amount from public.get_budget_progress() where name = 'parent-category' $$,
     array[150.00::numeric],
@@ -479,8 +625,8 @@ select results_eq(
 -- 14) OR within each set, AND between the sets
 select results_eq(
     $$ select current_amount from public.get_budget_progress() where name = 'and-multi' $$,
-    array[50.00::numeric],
-    'any linked category AND any linked tag: 20 + 30 counted, category-only and tag-only excluded'
+    array[63.00::numeric],
+    'any linked category AND any linked tag: 20 + 30 + 13 counted (the transaction carrying both tags once), category-only and tag-only excluded'
 );
 
 -- 15) No links at all → matches nothing, even with same-type transactions in the window
@@ -495,6 +641,89 @@ select results_eq(
     $$ select current_amount from public.get_budget_progress() where name = 'dead-tag-only' $$,
     array[0.00::numeric],
     'budget whose only linked tag is soft-deleted matches nothing instead of widening'
+);
+
+-- 16b) the dead link row is still present, i.e. the budget really is "linked to a dead tag"
+-- rather than the soft-delete having cascaded into budget_tags
+select ok(
+    exists (
+        select 1
+        from public.budget_tags bt
+        join public.budgets b on b.id = bt.budget_id
+        where b.name = 'dead-tag-only'
+    ),
+    'soft-deleting a tag leaves the budget_tags row in place (the link is dead, not removed)'
+);
+
+-- 17) Liveness is judged per set: a live category plus only a soft-deleted tag → the tag set is
+-- empty (no constraint), so the budget falls back to matching by category alone
+select results_eq(
+    $$ select current_amount from public.get_budget_progress() where name = 'live-cat-dead-tag' $$,
+    array[40.00::numeric],
+    'live category + soft-deleted tag: matches by category alone'
+);
+
+-- 18) Reverse: a soft-deleted category plus a live tag → matches by tag alone
+select results_eq(
+    $$ select current_amount from public.get_budget_progress() where name = 'dead-cat-live-tag' $$,
+    array[60.00::numeric],
+    'soft-deleted category + live tag: matches by tag alone'
+);
+
+-- 19-21) Open-ended date sides, with boundary dates inclusive
+select results_eq(
+    $$ select current_amount from public.get_budget_progress() where name = 'open-start' $$,
+    array[33.00::numeric],
+    'end_date only: unbounded start, end date inclusive'
+);
+select results_eq(
+    $$ select current_amount from public.get_budget_progress() where name = 'open-end' $$,
+    array[11.00::numeric],
+    'start_date only: unbounded end, start date inclusive'
+);
+select results_eq(
+    $$ select current_amount from public.get_budget_progress() where name = 'open-both' $$,
+    array[7.00::numeric],
+    'no dates: every matching transaction counts'
+);
+
+-- 22) Parent category + tag: a transaction under a child of the linked parent counts only if it
+-- also carries the tag
+select results_eq(
+    $$ select current_amount from public.get_budget_progress() where name = 'parent-and-tag' $$,
+    array[70.00::numeric],
+    'parent category AND tag: only the child transaction that carries the tag counts'
+);
+
+-- 23) The view itself (what the UI reads), not just the wrapper: link counts count LIVE links only,
+-- and current_amount agrees with the rule. Ordered with the C collation so the expected
+-- order does not depend on the database locale's treatment of hyphens.
+select results_eq(
+    $$ select name::text, category_count::int, tag_count::int, current_amount
+       from public.budgets_with_linked
+       where name in ('and-cat-tag', 'and-multi', 'dead-cat-live-tag', 'dead-tag-only',
+                      'deleted-cat', 'live-cat-dead-tag', 'no-links', 'parent-and-tag')
+       order by name collate "C" $$,
+    $$ values
+        ('and-cat-tag'::text,       1, 1, 100.00::numeric),
+        ('and-multi'::text,         2, 2,  63.00::numeric),
+        ('dead-cat-live-tag'::text, 0, 1,  60.00::numeric),
+        ('dead-tag-only'::text,     0, 0,   0.00::numeric),
+        ('deleted-cat'::text,       0, 0,   0.00::numeric),
+        ('live-cat-dead-tag'::text, 1, 0,  40.00::numeric),
+        ('no-links'::text,          0, 0,   0.00::numeric),
+        ('parent-and-tag'::text,    1, 1,  70.00::numeric) $$,
+    'budgets_with_linked: live link counts and current_amount follow the AND rule'
+);
+
+-- 24-25) View-level isolation, without the wrapper's own auth.uid() filter
+select is_empty(
+    $$ select id from public.budgets_with_linked where name = 'u2-budget' $$,
+    'budgets_with_linked does not expose another user''s budget'
+);
+select is_empty(
+    $$ select id from public.budgets_with_linked where user_id <> auth.uid() $$,
+    'budgets_with_linked returns only the caller''s budgets'
 );
 
 select * from finish();

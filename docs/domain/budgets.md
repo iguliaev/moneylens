@@ -29,8 +29,8 @@ A budget tracks transactions through two independent many-to-many links:
 - `budget_tags` (budget ↔ tag)
 
 A budget can use either, both (combined with AND, see below), or neither (a budget with no links
-matches nothing and stays at `current_amount = 0`). Both linked categories and linked tags must be the same user's and
-**live** (`deleted_at IS NULL`) at write time — enforced the same way as on transactions, in
+matches nothing and stays at `current_amount = 0`). Both linked categories and linked tags must
+be the same user's and **live** (`deleted_at IS NULL`) at write time — enforced the same way as on transactions, in
 `create_budget_with_links`/`update_budget_with_links`
 (`supabase/migrations/20260725120000_atomic_budget_with_links.sql`), replace-all semantics for
 both arrays. There's no per-budget uniqueness constraint stopping two budgets from linking the
@@ -38,9 +38,11 @@ same category or overlapping date ranges.
 
 ## How `current_amount` is computed
 
-`budgets_with_linked` (current definition: `20261025172439_budget_and_matching_categories_tags.sql`)
-sums a transaction into a budget's `current_amount` if **all** of:
+`budgets_with_linked` (most recently redefined in
+`20261025172439_budget_and_matching_categories_tags.sql`) sums a transaction into a budget's
+`current_amount` if **all** of:
 
+- the budget has at least one live linked category or tag (see below)
 - `transaction.type = budget.type`
 - `transaction.user_id = budget.user_id`, transaction is not soft-deleted
 - `transaction.date` falls within `[start_date, end_date]` (open-ended sides are unbounded)
@@ -58,8 +60,13 @@ Every transaction is evaluated once against this single predicate, so it can nev
 
 "Live" means the linked category or tag is not soft-deleted. A soft-deleted link simply stops
 counting as a link; the stale row in `budget_categories`/`budget_tags` itself is not cleaned up
-automatically. A budget with **no live links at all** — never linked, or all its links deleted —
-matches nothing (`current_amount = 0`) rather than every transaction of its type.
+automatically. A budget with **no live links at all** — never linked, or every linked category and
+tag soft-deleted — matches nothing (`current_amount = 0`) rather than every transaction of its
+type.
+
+Liveness is judged per set. A budget linked to a category and a tag whose tag is later
+soft-deleted therefore has an empty tag set, which is "no constraint", so it falls back to
+matching by category alone.
 
 `get_budget_progress()` is a thin wrapper over `budgets_with_linked`, so the match rule is defined
 in exactly one place.

@@ -27,8 +27,9 @@ Table: `public.tags`. Read model for the UI: `public.tags_with_usage`, which add
   `update_transaction_with_tags`, which both require every tag id to belong to the caller and be
   live.
 - **Budgets**: many-to-many via `budget_tags`. See [Budgets](budgets.md#linking-categories-andor-tags)
-  — a budget matches a transaction if it carries any of the budget's linked tags, unioned with
-  the category match (not double-counted).
+  — a budget's tag set is combined with its category set using AND: a transaction must carry at
+  least one of the budget's linked tags, and also match the budget's linked categories when it
+  has any.
 
 ## Soft delete
 
