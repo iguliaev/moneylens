@@ -138,7 +138,11 @@ export const BudgetEdit = () => {
             style={{ width: "100%" }}
           />
         </Form.Item>
-        <Form.Item label="Categories" name="category_ids">
+        <Form.Item
+          label="Categories"
+          name="category_ids"
+          extra="Any of these categories. Combined with tags using AND."
+        >
           <Select
             mode="multiple"
             options={categoryOptions}
@@ -149,7 +153,11 @@ export const BudgetEdit = () => {
             allowClear
           />
         </Form.Item>
-        <Form.Item label="Tags" name="tag_ids">
+        <Form.Item
+          label="Tags"
+          name="tag_ids"
+          extra="Any of these tags. A transaction must match both the categories and the tags when both are set."
+        >
           <Select
             mode="multiple"
             options={tagOptions}

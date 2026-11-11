@@ -82,7 +82,8 @@ denied"` until a different category is chosen.
 
 - [Transactions](transactions.md) — the category a transaction is filed under, and the type-match
   rule.
-- [Budgets](budgets.md) — budgets track progress by linking to a set of categories.
+- [Budgets](budgets.md) — budgets track progress by linking to a set of categories and/or tags,
+  combined with AND.
 - [`docs/api/bulk-upload.md`](../api/bulk-upload.md) — the `CategoryInput` schema, auto-creation
   of parent categories on import, and every validation error message.
 - [`docs/database/schema-and-migrations.md`](../database/schema-and-migrations.md) — soft-delete
