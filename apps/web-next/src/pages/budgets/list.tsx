@@ -1,4 +1,4 @@
-import { BaseRecord, useInvalidate } from "@refinedev/core";
+import { BaseRecord, useInvalidate, useUpdate } from "@refinedev/core";
 import {
   useTable,
   List,
@@ -6,7 +6,7 @@ import {
   ShowButton,
   DeleteButton,
 } from "@refinedev/antd";
-import { Table, Space, Tag, Progress } from "antd";
+import { Table, Space, Tag, Progress, Switch } from "antd";
 import {
   TRANSACTION_TYPE_LABELS,
   TransactionType,
@@ -18,6 +18,7 @@ import { useCurrency } from "../../contexts/currency";
 import {
   getBudgetAlertState,
   getProgressStatus,
+  isBudgetCompleted,
   WARN_STROKE_COLOR,
 } from "../../utility/budgetAlerts";
 import { useBudgetEmptyState, TableSkeleton } from "../../components";
@@ -25,11 +26,34 @@ import { useBudgetEmptyState, TableSkeleton } from "../../components";
 export const BudgetList = () => {
   const invalidate = useInvalidate();
   const { currency } = useCurrency();
+  const { mutate: updateBudget } = useUpdate();
 
   const { tableProps } = useTable({
     syncWithLocation: true,
     resource: "budgets_with_linked",
   });
+
+  // Flips only the `active` flag on the base table. The list and the
+  // dashboard both read budgets_with_linked, so that view is what gets
+  // invalidated.
+  const setActive = (id: string, active: boolean) =>
+    updateBudget(
+      {
+        resource: "budgets",
+        id,
+        values: { active },
+        mutationMode: "pessimistic",
+        successNotification: false,
+      },
+      {
+        onSuccess: () => {
+          invalidate({
+            resource: "budgets_with_linked",
+            invalidates: ["list"],
+          });
+        },
+      }
+    );
 
   // Always call to keep React hook call count consistent (internally calls useNavigation())
   const budgetEmptyState = useBudgetEmptyState();
@@ -37,14 +61,24 @@ export const BudgetList = () => {
   return (
     <List>
       {tableProps.loading && !tableProps.dataSource?.length ? (
-        <TableSkeleton columns={9} />
+        <TableSkeleton columns={10} />
       ) : (
         <Table
           {...tableProps}
           rowKey="id"
           locale={{ emptyText: budgetEmptyState }}
         >
-          <Table.Column dataIndex="name" title="Name" sorter />
+          <Table.Column
+            dataIndex="name"
+            title="Name"
+            sorter
+            render={(value: string, record: BaseRecord) => (
+              <Space>
+                {value}
+                {isBudgetCompleted(record.end_date) && <Tag>Completed</Tag>}
+              </Space>
+            )}
+          />
           <Table.Column
             dataIndex="type"
             title="Type"
@@ -123,6 +157,20 @@ export const BudgetList = () => {
                 </Space>
               );
             }}
+          />
+          <Table.Column
+            title="On dashboard"
+            dataIndex="active"
+            key="active"
+            align="center"
+            render={(value: boolean, record: BaseRecord) => (
+              <Switch
+                size="small"
+                checked={value}
+                aria-label={`Show ${record.name} on dashboard`}
+                onChange={(checked) => setActive(String(record.id), checked)}
+              />
+            )}
           />
           <Table.Column
             title="Actions"

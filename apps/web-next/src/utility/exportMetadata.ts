@@ -53,6 +53,7 @@ export interface BudgetExportRecord {
   description: string | null;
   start_date: string | null;
   end_date: string | null;
+  active: boolean;
   // "Parent/Child" path (nested) or bare name (root leaf), same convention
   // as a transaction's own category — resolved from budget_categories.
   categories: string[];
@@ -88,7 +89,9 @@ export const fetchExportMetadata = async (
       client.from("tags_with_usage").select("id, name, description"),
       client
         .from("budgets_with_linked")
-        .select("id, name, description, type, target_amount, start_date, end_date"),
+        .select(
+          "id, name, description, type, target_amount, start_date, end_date, active"
+        ),
       fetchAllRows<{ budget_id: string | null; category_id: string | null }>(
         client,
         "budget_categories",
@@ -195,6 +198,7 @@ export const fetchExportMetadata = async (
           target_amount: number;
           start_date: string | null;
           end_date: string | null;
+          active: boolean | null;
         } =>
           row.id !== null &&
           row.name !== null &&
@@ -208,6 +212,7 @@ export const fetchExportMetadata = async (
         description: row.description,
         start_date: row.start_date,
         end_date: row.end_date,
+        active: row.active ?? true,
         categories: (budgetCategoryPaths.get(row.id) ?? []).sort(),
         tags: (budgetTagNames.get(row.id) ?? []).sort(),
       })),

@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { TransactionType } from "../constants/transactionTypes";
 import { BUDGET_WARN_STROKE_COLOR } from "../theme/tokens";
 
@@ -58,6 +59,14 @@ export function getProgressStatus(
   if (type === "save") return "success";
   if (type === "spend") return "exception";
   return "normal";
+}
+
+/**
+ * A budget is "completed" once its end date is in the past. Display-only: it
+ * never affects matching or whether the budget shows on the dashboard.
+ */
+export function isBudgetCompleted(endDate: string | null | undefined): boolean {
+  return !!endDate && dayjs(endDate).isBefore(dayjs(), "day");
 }
 
 /** strokeColor override for the AntD <Progress> warn state */

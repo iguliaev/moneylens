@@ -15,6 +15,7 @@ manual "log against a budget" step.
 | `type` | `transaction_type` (`earn` \| `spend` \| `save`) | See [overview.md](overview.md). |
 | `target_amount` | numeric(12,2) | `CHECK (target_amount > 0)`. |
 | `start_date` / `end_date` | date, nullable | `NULL` = open-ended on that side. `CHECK (start_date <= end_date)` when both are set. |
+| `active` | boolean, `NOT NULL DEFAULT true` | Whether the budget is shown on the dashboard. Display only — an inactive budget still computes `current_amount`. See [Active flag](#active-flag). |
 | `deleted_at` | timestamptz, nullable | Soft delete. |
 | `created_at` / `updated_at` | timestamptz | |
 
@@ -70,6 +71,26 @@ matching by category alone.
 
 `get_budget_progress()` is a thin wrapper over `budgets_with_linked`, so the match rule is defined
 in exactly one place.
+
+## Active flag
+
+`budgets.active` is the only thing that decides whether a budget appears on the dashboard. It is
+independent of the budget's dates and of the year selected on the dashboard, so a budget with no
+dates, or one dated entirely in a past year, shows exactly when it is active.
+
+- New budgets are active by default (column default, `create_budget_with_links`, and
+  `insert_budgets`/bulk upload when the field is omitted or `null`).
+- The Budgets list page shows every budget, active or not, with an "On dashboard" switch so a budget
+  can be hidden or brought back without opening the edit form. The create and edit forms have the
+  same switch ("Show on dashboard").
+- The dashboard lists active budgets ordered by name (case-insensitive), not by creation time.
+- Inactive budgets keep tracking: `current_amount` is computed the same way, so reactivating one
+  loses nothing.
+- `update_budget_with_links` leaves the flag unchanged when its payload omits `active`.
+- JSON export writes `"active": false` for inactive budgets only; a missing field imports as
+  active.
+- A "Completed" tag (`end_date` before today) is shown next to a budget on the list, show page and
+  dashboard. It is display-only and has no effect on matching or visibility.
 
 ## Soft delete
 

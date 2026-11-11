@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Edit, useForm } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
-import { Form, Input, InputNumber, Select, DatePicker } from "antd";
+import { Form, Input, InputNumber, Select, DatePicker, Switch } from "antd";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { useBudgetForm } from "../../hooks";
 import {
@@ -167,6 +167,14 @@ export const BudgetEdit = () => {
             filterOption={simpleLabelFilterOption}
             allowClear
           />
+        </Form.Item>
+        <Form.Item
+          label="Show on dashboard"
+          name="active"
+          valuePropName="checked"
+          extra="Inactive budgets stay on the Budgets page and keep tracking their spending."
+        >
+          <Switch />
         </Form.Item>
       </Form>
     </Edit>

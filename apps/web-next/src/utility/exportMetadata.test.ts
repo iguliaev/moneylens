@@ -150,9 +150,45 @@ describe("fetchExportMetadata", () => {
         description: null,
         start_date: null,
         end_date: null,
+        active: true,
         categories: ["Fun"],
         tags: [],
       },
+    ]);
+  });
+
+  it("carries a budget's active flag, treating a missing flag as active", async () => {
+    const client = createSupabaseMock({
+      budgets: [
+        {
+          id: "budget-1",
+          name: "Hidden budget",
+          description: null,
+          type: "spend",
+          target_amount: 50,
+          start_date: null,
+          end_date: null,
+          active: false,
+        },
+        {
+          id: "budget-2",
+          name: "Legacy row",
+          description: null,
+          type: "spend",
+          target_amount: 70,
+          start_date: null,
+          end_date: null,
+        },
+      ],
+    });
+
+    const result = await fetchExportMetadata(client);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.budgets.map((b) => [b.name, b.active])).toEqual([
+      ["Hidden budget", false],
+      ["Legacy row", true],
     ]);
   });
 
@@ -195,6 +231,7 @@ describe("fetchExportMetadata", () => {
         description: "Monthly food",
         start_date: "2026-01-01",
         end_date: "2026-12-31",
+        active: true,
         categories: ["Food/Eating out"],
         tags: ["essentials"],
       },
@@ -242,6 +279,7 @@ describe("fetchExportMetadata", () => {
         description: null,
         start_date: null,
         end_date: null,
+        active: true,
         categories: [],
         tags: [],
       },

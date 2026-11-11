@@ -31,6 +31,8 @@ interface BudgetInput {
   description?: string | null;
   start_date?: string | null;
   end_date?: string | null;
+  /** Whether the budget shows on the dashboard. Missing or null means true. */
+  active?: boolean | null;
   /**
    * Bare root-leaf category name, or a "Parent/Child" path for a nested
    * category — same convention as a transaction's own `category` field.
@@ -92,6 +94,8 @@ export interface BudgetWithLinksInput {
   target_amount: number;
   start_date?: string | null;
   end_date?: string | null;
+  /** Missing leaves the flag unchanged on update; on create it defaults to true. */
+  active?: boolean;
 }
 
 type RpcResponse<T> = Promise<PostgrestSingleResponse<T>>;

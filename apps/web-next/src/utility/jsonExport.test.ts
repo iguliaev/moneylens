@@ -185,6 +185,7 @@ describe("budgetRecordToJsonExportBudget", () => {
     description: null,
     start_date: null,
     end_date: null,
+    active: true,
     categories: [],
     tags: [],
   };
@@ -216,6 +217,18 @@ describe("budgetRecordToJsonExportBudget", () => {
       categories: ["Food/Eating out"],
       tags: ["essentials"],
     });
+  });
+
+  it("writes active: false only for an inactive budget; an active one omits the field", () => {
+    expect(budgetRecordToJsonExportBudget({ ...base, active: false })).toEqual({
+      name: "Groceries budget",
+      type: "spend",
+      target_amount: 400,
+      active: false,
+    });
+    expect(budgetRecordToJsonExportBudget({ ...base, active: true })).not.toHaveProperty(
+      "active"
+    );
   });
 
   it("preserves an empty-string description rather than treating it as absent", () => {
@@ -296,6 +309,7 @@ describe("buildJsonExport", () => {
           description: null,
           start_date: null,
           end_date: null,
+          active: true,
           categories: [],
           tags: [],
         },
@@ -324,6 +338,7 @@ describe("buildJsonExport", () => {
           description: "Monthly food",
           start_date: "2026-01-01",
           end_date: "2026-12-31",
+          active: true,
           categories: ["Food/Eating out"],
           tags: ["essentials"],
         },
@@ -384,6 +399,7 @@ describe("buildJsonExport", () => {
           description: null,
           start_date: null,
           end_date: null,
+          active: true,
           categories: [],
           tags: [],
         },
@@ -394,6 +410,7 @@ describe("buildJsonExport", () => {
           description: null,
           start_date: null,
           end_date: null,
+          active: true,
           categories: [],
           tags: [],
         },

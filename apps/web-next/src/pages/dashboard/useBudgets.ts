@@ -11,6 +11,7 @@ export interface BudgetProgress {
   target_amount: number;
   start_date: string | null;
   end_date: string | null;
+  active: boolean;
   current_amount: number;
   created_at: string;
   updated_at: string;
@@ -23,7 +24,7 @@ type BudgetViewRow = Tables<"budgets_with_linked">;
 export const useBudgets = () => {
   const { query } = useList({
     resource: "budgets_with_linked",
-    sorters: [{ field: "created_at", order: "desc" }],
+    sorters: [{ field: "name", order: "asc" }],
     pagination: { mode: "off" },
   });
 
@@ -33,7 +34,7 @@ export const useBudgets = () => {
   // use a generic that rewrites the generated id type.)
   const rows = (query.data?.data ?? []) as BudgetViewRow[];
 
-  const budgets: BudgetProgress[] = rows.flatMap((b) => {
+  const allBudgets: BudgetProgress[] = rows.flatMap((b) => {
     if (
       !b.id ||
       !b.name ||
@@ -52,11 +53,22 @@ export const useBudgets = () => {
         current_amount: Number(b.current_amount) || 0,
         start_date: b.start_date,
         end_date: b.end_date,
+        active: b.active ?? true,
         created_at: b.created_at,
         updated_at: b.updated_at,
       },
     ];
   });
+
+  // The dashboard shows only active budgets, by name (case-insensitive) rather
+  // than by creation time. Dates and the dashboard's selected year play no
+  // part in visibility. totalCount lets the caller tell "no budgets at all"
+  // from "no active budgets".
+  const budgets = allBudgets
+    .filter((b) => b.active)
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+    );
 
   // isLoading: true only on the first fetch (no cached data) — safe to drive
   // a full <Skeleton /> without flickering on background refetches.
@@ -64,6 +76,7 @@ export const useBudgets = () => {
   // refresh indicators without hiding already-loaded data.
   return {
     budgets,
+    totalCount: allBudgets.length,
     loading: query.isLoading,
     isFetching: query.isFetching,
     error: toError(query.error, "Failed to load budgets."),

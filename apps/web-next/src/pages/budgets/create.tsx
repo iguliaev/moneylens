@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Create, useForm } from "@refinedev/antd";
 import { useList } from "@refinedev/core";
-import { Form, Input, InputNumber, Select, DatePicker } from "antd";
+import { Form, Input, InputNumber, Select, DatePicker, Switch } from "antd";
 import { TRANSACTION_TYPE_OPTIONS } from "../../constants/transactionTypes";
 import { useBudgetForm } from "../../hooks";
 import {
@@ -59,7 +59,12 @@ export const BudgetCreate = () => {
 
   return (
     <Create saveButtonProps={{ ...saveButtonProps, loading: isLoading }}>
-      <Form {...formProps} layout="vertical" onFinish={handleFinish}>
+      <Form
+        {...formProps}
+        layout="vertical"
+        onFinish={handleFinish}
+        initialValues={{ ...formProps.initialValues, active: true }}
+      >
         <Form.Item label="Name" name="name" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
@@ -130,6 +135,14 @@ export const BudgetCreate = () => {
             filterOption={simpleLabelFilterOption}
             allowClear
           />
+        </Form.Item>
+        <Form.Item
+          label="Show on dashboard"
+          name="active"
+          valuePropName="checked"
+          extra="Inactive budgets stay on the Budgets page and keep tracking their spending."
+        >
+          <Switch />
         </Form.Item>
       </Form>
     </Create>
