@@ -1,11 +1,7 @@
-import {
-  BaseRecord,
-  getDefaultSortOrder,
-  useInvalidate,
-  useUpdate,
-} from "@refinedev/core";
+import { BaseRecord, useInvalidate, useUpdate } from "@refinedev/core";
 import {
   useTable,
+  getDefaultSortOrder,
   List,
   EditButton,
   ShowButton,
