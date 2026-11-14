@@ -19,7 +19,7 @@ export const BudgetShow = () => {
   const { isLoading } = query;
   const { currency } = useCurrency();
 
-  const { pathFor } = useBudgetTransactionsLink();
+  const { pathFor, status: linkStatus } = useBudgetTransactionsLink();
 
   const type = record?.type as TransactionType | undefined;
 
@@ -50,6 +50,7 @@ export const BudgetShow = () => {
       {record?.id && type && (
         <div style={{ marginTop: 16 }}>
           <BudgetTransactionsLink
+            status={linkStatus}
             path={pathFor({
               id: String(record.id),
               type,

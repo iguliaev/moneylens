@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseTableParams, type CrudFilter } from "@refinedev/core";
 import {
   budgetTransactionsPath,
+  groupLiveLinks,
   buildTransactionFilters,
   type BudgetLinkSource,
 } from "./transactionFilterUrl";
@@ -80,7 +81,11 @@ describe("budgetTransactionsPath", () => {
     )!;
     const category = filtersOf(path).find((f) => fieldOf(f) === "category_id");
     expect(category?.operator).toBe("in");
-    expect(category?.value).toEqual(["parent", "child1", "child2"]);
+    expect([...(category?.value as string[])].sort()).toEqual([
+      "child1",
+      "child2",
+      "parent",
+    ]);
   });
 
   it("keeps a linked category that has no hierarchy row", () => {
@@ -114,5 +119,68 @@ describe("budgetTransactionsPath", () => {
     expect(
       budgetTransactionsPath(budget({ tagIds: ["t"] }), new Map())
     ).toMatch(/^\/transactions\?/);
+  });
+});
+
+describe("tag filter URL round trip", () => {
+  it("reads the nested tag_ids_or filter back out unchanged", () => {
+    const path = budgetTransactionsPath(
+      budget({ tagIds: ["t1", "t2"] }),
+      new Map()
+    )!;
+    const tag = filtersOf(path).find((f) => keyOf(f) === "tag_ids_or");
+    expect(tag).toEqual({
+      key: "tag_ids_or",
+      operator: "or",
+      value: [
+        { field: "tag_ids", operator: "ina", value: ["t1"] },
+        { field: "tag_ids", operator: "ina", value: ["t2"] },
+      ],
+    });
+  });
+
+  it("round-trips a one-sided date range", () => {
+    const path = budgetTransactionsPath(
+      budget({ tagIds: ["t"], startDate: "2026-03-01" }),
+      new Map()
+    )!;
+    expect(filtersOf(path)).toContainEqual({
+      field: "date",
+      operator: "gte",
+      value: "2026-03-01",
+    });
+  });
+});
+
+describe("groupLiveLinks", () => {
+  const live = new Set<string | null>(["c-live", "c-live2"]);
+
+  it("drops links whose target is not live", () => {
+    const grouped = groupLiveLinks(
+      [
+        { budget_id: "b1", category_id: "c-live" },
+        { budget_id: "b1", category_id: "c-deleted" },
+        { budget_id: "b2", category_id: "c-live2" },
+      ],
+      "category_id",
+      live
+    );
+    expect(grouped.get("b1")).toEqual(["c-live"]);
+    expect(grouped.get("b2")).toEqual(["c-live2"]);
+  });
+
+  it("leaves a budget whose only link is dead with no entry, so it has no link", () => {
+    const grouped = groupLiveLinks(
+      [{ budget_id: "b1", category_id: "c-deleted" }],
+      "category_id",
+      live
+    );
+    expect(grouped.has("b1")).toBe(false);
+    expect(
+      budgetTransactionsPath(
+        budget({ categoryIds: grouped.get("b1") ?? [] }),
+        new Map()
+      )
+    ).toBeNull();
   });
 });

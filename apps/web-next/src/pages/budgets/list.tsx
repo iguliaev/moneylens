@@ -32,7 +32,7 @@ export const BudgetList = () => {
   const invalidate = useInvalidate();
   const { currency } = useCurrency();
   const { mutate: updateBudget } = useUpdate();
-  const { pathFor } = useBudgetTransactionsLink();
+  const { pathFor, status: linkStatus } = useBudgetTransactionsLink();
 
   const { tableProps } = useTable({
     syncWithLocation: true,
@@ -185,6 +185,7 @@ export const BudgetList = () => {
               <Space>
                 <BudgetTransactionsLink
                   compact
+                  status={linkStatus}
                   path={pathFor({
                     id: String(record.id),
                     type: record.type as TransactionType,

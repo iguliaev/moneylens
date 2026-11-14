@@ -639,7 +639,36 @@ test.describe("Budget view transactions link", () => {
     before.setUTCMonth(before.getUTCMonth() - 2);
     const outOfRange = before.toISOString().slice(0, 10);
 
+    const startEdge = e2eCurrentMonthDate(1);
+    const endEdge = e2eCurrentMonthDate(28);
+    const afterEnd = new Date(`${endEdge}T12:00:00Z`);
+    afterEnd.setUTCDate(afterEnd.getUTCDate() + 1);
     const rows = [
+      // Boundary dates are inclusive; a row just past the end is not.
+      {
+        note: "in-start-edge",
+        cat: flights.id,
+        tag: tagA.id,
+        amount: 5,
+        date: startEdge,
+        match: true,
+      },
+      {
+        note: "in-end-edge",
+        cat: hotels.id,
+        tag: tagB.id,
+        amount: 5,
+        date: endEdge,
+        match: true,
+      },
+      {
+        note: "out-after-end",
+        cat: hotels.id,
+        tag: tagA.id,
+        amount: 7,
+        date: afterEnd.toISOString().slice(0, 10),
+        match: false,
+      },
       {
         note: "in-flights-a",
         cat: flights.id,
@@ -757,26 +786,138 @@ test.describe("Budget view transactions link", () => {
         page.getByRole("cell", { name: `${name}-${r.note}`, exact: true })
       ).toHaveCount(0);
     }
-    // Exactly the matching rows, so the visible total equals current_amount.
-    await expect(page.locator(".ant-table-row")).toHaveCount(shown.length);
+    // Exactly the matching rows, scoped to this test's data.
+    const ours = page.locator(".ant-table-row").filter({ hasText: name });
+    await expect(ours).toHaveCount(shown.length);
+    // And the amounts on screen add up to the budget's current amount.
+    const amounts = await ours.locator("td:nth-child(3)").allTextContents();
+    const total = amounts.reduce(
+      (sum, text) => sum + Number(text.replace(/[^0-9.]/g, "")),
+      0
+    );
+    expect(total).toBe(expected);
   });
 
   test("a budget with no links has a disabled link", async ({ page }) => {
-    const name = `e2e-link-none-${Date.now()}`;
-    const { error } = await supabaseAdmin.from("budgets").insert({
-      user_id: testUser!.userId,
-      name,
-      type: "spend",
-      target_amount: 100,
-    });
-    if (error) throw new Error(error.message);
+    const userId = testUser!.userId;
+    const stamp = Date.now();
+    const name = `e2e-link-none-${stamp}`;
+    const linkedName = `e2e-link-some-${stamp}`;
+    const [tag] = (
+      await supabaseAdmin
+        .from("tags")
+        .insert({ user_id: userId, name: `link-tag-${stamp}` })
+        .select("id")
+    ).data!;
+    const { data: created, error } = await supabaseAdmin
+      .from("budgets")
+      .insert(
+        [name, linkedName].map((n) => ({
+          user_id: userId,
+          name: n,
+          type: "spend" as const,
+          target_amount: 100,
+        }))
+      )
+      .select("id, name");
+    if (error || !created) throw new Error(error?.message ?? "insert failed");
+    const linked = created.find((b) => b.name === linkedName)!;
+    const { error: linkError } = await supabaseAdmin
+      .from("budget_tags")
+      .insert({ budget_id: linked.id, tag_id: tag.id });
+    if (linkError) throw new Error(linkError.message);
+
+    const linkIn = (budgetName: string) =>
+      page
+        .getByRole("row")
+        .filter({ hasText: budgetName })
+        .getByRole("link", { name: "View transactions" });
 
     await page.goto("/budgets");
+    // The link is disabled while loading too, so first wait for the linked
+    // budget's link to come alive: only then is "disabled" a real answer.
+    await expect(linkIn(linkedName)).toBeVisible();
     await expect(
       page
         .getByRole("row")
         .filter({ hasText: name })
         .getByRole("button", { name: "View transactions" })
     ).toBeDisabled();
+  });
+
+  test("an open-ended date range shows as an active, clearable date filter", async ({
+    page,
+  }) => {
+    const userId = testUser!.userId;
+    const stamp = Date.now();
+    const name = `e2e-link-open-${stamp}`;
+    const [tag] = (
+      await supabaseAdmin
+        .from("tags")
+        .insert({ user_id: userId, name: `open-tag-${stamp}` })
+        .select("id")
+    ).data!;
+    const { data: cat } = await supabaseAdmin
+      .from("categories")
+      .insert({ user_id: userId, type: "spend", name: `open-cat-${stamp}` })
+      .select("id")
+      .single();
+    const start = e2eCurrentMonthDate(10);
+    const early = e2eCurrentMonthDate(5);
+    const { data: txns, error: txError } = await supabaseAdmin
+      .from("transactions")
+      .insert(
+        [
+          { note: "late", date: start },
+          { note: "early", date: early },
+        ].map((r) => ({
+          user_id: userId,
+          type: "spend" as const,
+          amount: 10,
+          date: r.date,
+          category_id: cat!.id,
+          notes: `${name}-${r.note}`,
+        }))
+      )
+      .select("id");
+    if (txError || !txns) throw new Error(txError?.message ?? "insert failed");
+    await supabaseAdmin
+      .from("transaction_tags")
+      .insert(txns.map((t) => ({ transaction_id: t.id, tag_id: tag.id })));
+    const { data: budget } = await supabaseAdmin
+      .from("budgets")
+      .insert({
+        user_id: userId,
+        name,
+        type: "spend",
+        target_amount: 100,
+        start_date: start, // no end date
+      })
+      .select("id")
+      .single();
+    await supabaseAdmin
+      .from("budget_tags")
+      .insert({ budget_id: budget!.id, tag_id: tag.id });
+
+    await page.goto("/budgets");
+    await page
+      .getByRole("row")
+      .filter({ hasText: name })
+      .getByRole("link", { name: "View transactions" })
+      .click();
+    await expect(page).toHaveURL(/\/transactions\?/);
+
+    await expect(
+      page.getByRole("cell", { name: `${name}-late`, exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: `${name}-early`, exact: true })
+    ).toHaveCount(0);
+    // The one-sided range is reflected on the Date column, not hidden.
+    await expect(
+      page
+        .getByRole("columnheader", { name: /Date/ })
+        .locator(".ant-table-filter-trigger.active")
+    ).toBeVisible();
   });
 });

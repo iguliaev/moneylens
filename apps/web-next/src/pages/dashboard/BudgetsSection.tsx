@@ -34,7 +34,9 @@ const { Text, Title } = Typography;
 export const BudgetsSection = () => {
   const { budgets, totalCount, loading, error } = useBudgets();
   const { list } = useNavigation();
-  const { pathFor } = useBudgetTransactionsLink();
+  const { pathFor, status: linkStatus } = useBudgetTransactionsLink({
+    enabled: budgets.length > 0,
+  });
   const { currency } = useCurrency();
   const [animated, setAnimated] = useState(false);
 
@@ -161,7 +163,10 @@ export const BudgetsSection = () => {
                         </Text>
                       )}
                     </Space>
-                    <BudgetTransactionsLink path={pathFor(budget)} />
+                    <BudgetTransactionsLink
+                      status={linkStatus}
+                      path={pathFor(budget)}
+                    />
                   </Space>
                 </Card>
               </Col>

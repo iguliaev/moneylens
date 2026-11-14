@@ -1,9 +1,27 @@
-import { stringifyTableParams, type CrudFilter } from "@refinedev/core";
+import {
+  stringifyTableParams,
+  type ConditionalFilter,
+  type CrudFilter,
+} from "@refinedev/core";
 import type { TransactionType } from "../constants/transactionTypes";
 
-// Must match TAG_IDS_OR_KEY in pages/transactions/list.tsx: the list reads its
-// tag filter back out of the URL by this key.
+// tag_ids is a uuid[] computed column, so multi-tag filtering can't use the
+// default "in" operator (a scalar-list comparison against an array column).
+// Instead the transactions page uses an explicit OR-of-"contains" filter
+// ("has tag1 OR tag2"), keyed separately from the field so refine's own
+// filteredValue/"in" machinery never touches it. The list reads it back out
+// of the URL by this key, so both sides import it from here.
 export const TAG_IDS_OR_KEY = "tag_ids_or";
+
+export const buildTagIdsOrFilter = (tagIds: string[]): ConditionalFilter => ({
+  key: TAG_IDS_OR_KEY,
+  operator: "or",
+  value: tagIds.map((tagId) => ({
+    field: "tag_ids",
+    operator: "ina",
+    value: [tagId],
+  })),
+});
 
 export interface TransactionFilterSpec {
   type: TransactionType;
@@ -48,15 +66,7 @@ export const buildTransactionFilters = (
     });
   }
   if (spec.tagIds?.length) {
-    filters.push({
-      key: TAG_IDS_OR_KEY,
-      operator: "or",
-      value: spec.tagIds.map((tagId) => ({
-        field: "tag_ids",
-        operator: "ina",
-        value: [tagId],
-      })),
-    });
+    filters.push(buildTagIdsOrFilter(spec.tagIds));
   }
   return filters;
 };
@@ -105,4 +115,26 @@ export const budgetTransactionsPath = (
     categoryIds,
     tagIds: budget.tagIds,
   });
+};
+
+/**
+ * Groups raw link rows (budget_categories / budget_tags) by budget, keeping
+ * only links whose target is live. A link to a soft-deleted category or tag
+ * must not count: the budget's SQL ignores it, so keeping it would widen the
+ * link's result past the budget's amount.
+ */
+export const groupLiveLinks = <K extends string>(
+  links: readonly ({ budget_id: string } & Record<K, string>)[],
+  targetKey: K,
+  liveIds: ReadonlySet<string | null>
+): Map<string, string[]> => {
+  const byBudget = new Map<string, string[]>();
+  for (const link of links) {
+    const target = link[targetKey];
+    if (!liveIds.has(target)) continue;
+    const list = byBudget.get(link.budget_id) ?? [];
+    list.push(target);
+    byBudget.set(link.budget_id, list);
+  }
+  return byBudget;
 };
