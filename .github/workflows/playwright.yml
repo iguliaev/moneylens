@@ -11,7 +11,7 @@ on:
 jobs:
   e2e-tests:
     environment: staging
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     if: github.event.deployment_status.state == 'success' || github.event_name == 'workflow_dispatch'
     steps:
