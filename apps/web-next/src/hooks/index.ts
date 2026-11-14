@@ -17,3 +17,4 @@ export type {
   TransactionTypeDefaults,
   TransactionDefaultsByType,
 } from "./useTransactionDefaults";
+export { useBudgetTransactionsLink } from "./useBudgetTransactionsLink";

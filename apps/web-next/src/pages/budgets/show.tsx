@@ -9,6 +9,8 @@ import {
 import { useCurrency } from "../../contexts/currency";
 import { formatDisplayDate } from "../../utility/dateDisplay";
 import { isBudgetCompleted } from "../../utility/budgetAlerts";
+import { BudgetTransactionsLink } from "../../components";
+import { useBudgetTransactionsLink } from "../../hooks/useBudgetTransactionsLink";
 
 const { Title } = Typography;
 
@@ -16,6 +18,8 @@ export const BudgetShow = () => {
   const { query, result: record } = useShow();
   const { isLoading } = query;
   const { currency } = useCurrency();
+
+  const { pathFor, status: linkStatus } = useBudgetTransactionsLink();
 
   const type = record?.type as TransactionType | undefined;
 
@@ -43,6 +47,19 @@ export const BudgetShow = () => {
       </Space>
       <Title level={5}>Show on dashboard</Title>
       <TextField value={record?.active === false ? "No" : "Yes"} />
+      {record?.id && type && (
+        <div style={{ marginTop: 16 }}>
+          <BudgetTransactionsLink
+            status={linkStatus}
+            path={pathFor({
+              id: String(record.id),
+              type,
+              start_date: record.start_date ?? null,
+              end_date: record.end_date ?? null,
+            })}
+          />
+        </div>
+      )}
     </Show>
   );
 };

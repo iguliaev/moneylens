@@ -92,6 +92,24 @@ dates, or one dated entirely in a past year, shows exactly when it is active.
 - A "Completed" tag (`end_date` before today) is shown next to a budget on the list, show page and
   dashboard. It is display-only and has no effect on matching or visibility.
 
+## View transactions
+
+Each budget has a "View transactions" link (budgets list, budget show page, dashboard card) that
+opens the Transactions page filtered to the rows behind `current_amount`. The filters are the
+budget's definition expressed as the list's URL filters (`syncWithLocation`):
+
+| Budget field | URL filter |
+|---|---|
+| `type` | `type eq <type>` |
+| `start_date` / `end_date` | `date between` when both are set, `date gte` / `date lte` when only one is |
+| linked categories | `category_id in [...]`, each linked parent expanded to itself and all its descendants |
+| linked tags | the `tag_ids_or` conditional filter |
+
+Links to soft-deleted categories or tags are left out, and a budget with no live links has the
+link disabled (it matches nothing). The URL is built by `utility/transactionFilterUrl.ts`; the
+SQL sum and the URL are two encodings of the same rule, so the e2e test "rows behind the link sum
+to the budget's current amount" in `budgets.spec.ts` guards against drift.
+
 ## Soft delete
 
 Like transactions, budgets are soft-deleted via a blind `UPDATE ... SET deleted_at = NOW()`
