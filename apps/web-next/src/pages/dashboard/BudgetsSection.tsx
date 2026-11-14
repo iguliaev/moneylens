@@ -14,6 +14,8 @@ import { AimOutlined } from "@ant-design/icons";
 import { useNavigation } from "@refinedev/core";
 import { useEffect, useState } from "react";
 import { useBudgets } from "./useBudgets";
+import { BudgetTransactionsLink } from "../../components";
+import { useBudgetTransactionsLink } from "../../hooks/useBudgetTransactionsLink";
 import {
   TRANSACTION_TYPE_LABELS,
   TYPE_COLORS,
@@ -32,6 +34,7 @@ const { Text, Title } = Typography;
 export const BudgetsSection = () => {
   const { budgets, totalCount, loading, error } = useBudgets();
   const { list } = useNavigation();
+  const { pathFor } = useBudgetTransactionsLink();
   const { currency } = useCurrency();
   const [animated, setAnimated] = useState(false);
 
@@ -158,6 +161,7 @@ export const BudgetsSection = () => {
                         </Text>
                       )}
                     </Space>
+                    <BudgetTransactionsLink path={pathFor(budget)} />
                   </Space>
                 </Card>
               </Col>
