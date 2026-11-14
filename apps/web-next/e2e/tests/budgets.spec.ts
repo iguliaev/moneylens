@@ -421,6 +421,47 @@ test.describe("Budget dashboard ordering", () => {
     expect(titles.indexOf(nameA)).toBeGreaterThanOrEqual(0);
     expect(titles.indexOf(nameA)).toBeLessThan(titles.indexOf(nameB));
   });
+
+  test("budgets list keeps its order, sorted by name, when a switch is toggled", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    // Inserted out of name order, so physical order differs from name order.
+    const names = ["m", "c", "z", "a"].map((n) => `e2e-order-${n}-${ts}`);
+    const { error } = await supabaseAdmin.from("budgets").insert(
+      names.map((name) => ({
+        user_id: testUser!.userId,
+        name,
+        type: "spend" as const,
+        target_amount: 100,
+      }))
+    );
+    if (error) throw new Error(error.message);
+    const sorted = [...names].sort();
+
+    const visibleOrder = async () => {
+      const cells = await page
+        .getByRole("cell", { name: new RegExp(`^e2e-order-.*-${ts}`) })
+        .allTextContents();
+      return cells.map((c) => c.replace(/Completed$/, "").trim());
+    };
+
+    await page.goto("/budgets");
+    await expect(page.getByRole("cell", { name: sorted[0], exact: true })).toBeVisible();
+    expect(await visibleOrder()).toEqual(sorted);
+
+    // Updating a row rewrites it, which used to move it in the unordered list.
+    const toggle = page.getByRole("switch", {
+      name: `Show ${sorted[1]} on dashboard`,
+    });
+    await toggle.click();
+    await expect(toggle).not.toBeChecked();
+    await expect.poll(visibleOrder).toEqual(sorted);
+
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await expect.poll(visibleOrder).toEqual(sorted);
+  });
 });
 
 test.describe("Budget alert states", () => {

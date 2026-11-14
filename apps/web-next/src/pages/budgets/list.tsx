@@ -1,6 +1,7 @@
 import { BaseRecord, useInvalidate, useUpdate } from "@refinedev/core";
 import {
   useTable,
+  getDefaultSortOrder,
   List,
   EditButton,
   ShowButton,
@@ -34,9 +35,18 @@ export const BudgetList = () => {
   const { mutate: updateBudget } = useUpdate();
   const { pathFor, status: linkStatus } = useBudgetTransactionsLink();
 
-  const { tableProps } = useTable({
+  // Without an ORDER BY, Postgres returns rows in physical order, and updating
+  // a row (the "On dashboard" switch) moves it. Default to name, with id as a
+  // tie-breaker so equal names keep a fixed order too.
+  const { tableProps, sorters } = useTable({
     syncWithLocation: true,
     resource: "budgets_with_linked",
+    sorters: {
+      initial: [
+        { field: "name", order: "asc" },
+        { field: "id", order: "asc" },
+      ],
+    },
   });
 
   // Flips only the `active` flag on the base table. The list and the
@@ -78,6 +88,7 @@ export const BudgetList = () => {
             dataIndex="name"
             title="Name"
             sorter
+            defaultSortOrder={getDefaultSortOrder("name", sorters)}
             render={(value: string, record: BaseRecord) => (
               <Space>
                 {value}
