@@ -594,3 +594,371 @@ test.describe("Budget alert states", () => {
     await expect(card.getByText("Over budget").first()).toBeVisible();
   });
 });
+
+test.describe("Budget view transactions link", () => {
+  let testUser: { email: string; password: string; userId: string } | undefined;
+
+  test.beforeAll(async () => {
+    testUser = await createTestUser();
+  });
+
+  test.afterAll(async () => {
+    if (!testUser) return;
+    await supabaseAdmin.from("budgets").delete().eq("user_id", testUser.userId);
+    await supabaseAdmin
+      .from("transactions")
+      .delete()
+      .eq("user_id", testUser.userId);
+    await supabaseAdmin.from("tags").delete().eq("user_id", testUser.userId);
+    await supabaseAdmin
+      .from("categories")
+      .delete()
+      .eq("user_id", testUser.userId);
+    await deleteTestUser(testUser.userId);
+  });
+
+  test.beforeEach(async ({ page }) => {
+    if (!testUser) throw new Error("Link test user was not initialized");
+    await loginUser(page, testUser.email, testUser.password);
+  });
+
+  // The budget's SQL sum and the link's URL filter encode the same rule in two
+  // places; this fails if they drift apart.
+  test("rows behind the link sum to the budget's current amount", async ({
+    page,
+  }) => {
+    const userId = testUser!.userId;
+    const ts = Date.now();
+    const name = `e2e-link-parity-${ts}`;
+    const insert = async <T extends { id: string }>(
+      q: PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+    ) => {
+      const { data, error } = await q;
+      if (error || !data) throw new Error(error?.message ?? "insert failed");
+      return data;
+    };
+
+    const [vacation] = await insert(
+      supabaseAdmin
+        .from("categories")
+        .insert({ user_id: userId, type: "spend", name: `Vacation ${ts}` })
+        .select("id")
+    );
+    const [flights, hotels] = await insert(
+      supabaseAdmin
+        .from("categories")
+        .insert(
+          ["Flights", "Hotels"].map((n) => ({
+            user_id: userId,
+            type: "spend" as const,
+            name: `${n} ${ts}`,
+            parent_id: vacation.id,
+          }))
+        )
+        .select("id")
+    );
+    const [food] = await insert(
+      supabaseAdmin
+        .from("categories")
+        .insert({ user_id: userId, type: "spend", name: `Food ${ts}` })
+        .select("id")
+    );
+    const [tagA, tagB] = await insert(
+      supabaseAdmin
+        .from("tags")
+        .insert(
+          ["Trip A", "Trip B"].map((n) => ({
+            user_id: userId,
+            name: `${n} ${ts}`,
+          }))
+        )
+        .select("id")
+    );
+
+    const inRange = e2eCurrentMonthDate(10);
+    const before = new Date(`${inRange}T12:00:00Z`);
+    before.setUTCMonth(before.getUTCMonth() - 2);
+    const outOfRange = before.toISOString().slice(0, 10);
+
+    const startEdge = e2eCurrentMonthDate(1);
+    const endEdge = e2eCurrentMonthDate(28);
+    const afterEnd = new Date(`${endEdge}T12:00:00Z`);
+    afterEnd.setUTCDate(afterEnd.getUTCDate() + 1);
+    const rows = [
+      // Boundary dates are inclusive; a row just past the end is not.
+      {
+        note: "in-start-edge",
+        cat: flights.id,
+        tag: tagA.id,
+        amount: 5,
+        date: startEdge,
+        match: true,
+      },
+      {
+        note: "in-end-edge",
+        cat: hotels.id,
+        tag: tagB.id,
+        amount: 5,
+        date: endEdge,
+        match: true,
+      },
+      {
+        note: "out-after-end",
+        cat: hotels.id,
+        tag: tagA.id,
+        amount: 7,
+        date: afterEnd.toISOString().slice(0, 10),
+        match: false,
+      },
+      {
+        note: "in-flights-a",
+        cat: flights.id,
+        tag: tagA.id,
+        amount: 100,
+        date: inRange,
+        match: true,
+      },
+      {
+        note: "in-hotels-b",
+        cat: hotels.id,
+        tag: tagB.id,
+        amount: 50,
+        date: inRange,
+        match: true,
+      },
+      {
+        note: "out-food",
+        cat: food.id,
+        tag: tagA.id,
+        amount: 30,
+        date: inRange,
+        match: false,
+      },
+      {
+        note: "out-untagged",
+        cat: flights.id,
+        tag: null,
+        amount: 20,
+        date: inRange,
+        match: false,
+      },
+      {
+        note: "out-early",
+        cat: hotels.id,
+        tag: tagA.id,
+        amount: 10,
+        date: outOfRange,
+        match: false,
+      },
+    ];
+    const txns = await insert(
+      supabaseAdmin
+        .from("transactions")
+        .insert(
+          rows.map((r) => ({
+            user_id: userId,
+            type: "spend" as const,
+            amount: r.amount,
+            date: r.date,
+            category_id: r.cat,
+            notes: `${name}-${r.note}`,
+          }))
+        )
+        .select("id, notes")
+    );
+    const tagLinks = txns.flatMap((t, i) =>
+      rows[i].tag ? [{ transaction_id: t.id, tag_id: rows[i].tag! }] : []
+    );
+    const { error: ttError } = await supabaseAdmin
+      .from("transaction_tags")
+      .insert(tagLinks);
+    if (ttError) throw new Error(ttError.message);
+
+    const [budget] = await insert(
+      supabaseAdmin
+        .from("budgets")
+        .insert({
+          user_id: userId,
+          name,
+          type: "spend",
+          target_amount: 1000,
+          start_date: e2eCurrentMonthDate(1),
+          end_date: e2eCurrentMonthDate(28),
+        })
+        .select("id")
+    );
+    // Linking the parent only: its children must be pulled in by the link.
+    const { error: bcError } = await supabaseAdmin
+      .from("budget_categories")
+      .insert({ budget_id: budget.id, category_id: vacation.id });
+    const { error: btError } = await supabaseAdmin.from("budget_tags").insert([
+      { budget_id: budget.id, tag_id: tagA.id },
+      { budget_id: budget.id, tag_id: tagB.id },
+    ]);
+    if (bcError || btError) throw new Error((bcError ?? btError)!.message);
+
+    const { data: progress, error: progressError } = await supabaseAdmin
+      .from("budgets_with_linked")
+      .select("current_amount")
+      .eq("id", budget.id)
+      .single();
+    if (progressError) throw new Error(progressError.message);
+    const expected = rows
+      .filter((r) => r.match)
+      .reduce((s, r) => s + r.amount, 0);
+    expect(Number(progress.current_amount)).toBe(expected);
+
+    await page.goto("/budgets");
+    await page
+      .getByRole("row")
+      .filter({ hasText: name })
+      .getByRole("link", { name: "View transactions" })
+      .click();
+    await expect(page).toHaveURL(/\/transactions\?/);
+
+    const shown = rows.filter((r) => r.match).map((r) => `${name}-${r.note}`);
+    for (const note of shown) {
+      await expect(
+        page.getByRole("cell", { name: note, exact: true })
+      ).toBeVisible();
+    }
+    for (const r of rows.filter((r) => !r.match)) {
+      await expect(
+        page.getByRole("cell", { name: `${name}-${r.note}`, exact: true })
+      ).toHaveCount(0);
+    }
+    // Exactly the matching rows, scoped to this test's data.
+    const ours = page.locator(".ant-table-row").filter({ hasText: name });
+    await expect(ours).toHaveCount(shown.length);
+    // And the amounts on screen add up to the budget's current amount.
+    const amounts = await ours.locator("td:nth-child(3)").allTextContents();
+    const total = amounts.reduce(
+      (sum, text) => sum + Number(text.replace(/[^0-9.]/g, "")),
+      0
+    );
+    expect(total).toBe(expected);
+  });
+
+  test("a budget with no links has a disabled link", async ({ page }) => {
+    const userId = testUser!.userId;
+    const stamp = Date.now();
+    const name = `e2e-link-none-${stamp}`;
+    const linkedName = `e2e-link-some-${stamp}`;
+    const [tag] = (
+      await supabaseAdmin
+        .from("tags")
+        .insert({ user_id: userId, name: `link-tag-${stamp}` })
+        .select("id")
+    ).data!;
+    const { data: created, error } = await supabaseAdmin
+      .from("budgets")
+      .insert(
+        [name, linkedName].map((n) => ({
+          user_id: userId,
+          name: n,
+          type: "spend" as const,
+          target_amount: 100,
+        }))
+      )
+      .select("id, name");
+    if (error || !created) throw new Error(error?.message ?? "insert failed");
+    const linked = created.find((b) => b.name === linkedName)!;
+    const { error: linkError } = await supabaseAdmin
+      .from("budget_tags")
+      .insert({ budget_id: linked.id, tag_id: tag.id });
+    if (linkError) throw new Error(linkError.message);
+
+    const linkIn = (budgetName: string) =>
+      page
+        .getByRole("row")
+        .filter({ hasText: budgetName })
+        .getByRole("link", { name: "View transactions" });
+
+    await page.goto("/budgets");
+    // The link is disabled while loading too, so first wait for the linked
+    // budget's link to come alive: only then is "disabled" a real answer.
+    await expect(linkIn(linkedName)).toBeVisible();
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: name })
+        .getByRole("button", { name: "View transactions" })
+    ).toBeDisabled();
+  });
+
+  test("an open-ended date range shows as an active, clearable date filter", async ({
+    page,
+  }) => {
+    const userId = testUser!.userId;
+    const stamp = Date.now();
+    const name = `e2e-link-open-${stamp}`;
+    const [tag] = (
+      await supabaseAdmin
+        .from("tags")
+        .insert({ user_id: userId, name: `open-tag-${stamp}` })
+        .select("id")
+    ).data!;
+    const { data: cat } = await supabaseAdmin
+      .from("categories")
+      .insert({ user_id: userId, type: "spend", name: `open-cat-${stamp}` })
+      .select("id")
+      .single();
+    const start = e2eCurrentMonthDate(10);
+    const early = e2eCurrentMonthDate(5);
+    const { data: txns, error: txError } = await supabaseAdmin
+      .from("transactions")
+      .insert(
+        [
+          { note: "late", date: start },
+          { note: "early", date: early },
+        ].map((r) => ({
+          user_id: userId,
+          type: "spend" as const,
+          amount: 10,
+          date: r.date,
+          category_id: cat!.id,
+          notes: `${name}-${r.note}`,
+        }))
+      )
+      .select("id");
+    if (txError || !txns) throw new Error(txError?.message ?? "insert failed");
+    await supabaseAdmin
+      .from("transaction_tags")
+      .insert(txns.map((t) => ({ transaction_id: t.id, tag_id: tag.id })));
+    const { data: budget } = await supabaseAdmin
+      .from("budgets")
+      .insert({
+        user_id: userId,
+        name,
+        type: "spend",
+        target_amount: 100,
+        start_date: start, // no end date
+      })
+      .select("id")
+      .single();
+    await supabaseAdmin
+      .from("budget_tags")
+      .insert({ budget_id: budget!.id, tag_id: tag.id });
+
+    await page.goto("/budgets");
+    await page
+      .getByRole("row")
+      .filter({ hasText: name })
+      .getByRole("link", { name: "View transactions" })
+      .click();
+    await expect(page).toHaveURL(/\/transactions\?/);
+
+    await expect(
+      page.getByRole("cell", { name: `${name}-late`, exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: `${name}-early`, exact: true })
+    ).toHaveCount(0);
+    // The one-sided range is reflected on the Date column, not hidden.
+    await expect(
+      page
+        .getByRole("columnheader", { name: /Date/ })
+        .locator(".ant-table-filter-trigger.active")
+    ).toBeVisible();
+  });
+});

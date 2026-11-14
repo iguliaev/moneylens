@@ -22,12 +22,18 @@ import {
   isBudgetCompleted,
   WARN_STROKE_COLOR,
 } from "../../utility/budgetAlerts";
-import { useBudgetEmptyState, TableSkeleton } from "../../components";
+import {
+  useBudgetEmptyState,
+  TableSkeleton,
+  BudgetTransactionsLink,
+} from "../../components";
+import { useBudgetTransactionsLink } from "../../hooks/useBudgetTransactionsLink";
 
 export const BudgetList = () => {
   const invalidate = useInvalidate();
   const { currency } = useCurrency();
   const { mutate: updateBudget } = useUpdate();
+  const { pathFor, status: linkStatus } = useBudgetTransactionsLink();
 
   // Without an ORDER BY, Postgres returns rows in physical order, and updating
   // a row (the "On dashboard" switch) moves it. Default to name, with id as a
@@ -188,6 +194,16 @@ export const BudgetList = () => {
             dataIndex="actions"
             render={(_, record: BaseRecord) => (
               <Space>
+                <BudgetTransactionsLink
+                  compact
+                  status={linkStatus}
+                  path={pathFor({
+                    id: String(record.id),
+                    type: record.type as TransactionType,
+                    start_date: record.start_date ?? null,
+                    end_date: record.end_date ?? null,
+                  })}
+                />
                 <EditButton hideText size="small" recordItemId={record.id} />
                 <ShowButton hideText size="small" recordItemId={record.id} />
                 <DeleteButton

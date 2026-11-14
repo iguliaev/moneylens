@@ -39,6 +39,10 @@ import {
 } from "../../constants/transactionTypes";
 import { formatAmount, DATE_PICKER_INPUT_FORMATS } from "../../utility";
 import { formatDisplayDate } from "../../utility/dateDisplay";
+import {
+  TAG_IDS_OR_KEY,
+  buildTagIdsOrFilter,
+} from "../../utility/transactionFilterUrl";
 import { useTransactionEmptyState, TableSkeleton } from "../../components";
 
 const DEFAULT_SORTERS: CrudSort[] = [{ field: "date", order: "desc" }];
@@ -76,22 +80,24 @@ const commonSelectOptions = {
   pagination: { mode: "off" as const },
 };
 
-// tag_ids is a uuid[] computed column, so multi-tag filtering can't use the
-// default "in" operator (a scalar-list comparison against an array column).
-// Instead we build an explicit OR-of-"contains" filter — "has tag1 OR tag2"
-// — keyed separately from the field so refine's own filteredValue/"in"
-// machinery never touches it (it explicitly skips or/and filters).
-const TAG_IDS_OR_KEY = "tag_ids_or";
-
-function buildTagIdsOrFilter(tagIds: string[]): ConditionalFilter {
+/**
+ * The date column's range from the URL filters: `between` (set by the picker)
+ * or one-sided `gte` / `lte` (set by a budget's "View transactions" link when
+ * the budget has only a start or only an end date).
+ */
+function getDateRangeFilter(filters: CrudFilters): {
+  start?: string;
+  end?: string;
+} {
+  const between = getDefaultFilter("date", filters, "between");
+  if (Array.isArray(between) && between.length === 2) {
+    return { start: String(between[0]), end: String(between[1]) };
+  }
+  const gte = getDefaultFilter("date", filters, "gte");
+  const lte = getDefaultFilter("date", filters, "lte");
   return {
-    key: TAG_IDS_OR_KEY,
-    operator: "or",
-    value: tagIds.map((tagId) => ({
-      field: "tag_ids",
-      operator: "ina",
-      value: [tagId],
-    })),
+    start: gte ? String(gte) : undefined,
+    end: lte ? String(lte) : undefined,
   };
 }
 
@@ -251,6 +257,7 @@ export const TransactionList = () => {
     }
     tableProps.onChange?.(pagination, tableFilters, sorter, extra);
   };
+  const dateRange = getDateRangeFilter(filters);
   const transactionType =
     (getDefaultFilter("type", filters, "eq") as string) ??
     TRANSACTION_TYPES.SPEND;
@@ -345,15 +352,20 @@ export const TransactionList = () => {
             title="Date"
             sorter
             render={(value: string) => formatDisplayDate(value)}
-            filteredValue={getDefaultFilter("date", filters, "between") ?? null}
+            filteredValue={
+              dateRange.start || dateRange.end
+                ? [dateRange.start ?? "", dateRange.end ?? ""]
+                : null
+            }
             filterDropdown={({ confirm }) => {
-              const activeVal = getDefaultFilter("date", filters, "between");
-              const value =
-                Array.isArray(activeVal) && activeVal.length === 2
-                  ? ([
-                      dayjs(activeVal[0] as string),
-                      dayjs(activeVal[1] as string),
-                    ] as [dayjs.Dayjs, dayjs.Dayjs])
+              const value:
+                | [dayjs.Dayjs | null, dayjs.Dayjs | null]
+                | undefined =
+                dateRange.start || dateRange.end
+                  ? [
+                      dateRange.start ? dayjs(dateRange.start) : null,
+                      dateRange.end ? dayjs(dateRange.end) : null,
+                    ]
                   : undefined;
               return (
                 <div style={{ padding: 8 }}>
@@ -361,7 +373,12 @@ export const TransactionList = () => {
                     format={DATE_PICKER_INPUT_FORMATS}
                     value={value}
                     onChange={(dates) => {
+                      // The picker always writes `between`; the one-sided
+                      // operators are cleared so a link's open-ended range
+                      // doesn't linger beside the new one.
                       setFilters([
+                        { field: "date", operator: "gte", value: undefined },
+                        { field: "date", operator: "lte", value: undefined },
                         {
                           field: "date",
                           operator: "between",
