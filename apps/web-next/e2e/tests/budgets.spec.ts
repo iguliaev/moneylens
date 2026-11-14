@@ -46,7 +46,15 @@ test.describe("Budgets", () => {
     const startDate = e2eCurrentMonthDate(10);
     const endDate = e2eCurrentMonthDate(20);
 
-    await createBudget(page, name, "Spend", "1200", undefined, startDate, endDate);
+    await createBudget(
+      page,
+      name,
+      "Spend",
+      "1200",
+      undefined,
+      startDate,
+      endDate
+    );
   });
 
   test("user can edit a budget", async ({ page }) => {
@@ -543,5 +551,232 @@ test.describe("Budget alert states", () => {
       .locator(".ant-card")
       .filter({ hasText: budgetName });
     await expect(card.getByText("Over budget").first()).toBeVisible();
+  });
+});
+
+test.describe("Budget view transactions link", () => {
+  let testUser: { email: string; password: string; userId: string } | undefined;
+
+  test.beforeAll(async () => {
+    testUser = await createTestUser();
+  });
+
+  test.afterAll(async () => {
+    if (!testUser) return;
+    await supabaseAdmin.from("budgets").delete().eq("user_id", testUser.userId);
+    await supabaseAdmin
+      .from("transactions")
+      .delete()
+      .eq("user_id", testUser.userId);
+    await supabaseAdmin.from("tags").delete().eq("user_id", testUser.userId);
+    await supabaseAdmin
+      .from("categories")
+      .delete()
+      .eq("user_id", testUser.userId);
+    await deleteTestUser(testUser.userId);
+  });
+
+  test.beforeEach(async ({ page }) => {
+    if (!testUser) throw new Error("Link test user was not initialized");
+    await loginUser(page, testUser.email, testUser.password);
+  });
+
+  // The budget's SQL sum and the link's URL filter encode the same rule in two
+  // places; this fails if they drift apart.
+  test("rows behind the link sum to the budget's current amount", async ({
+    page,
+  }) => {
+    const userId = testUser!.userId;
+    const ts = Date.now();
+    const name = `e2e-link-parity-${ts}`;
+    const insert = async <T extends { id: string }>(
+      q: PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+    ) => {
+      const { data, error } = await q;
+      if (error || !data) throw new Error(error?.message ?? "insert failed");
+      return data;
+    };
+
+    const [vacation] = await insert(
+      supabaseAdmin
+        .from("categories")
+        .insert({ user_id: userId, type: "spend", name: `Vacation ${ts}` })
+        .select("id")
+    );
+    const [flights, hotels] = await insert(
+      supabaseAdmin
+        .from("categories")
+        .insert(
+          ["Flights", "Hotels"].map((n) => ({
+            user_id: userId,
+            type: "spend" as const,
+            name: `${n} ${ts}`,
+            parent_id: vacation.id,
+          }))
+        )
+        .select("id")
+    );
+    const [food] = await insert(
+      supabaseAdmin
+        .from("categories")
+        .insert({ user_id: userId, type: "spend", name: `Food ${ts}` })
+        .select("id")
+    );
+    const [tagA, tagB] = await insert(
+      supabaseAdmin
+        .from("tags")
+        .insert(
+          ["Trip A", "Trip B"].map((n) => ({
+            user_id: userId,
+            name: `${n} ${ts}`,
+          }))
+        )
+        .select("id")
+    );
+
+    const inRange = e2eCurrentMonthDate(10);
+    const before = new Date(`${inRange}T12:00:00Z`);
+    before.setUTCMonth(before.getUTCMonth() - 2);
+    const outOfRange = before.toISOString().slice(0, 10);
+
+    const rows = [
+      {
+        note: "in-flights-a",
+        cat: flights.id,
+        tag: tagA.id,
+        amount: 100,
+        date: inRange,
+        match: true,
+      },
+      {
+        note: "in-hotels-b",
+        cat: hotels.id,
+        tag: tagB.id,
+        amount: 50,
+        date: inRange,
+        match: true,
+      },
+      {
+        note: "out-food",
+        cat: food.id,
+        tag: tagA.id,
+        amount: 30,
+        date: inRange,
+        match: false,
+      },
+      {
+        note: "out-untagged",
+        cat: flights.id,
+        tag: null,
+        amount: 20,
+        date: inRange,
+        match: false,
+      },
+      {
+        note: "out-early",
+        cat: hotels.id,
+        tag: tagA.id,
+        amount: 10,
+        date: outOfRange,
+        match: false,
+      },
+    ];
+    const txns = await insert(
+      supabaseAdmin
+        .from("transactions")
+        .insert(
+          rows.map((r) => ({
+            user_id: userId,
+            type: "spend" as const,
+            amount: r.amount,
+            date: r.date,
+            category_id: r.cat,
+            notes: `${name}-${r.note}`,
+          }))
+        )
+        .select("id, notes")
+    );
+    const tagLinks = txns.flatMap((t, i) =>
+      rows[i].tag ? [{ transaction_id: t.id, tag_id: rows[i].tag! }] : []
+    );
+    const { error: ttError } = await supabaseAdmin
+      .from("transaction_tags")
+      .insert(tagLinks);
+    if (ttError) throw new Error(ttError.message);
+
+    const [budget] = await insert(
+      supabaseAdmin
+        .from("budgets")
+        .insert({
+          user_id: userId,
+          name,
+          type: "spend",
+          target_amount: 1000,
+          start_date: e2eCurrentMonthDate(1),
+          end_date: e2eCurrentMonthDate(28),
+        })
+        .select("id")
+    );
+    // Linking the parent only: its children must be pulled in by the link.
+    const { error: bcError } = await supabaseAdmin
+      .from("budget_categories")
+      .insert({ budget_id: budget.id, category_id: vacation.id });
+    const { error: btError } = await supabaseAdmin.from("budget_tags").insert([
+      { budget_id: budget.id, tag_id: tagA.id },
+      { budget_id: budget.id, tag_id: tagB.id },
+    ]);
+    if (bcError || btError) throw new Error((bcError ?? btError)!.message);
+
+    const { data: progress, error: progressError } = await supabaseAdmin
+      .from("budgets_with_linked")
+      .select("current_amount")
+      .eq("id", budget.id)
+      .single();
+    if (progressError) throw new Error(progressError.message);
+    const expected = rows
+      .filter((r) => r.match)
+      .reduce((s, r) => s + r.amount, 0);
+    expect(Number(progress.current_amount)).toBe(expected);
+
+    await page.goto("/budgets");
+    await page
+      .getByRole("row")
+      .filter({ hasText: name })
+      .getByRole("link", { name: "View transactions" })
+      .click();
+    await expect(page).toHaveURL(/\/transactions\?/);
+
+    const shown = rows.filter((r) => r.match).map((r) => `${name}-${r.note}`);
+    for (const note of shown) {
+      await expect(
+        page.getByRole("cell", { name: note, exact: true })
+      ).toBeVisible();
+    }
+    for (const r of rows.filter((r) => !r.match)) {
+      await expect(
+        page.getByRole("cell", { name: `${name}-${r.note}`, exact: true })
+      ).toHaveCount(0);
+    }
+    // Exactly the matching rows, so the visible total equals current_amount.
+    await expect(page.locator(".ant-table-row")).toHaveCount(shown.length);
+  });
+
+  test("a budget with no links has a disabled link", async ({ page }) => {
+    const name = `e2e-link-none-${Date.now()}`;
+    const { error } = await supabaseAdmin.from("budgets").insert({
+      user_id: testUser!.userId,
+      name,
+      type: "spend",
+      target_amount: 100,
+    });
+    if (error) throw new Error(error.message);
+
+    await page.goto("/budgets");
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: name })
+        .getByRole("button", { name: "View transactions" })
+    ).toBeDisabled();
   });
 });

@@ -11,3 +11,4 @@ export {
   useTagEmptyState,
 } from "./EmptyStates";
 export { TableSkeleton } from "./TableSkeleton";
+export { BudgetTransactionsLink } from "./BudgetTransactionsLink";
