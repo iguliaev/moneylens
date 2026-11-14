@@ -299,6 +299,120 @@ test.describe("Budgets", () => {
     // Progress bar should be rendered (Ant Design renders it as a role="progressbar")
     await expect(page.getByRole("progressbar").first()).toBeVisible();
   });
+
+  test("inactive budgets stay on the list but leave the dashboard, and the switch toggles it", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const name = `e2e-active-toggle-${ts}`;
+    await createBudget(page, name, "Spend", "300");
+
+    // New budgets are active by default, so it shows on the dashboard.
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name })).toBeVisible();
+
+    // Turn it off from the budgets list.
+    await page.goto("/budgets");
+    const toggle = page.getByRole("switch", {
+      name: `Show ${name} on dashboard`,
+    });
+    await expect(toggle).toBeChecked();
+    await toggle.click();
+    await expect(toggle).not.toBeChecked();
+
+    // Still listed on the budgets page after a reload...
+    await page.reload();
+    await expect(
+      page.getByRole("switch", { name: `Show ${name} on dashboard` })
+    ).not.toBeChecked();
+
+    // ...but gone from the dashboard.
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: "Dashboard" })
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name })).toHaveCount(0);
+
+    // Turn it back on: it returns to the dashboard.
+    await page.goto("/budgets");
+    await page
+      .getByRole("switch", { name: `Show ${name} on dashboard` })
+      .click();
+    await expect(
+      page.getByRole("switch", { name: `Show ${name} on dashboard` })
+    ).toBeChecked();
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name })).toBeVisible();
+  });
+
+  test("a budget can be created inactive from the form", async ({ page }) => {
+    const ts = Date.now();
+    const name = `e2e-create-inactive-${ts}`;
+
+    await page.goto("/budgets/create");
+    await expect(
+      page.getByRole("heading", { name: "Create Budget" })
+    ).toBeVisible();
+    await page.getByRole("textbox", { name: "* Name" }).fill(name);
+    await page.getByRole("combobox", { name: "* Type" }).click();
+    await page.getByTitle(/^Spend$/i).click();
+    await page.getByRole("spinbutton", { name: "* Target Amount" }).fill("50");
+    const dashboardSwitch = page.getByRole("switch", {
+      name: "Show on dashboard",
+    });
+    await expect(dashboardSwitch).toBeChecked();
+    await dashboardSwitch.click();
+    await page.getByRole("button", { name: /save/i }).click();
+
+    await expect(page).toHaveURL(/\/budgets(\?.*)?$/);
+    await expect(
+      page.getByRole("switch", { name: `Show ${name} on dashboard` })
+    ).not.toBeChecked();
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name })).toHaveCount(0);
+  });
+});
+
+test.describe("Budget dashboard ordering", () => {
+  // Own user: createBudget looks for the new budget on the first page of the
+  // list, so it must not share a user that already has more than a page of them.
+  let testUser: { email: string; password: string; userId: string } | undefined;
+
+  test.beforeAll(async () => {
+    testUser = await createTestUser();
+    await seedReferenceDataForUser(testUser.userId);
+  });
+
+  test.afterAll(async () => {
+    if (!testUser) return;
+    await supabaseAdmin.from("budgets").delete().eq("user_id", testUser.userId);
+    await cleanupReferenceDataForUser(testUser.userId);
+    await deleteTestUser(testUser.userId);
+  });
+
+  test.beforeEach(async ({ page }) => {
+    if (!testUser) throw new Error("Ordering test user was not initialized");
+    await loginUser(page, testUser.email, testUser.password);
+  });
+
+  test("dashboard lists budgets by name, not by creation order", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const nameB = `e2e-sort-b-${ts}`;
+    const nameA = `e2e-sort-a-${ts}`;
+    // Created B first, then A: creation order would put B before A.
+    await createBudget(page, nameB, "Spend", "100");
+    await createBudget(page, nameA, "Spend", "100");
+
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: nameA })).toBeVisible();
+    const titles = await page
+      .getByRole("heading", { level: 5 })
+      .allTextContents();
+    expect(titles.indexOf(nameA)).toBeGreaterThanOrEqual(0);
+    expect(titles.indexOf(nameA)).toBeLessThan(titles.indexOf(nameB));
+  });
 });
 
 test.describe("Budget alert states", () => {

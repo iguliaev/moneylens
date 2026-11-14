@@ -1,6 +1,6 @@
 import { useShow } from "@refinedev/core";
 import { Show, TextField, NumberField } from "@refinedev/antd";
-import { Tag, Typography } from "antd";
+import { Space, Tag, Typography } from "antd";
 import {
   TRANSACTION_TYPE_LABELS,
   TransactionType,
@@ -8,6 +8,7 @@ import {
 } from "../../constants/transactionTypes";
 import { useCurrency } from "../../contexts/currency";
 import { formatDisplayDate } from "../../utility/dateDisplay";
+import { isBudgetCompleted } from "../../utility/budgetAlerts";
 
 const { Title } = Typography;
 
@@ -36,7 +37,12 @@ export const BudgetShow = () => {
       <Title level={5}>Start Date</Title>
       <TextField value={formatDisplayDate(record?.start_date)} />
       <Title level={5}>End Date</Title>
-      <TextField value={formatDisplayDate(record?.end_date)} />
+      <Space>
+        <TextField value={formatDisplayDate(record?.end_date)} />
+        {isBudgetCompleted(record?.end_date) && <Tag>Completed</Tag>}
+      </Space>
+      <Title level={5}>Show on dashboard</Title>
+      <TextField value={record?.active === false ? "No" : "Yes"} />
     </Show>
   );
 };

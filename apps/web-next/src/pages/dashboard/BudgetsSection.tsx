@@ -23,13 +23,14 @@ import { useCurrency } from "../../contexts/currency";
 import {
   getBudgetAlertState,
   getProgressStatus,
+  isBudgetCompleted,
   WARN_STROKE_COLOR,
 } from "../../utility/budgetAlerts";
 
 const { Text, Title } = Typography;
 
 export const BudgetsSection = () => {
-  const { budgets, loading, error } = useBudgets();
+  const { budgets, totalCount, loading, error } = useBudgets();
   const { list } = useNavigation();
   const { currency } = useCurrency();
   const [animated, setAnimated] = useState(false);
@@ -70,6 +71,18 @@ export const BudgetsSection = () => {
       )}
       {loading ? (
         <Skeleton active paragraph={{ rows: 3 }} />
+      ) : budgets.length === 0 && totalCount > 0 ? (
+        <Text type="secondary">
+          No budgets are shown on the dashboard.{" "}
+          <Button
+            type="link"
+            style={{ padding: 0, height: "auto" }}
+            onClick={() => list("budgets")}
+          >
+            Manage budgets
+          </Button>{" "}
+          to turn one on.
+        </Text>
       ) : budgets.length === 0 ? (
         <Text type="secondary">
           No budgets yet.{" "}
@@ -113,6 +126,9 @@ export const BudgetsSection = () => {
                       )}
                       {alertLevel === "over" && (
                         <Tag color="error">Over budget</Tag>
+                      )}
+                      {isBudgetCompleted(budget.end_date) && (
+                        <Tag>Completed</Tag>
                       )}
                     </Space>
                     {budget.description && (

@@ -44,6 +44,8 @@ export interface JsonExportBudget {
   description?: string;
   start_date?: string;
   end_date?: string;
+  /** Only written when false; a missing field imports as active. */
+  active?: boolean;
   categories?: string[];
   tags?: string[];
 }
@@ -106,6 +108,7 @@ export const budgetRecordToJsonExportBudget = (record: BudgetExportRecord): Json
   };
   if (record.start_date !== null) base.start_date = record.start_date;
   if (record.end_date !== null) base.end_date = record.end_date;
+  if (!record.active) base.active = false;
   if (record.categories.length > 0) base.categories = record.categories;
   if (record.tags.length > 0) base.tags = record.tags;
   return withOptionalDescription(base, record.description);

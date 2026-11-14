@@ -151,6 +151,7 @@ interface BudgetInput {
   description?: string | null;       // Optional
   start_date?: string | null;        // Optional (YYYY-MM-DD)
   end_date?: string | null;          // Optional (YYYY-MM-DD)
+  active?: boolean | null;           // Optional — show on the dashboard; missing/null = true
   categories?: string[];             // Optional — category names/paths to link
   tags?: string[];                   // Optional — tag names to link
 }
@@ -660,6 +661,7 @@ except where noted.
 | `P0001` | `insert_budgets: tags for budget "<name>" must be an array` | `tags` is present and not an array (and not JSON `null`) |
 | `P0001` | `insert_budgets: start_date for budget "<name>" is not a valid date (expected YYYY-MM-DD)` | `start_date` isn't a plain, calendar-valid `YYYY-MM-DD` date |
 | `P0001` | `insert_budgets: end_date for budget "<name>" is not a valid date (expected YYYY-MM-DD)` | `end_date` isn't a plain, calendar-valid `YYYY-MM-DD` date |
+| `P0001` | `insert_budgets: active for budget "<name>" must be a boolean` | `active` is present and is neither a JSON boolean nor `null` |
 | `P0001` | `insert_budgets: start_date must be on or before end_date for budget "<name>"` | Both dates present, but `start_date` is after `end_date` |
 | `P0001` | `insert_budgets: category "<name>" not found as a root-level category for type "<type>"` | A bare `categories` entry doesn't resolve to a live root-level category (parent or leaf) for that budget's type |
 | `P0001` | `insert_budgets: category parent "<parent>" not found for type "<type>"` | A `"Parent/Child"` `categories` entry: no live root category matches `<parent>` for that type |

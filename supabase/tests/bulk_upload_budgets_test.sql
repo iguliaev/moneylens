@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(35);
+select plan(39);
 
 select tests.create_supabase_user('budget_user1@test.com');
 select tests.create_supabase_user('budget_user2@test.com');
@@ -24,6 +24,7 @@ select tests.create_supabase_user('budget_user13@test.com');
 select tests.create_supabase_user('budget_user14@test.com');
 select tests.create_supabase_user('budget_user15@test.com');
 select tests.create_supabase_user('budget_user16@test.com');
+select tests.create_supabase_user('budget_user17@test.com');
 
 -- Test 1: Insert a new budget with no categories/tags
 select tests.authenticate_as('budget_user1@test.com');
@@ -403,6 +404,35 @@ SELECT is(
   (SELECT COUNT(*) FROM public.bank_accounts WHERE user_id = tests.get_supabase_uid('budget_user14@test.com') AND name = 'ShouldNotExist'),
   0::bigint,
   'Atomicity: bank account not inserted due to budget category error'
+);
+
+-- active: stored as given; missing or null means true; a non-boolean is rejected
+select tests.authenticate_as('budget_user17@test.com');
+SELECT is(
+  (SELECT bulk_upload_data(jsonb_build_object('budgets', '[
+      {"name":"Hidden","type":"spend","target_amount":10,"active":false},
+      {"name":"Shown","type":"spend","target_amount":10},
+      {"name":"Explicit null","type":"spend","target_amount":10,"active":null}
+    ]'::jsonb))->>'budgets_inserted')::bigint,
+  3::bigint,
+  'active: budgets with active false / missing / null are inserted'
+);
+SELECT is(
+  (SELECT active FROM public.budgets WHERE user_id = tests.get_supabase_uid('budget_user17@test.com') AND name = 'Hidden'),
+  false,
+  'active: an explicit false is stored'
+);
+SELECT is(
+  (SELECT array_agg(active ORDER BY name) FROM public.budgets
+    WHERE user_id = tests.get_supabase_uid('budget_user17@test.com') AND name IN ('Shown', 'Explicit null')),
+  ARRAY[true, true],
+  'active: a missing or null active imports as true'
+);
+SELECT throws_like(
+  $$ SELECT bulk_upload_data(jsonb_build_object('budgets',
+       '[{"name":"Bad active","type":"spend","target_amount":10,"active":"yes"}]'::jsonb)) $$,
+  '%active for budget "Bad active" must be a boolean%',
+  'active: a non-boolean active is rejected with the budget name'
 );
 
 select * from finish();

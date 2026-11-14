@@ -23,6 +23,7 @@ export interface BudgetFormValues {
   target_amount: number;
   start_date?: string | Dayjs;
   end_date?: string | Dayjs;
+  active?: boolean;
   category_ids?: string[];
   tag_ids?: string[];
 }
@@ -57,6 +58,7 @@ export function useBudgetForm({ mode, id }: UseBudgetFormOptions) {
         target_amount: rawFields.target_amount,
         start_date: toDateString(rawFields.start_date),
         end_date: toDateString(rawFields.end_date),
+        active: rawFields.active ?? true,
       } satisfies BudgetWithLinksInput;
 
       let result;

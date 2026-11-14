@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(30);
 
 -- ── Users ────────────────────────────────────────────────────────────────────
 select tests.create_supabase_user('bp_u1@test.com');
@@ -520,6 +520,11 @@ update public.categories
 set deleted_at = now()
 where user_id = tests.get_supabase_uid('bp_u1@test.com') and name = 'bp_c18';
 
+-- active pre-condition: an inactive budget must keep tracking its spending
+update public.budgets
+set active = false
+where user_id = tests.get_supabase_uid('bp_u1@test.com') and name = 'and-cat-tag';
+
 -- ── Assertions ───────────────────────────────────────────────────────────────
 select tests.authenticate_as('bp_u1@test.com');
 
@@ -724,6 +729,23 @@ select is_empty(
 select is_empty(
     $$ select id from public.budgets_with_linked where user_id <> auth.uid() $$,
     'budgets_with_linked returns only the caller''s budgets'
+);
+
+-- 26-28) active: exposed by the wrapper and the view, defaults to true, and has no effect on matching
+select results_eq(
+    $$ select active, current_amount from public.get_budget_progress() where name = 'and-cat-tag' $$,
+    $$ values (false, 100.00::numeric) $$,
+    'get_budget_progress: an inactive budget reports active = false and still computes current_amount'
+);
+select results_eq(
+    $$ select active, current_amount from public.budgets_with_linked where name = 'and-cat-tag' $$,
+    $$ values (false, 100.00::numeric) $$,
+    'budgets_with_linked: an inactive budget reports active = false and still computes current_amount'
+);
+select results_eq(
+    $$ select active from public.budgets_with_linked where name = 'cat-only' $$,
+    array[true],
+    'budgets_with_linked: active defaults to true'
 );
 
 select * from finish();

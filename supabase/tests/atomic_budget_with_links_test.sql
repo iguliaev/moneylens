@@ -3,7 +3,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(32);
 
 -- Setup two test users
 select tests.create_supabase_user('atomic_budget_user1@test.com');
@@ -337,6 +337,48 @@ SELECT throws_like(
 SELECT ok(
   (SELECT COUNT(*) FROM public.budget_tags WHERE budget_id = current_setting('test.budget1_id')::uuid) = 0,
   'No tag linked after rejected update with another user''s tag'
+);
+
+-- 19) active: create defaults to true when the payload omits it
+SELECT is(
+  (SELECT (public.create_budget_with_links(
+    jsonb_build_object('name', 'ActiveDefault', 'type', 'spend', 'target_amount', 1),
+    ARRAY[]::uuid[], ARRAY[]::uuid[]
+  )).active),
+  true,
+  'create_budget_with_links defaults active to true when omitted'
+);
+
+-- 20) active: create honours an explicit false
+SELECT is(
+  (SELECT (public.create_budget_with_links(
+    jsonb_build_object('name', 'ActiveOff', 'type', 'spend', 'target_amount', 1, 'active', false),
+    ARRAY[]::uuid[], ARRAY[]::uuid[]
+  )).active),
+  false,
+  'create_budget_with_links stores active = false when asked'
+);
+
+-- 21) active: an update payload without "active" leaves the flag unchanged
+SELECT is(
+  (SELECT (public.update_budget_with_links(
+    (SELECT id FROM public.budgets WHERE name = 'ActiveOff' AND user_id = auth.uid()),
+    jsonb_build_object('name', 'ActiveOff', 'type', 'spend', 'target_amount', 2),
+    ARRAY[]::uuid[], ARRAY[]::uuid[]
+  )).active),
+  false,
+  'update_budget_with_links leaves active unchanged when the payload omits it'
+);
+
+-- 22) active: an update payload with "active" changes it
+SELECT is(
+  (SELECT (public.update_budget_with_links(
+    (SELECT id FROM public.budgets WHERE name = 'ActiveOff' AND user_id = auth.uid()),
+    jsonb_build_object('name', 'ActiveOff', 'type', 'spend', 'target_amount', 2, 'active', true),
+    ARRAY[]::uuid[], ARRAY[]::uuid[]
+  )).active),
+  true,
+  'update_budget_with_links sets active when the payload provides it'
 );
 
 select * from finish();

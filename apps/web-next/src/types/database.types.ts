@@ -166,6 +166,7 @@ export type Database = {
       };
       budgets: {
         Row: {
+          active: boolean;
           created_at: string;
           deleted_at: string | null;
           description: string | null;
@@ -179,6 +180,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          active?: boolean;
           created_at?: string;
           deleted_at?: string | null;
           description?: string | null;
@@ -192,6 +194,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          active?: boolean;
           created_at?: string;
           deleted_at?: string | null;
           description?: string | null;
@@ -557,6 +560,7 @@ export type Database = {
       };
       budgets_with_linked: {
         Row: {
+          active: boolean | null;
           category_count: number | null;
           created_at: string | null;
           current_amount: number | null;
@@ -745,6 +749,7 @@ export type Database = {
       create_budget_with_links: {
         Args: { p_budget: Json; p_category_ids: string[]; p_tag_ids: string[] };
         Returns: {
+          active: boolean;
           created_at: string;
           deleted_at: string | null;
           description: string | null;
@@ -810,6 +815,7 @@ export type Database = {
       get_budget_progress: {
         Args: never;
         Returns: {
+          active: boolean;
           created_at: string;
           current_amount: number;
           description: string;
@@ -855,6 +861,7 @@ export type Database = {
           p_tag_ids: string[];
         };
         Returns: {
+          active: boolean;
           created_at: string;
           deleted_at: string | null;
           description: string | null;
