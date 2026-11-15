@@ -63,6 +63,8 @@ This has happened in this codebase: `get_transaction_tags`, added in `2026071820
 
 **Rule of thumb when writing or reviewing any view/RPC/query touching `transactions`, `categories`, `bank_accounts`, or `tags`:** add `deleted_at IS NULL` on every join to one of these tables, not just the top-level `WHERE` — a join without the filter leaks soft-deleted rows just as easily as a bare `SELECT`.
 
+**Documented exception: historical reporting.** `breakdown_matches` / `get_breakdown` (`20261115165716_add_breakdown_rpcs.sql`) deliberately join `categories`, `tags` and `bank_accounts` *without* `deleted_at IS NULL`. A report over past transactions must keep counting a transaction that still points at a since-deleted category, tag or account, and show it under its stored name; filtering them out would silently change historical totals. The soft-deleted *transactions* themselves are still excluded. Do not "fix" these joins when reviewing; the exception is covered by `supabase/tests/breakdown_rpcs_test.sql`.
+
 ### Standard 4-policy RLS shape
 
 Every user-facing table gets exactly four RLS policies, named `<table>_select` / `<table>_insert` / `<table>_update` / `<table>_delete`, each scoped with the identical predicate `user_id = (SELECT auth.uid())` (wrapped in a `SELECT` so Postgres can cache/inline it instead of re-evaluating `auth.uid()` per row — see `20260201164000_baseline_from_schemas.sql:190-236`). When adding a new user table, copy this exact template rather than writing a combined or ad-hoc policy.

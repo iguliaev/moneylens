@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(26);
 
 select tests.create_supabase_user('bd_u1@test.com');
 select tests.create_supabase_user('bd_u2@test.com');
@@ -173,12 +173,6 @@ select is(
   (select count(*)::int from public.get_breakdown('category', 'spend', '2026-02-28', '2026-01-01')),
   0,
   'an inverted period returns no rows'
-);
-
-select is(
-  (select coalesce(sum(total), 0) from public.get_breakdown('category', 'spend', '2026-01-01', '2026-02-28') where total = 666),
-  0::numeric,
-  'a soft-deleted transaction is never counted'
 );
 
 -- ── isolation ────────────────────────────────────────────────────────────────

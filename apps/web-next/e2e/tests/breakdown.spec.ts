@@ -203,6 +203,21 @@ test.describe("Dashboard Breakdown tab", () => {
       .getByRole("row")
       .filter({ hasText: text });
 
+  // Asserts the Total and Transactions cells exactly. A row's whole text also
+  // holds the entity name, which carries a timestamp, so a substring check on
+  // the row could match digits that are not the total.
+  const expectRowValues = async (
+    page: import("@playwright/test").Page,
+    name: string,
+    total: number,
+    count: number
+  ) => {
+    const cells = row(page, name).getByRole("cell");
+    // Any currency symbol, then exactly the amount.
+    await expect(cells.nth(1)).toHaveText(new RegExp(`^\\D*${total}\\.00$`));
+    await expect(cells.nth(2)).toHaveText(String(count));
+  };
+
   test("the tab sits between Monthly Statistics and Charts", async ({
     page,
   }) => {
@@ -217,12 +232,12 @@ test.describe("Dashboard Breakdown tab", () => {
   test("ranks categories by total with transaction counts", async ({
     page,
   }) => {
-    await expect(row(page, names.flights)).toContainText("100");
+    await expectRowValues(page, names.flights, 100, 1);
     await expect(row(page, names.flights)).toContainText(
       `${names.parent} / ${names.flights}`
     );
-    await expect(row(page, names.hotels)).toContainText("50");
-    await expect(row(page, names.food)).toContainText("30");
+    await expectRowValues(page, names.hotels, 50, 1);
+    await expectRowValues(page, names.food, 30, 1);
     // The earn category is not in the default (spend) view.
     await expect(row(page, names.salary)).toHaveCount(0);
 
@@ -241,14 +256,14 @@ test.describe("Dashboard Breakdown tab", () => {
 
   test("group by parent rolls the children up", async ({ page }) => {
     await page.getByText("Group by parent").click();
-    await expect(row(page, names.parent)).toContainText("150");
+    await expectRowValues(page, names.parent, 150, 2);
     await expect(row(page, names.flights)).toHaveCount(0);
-    await expect(row(page, names.food)).toContainText("30");
+    await expectRowValues(page, names.food, 30, 1);
   });
 
   test("switching the type shows that type's rows", async ({ page }) => {
     await choose(page, "Earn");
-    await expect(row(page, names.salary)).toContainText("500");
+    await expectRowValues(page, names.salary, 500, 1);
     await expect(row(page, names.flights)).toHaveCount(0);
   });
 
@@ -256,12 +271,12 @@ test.describe("Dashboard Breakdown tab", () => {
     page,
   }) => {
     await choose(page, "Tag");
-    await expect(row(page, names.trip)).toContainText("150");
+    await expectRowValues(page, names.trip, 150, 2);
     await expect(page.getByText(/counts toward each of them/)).toBeVisible();
 
     await choose(page, "Bank account");
-    await expect(row(page, names.main)).toContainText("150");
-    await expect(row(page, names.savings)).toContainText("30");
+    await expectRowValues(page, names.main, 150, 2);
+    await expectRowValues(page, names.savings, 30, 1);
     // Group-by-parent is a category-only control.
     await expect(page.getByText("Group by parent")).toHaveCount(0);
   });
