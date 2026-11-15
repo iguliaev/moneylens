@@ -741,6 +741,21 @@ export type Database = {
       }
     }
     Functions: {
+      breakdown_matches: {
+        Args: {
+          p_dimension: string
+          p_end: string
+          p_group_by_parent?: boolean
+          p_start: string
+          p_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          amount: number
+          entity_id: string
+          tx_date: string
+          tx_id: string
+        }[]
+      }
       bulk_insert_transactions: {
         Args: { p_transactions: Json }
         Returns: Json
@@ -810,6 +825,38 @@ export type Database = {
         Returns: {
           in_use_count: number
           ok: boolean
+        }[]
+      }
+      get_breakdown: {
+        Args: {
+          p_dimension: string
+          p_end: string
+          p_group_by_parent?: boolean
+          p_start: string
+          p_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          entity_id: string
+          entity_name: string
+          member_ids: string[]
+          parent_name: string
+          total: number
+          tx_count: number
+        }[]
+      }
+      get_breakdown_monthly: {
+        Args: {
+          p_dimension: string
+          p_end: string
+          p_entity_id: string
+          p_group_by_parent?: boolean
+          p_start: string
+          p_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          month: string
+          total: number
+          tx_count: number
         }[]
       }
       get_budget_progress: {

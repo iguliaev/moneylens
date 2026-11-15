@@ -16,9 +16,10 @@ const budget = (over: Partial<BudgetLinkSource> = {}): BudgetLinkSource => ({
   ...over,
 });
 
-// Reads the path back with refine's own parser, the one syncWithLocation uses.
+// Reads the path back with refine's own parser, the one syncWithLocation uses
+// (it expects the leading "?" and drops the first character).
 const filtersOf = (path: string): CrudFilter[] =>
-  parseTableParams(path.split("?")[1]).parsedFilters;
+  parseTableParams(path.slice(path.indexOf("?"))).parsedFilters;
 
 const fieldOf = (f: CrudFilter) => ("field" in f ? f.field : undefined);
 const keyOf = (f: CrudFilter) => ("key" in f ? f.key : undefined);

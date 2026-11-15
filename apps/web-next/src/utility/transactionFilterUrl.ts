@@ -31,6 +31,8 @@ export interface TransactionFilterSpec {
   categoryIds?: string[];
   /** Matches transactions carrying any of these tags (OR). Empty or missing means no constraint. */
   tagIds?: string[];
+  /** Matches any of these bank accounts (OR). Empty or missing means no constraint. */
+  bankAccountIds?: string[];
 }
 
 const dateFilters = (
@@ -63,6 +65,13 @@ export const buildTransactionFilters = (
       field: "category_id",
       operator: "in",
       value: spec.categoryIds,
+    });
+  }
+  if (spec.bankAccountIds?.length) {
+    filters.push({
+      field: "bank_account_id",
+      operator: "in",
+      value: spec.bankAccountIds,
     });
   }
   if (spec.tagIds?.length) {

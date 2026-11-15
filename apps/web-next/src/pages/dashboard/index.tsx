@@ -1,6 +1,7 @@
 import { Tabs } from "antd";
 import { Show } from "@refinedev/antd";
 import { BudgetsSection } from "./BudgetsSection";
+import { BreakdownTab } from "./BreakdownTab";
 import { ChartsTab } from "./ChartsTab";
 import { PeriodTab } from "./components/PeriodTab";
 import { useState, type FC } from "react";
@@ -35,6 +36,11 @@ export const DashboardPage: FC = () => {
           setSelectedMonth={setSelectedMonth}
         />
       ),
+    },
+    {
+      key: "breakdown",
+      label: "Breakdown",
+      children: <BreakdownTab />,
     },
     {
       key: "charts",

@@ -18,3 +18,4 @@ export type {
   TransactionDefaultsByType,
 } from "./useTransactionDefaults";
 export { useBudgetTransactionsLink } from "./useBudgetTransactionsLink";
+export { useBreakdown, useBreakdownMonthly } from "./useBreakdown";

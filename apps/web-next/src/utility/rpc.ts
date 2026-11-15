@@ -1,4 +1,7 @@
-import type { PostgrestSingleResponse } from "@supabase/supabase-js";
+import type {
+  PostgrestResponse,
+  PostgrestSingleResponse,
+} from "@supabase/supabase-js";
 import type { Database, Json, Tables } from "../types/database.types";
 import { supabaseClient } from "./supabaseClient";
 
@@ -170,3 +173,47 @@ export const updateBudgetWithLinks = async (
     p_tag_ids: tagIds,
   });
 };
+
+export type BreakdownDimension = "category" | "tag" | "bank_account";
+
+export interface BreakdownArgs {
+  dimension: BreakdownDimension;
+  type: Database["public"]["Enums"]["transaction_type"];
+  start: string;
+  end: string;
+  groupByParent: boolean;
+}
+
+type BreakdownRowRaw =
+  Database["public"]["Functions"]["get_breakdown"]["Returns"][number];
+type BreakdownMonthRowRaw =
+  Database["public"]["Functions"]["get_breakdown_monthly"]["Returns"][number];
+
+// INTENTIONAL_DIRECT_SUPABASE: RPC must run via Supabase client, wrapped here for typed call sites.
+export const getBreakdown = async (
+  args: BreakdownArgs
+): Promise<PostgrestResponse<BreakdownRowRaw>> =>
+  await supabaseClient.rpc("get_breakdown", {
+    p_dimension: args.dimension,
+    p_type: args.type,
+    p_start: args.start,
+    p_end: args.end,
+    p_group_by_parent: args.groupByParent,
+  });
+
+// INTENTIONAL_DIRECT_SUPABASE: RPC must run via Supabase client, wrapped here for typed call sites.
+// entityId null selects the "Uncategorised" / "No account" row.
+export const getBreakdownMonthly = async (
+  args: BreakdownArgs,
+  entityId: string | null
+): Promise<PostgrestResponse<BreakdownMonthRowRaw>> =>
+  await supabaseClient.rpc("get_breakdown_monthly", {
+    p_dimension: args.dimension,
+    // The generated type says string; the function accepts NULL for the
+    // no-category / no-account row.
+    p_entity_id: entityId as string,
+    p_type: args.type,
+    p_start: args.start,
+    p_end: args.end,
+    p_group_by_parent: args.groupByParent,
+  });
