@@ -1,6 +1,6 @@
 # Dashboard Breakdown Tab Design
 
-**Status:** Draft
+**Status:** Implemented
 
 ## Context
 
@@ -154,12 +154,29 @@ duplicated.
   expected rows.
 - Unit tests for the URL builder and for the zero-filled month series.
 
-## Open questions
+## Decisions and implementation notes
 
-1. **Untagged transactions** under the Tag dimension: omit them, or show an "Untagged" row? The
-   default here is to omit them.
-2. **Soft-deleted entities:** transactions that still point at a deleted category, tag or bank
-   account. Default here: they still count, and the entity is shown with its stored name.
-3. **Nullability:** whether `bank_account_id` can be null on a transaction. If it can, the Bank
-   account dimension needs a "No account" row or an explicit omission. To be verified against the
-   schema before the implementation plan.
+The three open questions were settled as follows, and a few details were added during
+implementation.
+
+1. **Untagged transactions** are omitted from the Tag dimension. A note on the tab says so.
+2. **Soft-deleted entities** still count, under the name stored on the deleted row. The helper
+   joins `categories` / `tags` / `bank_accounts` without a `deleted_at` filter on purpose.
+3. **Missing category / bank account:** `transactions.category_id` and `bank_account_id` are both
+   nullable, so the Category and Bank account dimensions report an **"Uncategorised"** / **"No
+   account"** row (`entity_id` is NULL) rather than silently dropping that money. These rows have
+   no link, because the transactions page has no filter for "empty" that its column filters can
+   show. `get_breakdown_monthly` selects them with `p_entity_id = NULL`.
+
+Additions to the RPC contract:
+
+- `get_breakdown` also returns `member_ids uuid[]`: the category ids a row stands for (the category
+  itself, or in parent mode the parent plus all its children). The drill-down link uses it, so the
+  client does not need the hierarchy. It is NULL for the Uncategorised / No account rows.
+- The matching rules live in one helper, `breakdown_matches`, used by both RPCs, so the list and the
+  monthly chart cannot disagree. The three functions are granted to `authenticated` only.
+- The drill-down filter builder gained a `bankAccountIds` option (`bank_account_id in [...]`).
+
+The period picker (antd `RangePicker`) never produces an empty or inverted range, so the
+validation message in the Controls section is a guard that the UI cannot reach today; the hook
+still refuses to query for such a period.
