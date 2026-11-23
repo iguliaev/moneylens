@@ -37,6 +37,20 @@ export function e2eCurrentMonthDate(dayOfMonth = 15): string {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * A date a year from now, for budget end dates that must stay in the future.
+ * An end date inside the current month turns a budget "Completed" once the
+ * calendar passes it, which changes what the list shows and makes a test
+ * depend on the day it runs.
+ */
+export function e2eFutureDate(dayOfMonth = 15): string {
+  const date = new Date();
+  date.setUTCHours(12, 0, 0, 0);
+  date.setUTCFullYear(date.getUTCFullYear() + 1);
+  date.setUTCDate(dayOfMonth);
+  return date.toISOString().slice(0, 10);
+}
+
 export async function createTestUser(seed?: string) {
   const email = seed
     ? `test-${seed}-${Date.now()}@example.com`
@@ -696,8 +710,11 @@ export async function createBudget(
   await page.getByRole("button", { name: /save/i }).click();
   await expect(page).toHaveURL(/\/budgets/);
   await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
+  // A budget whose end date has passed carries a "Completed" tag in the same
+  // cell, so its accessible name is "<name> Completed".
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await expect(
-    page.getByRole("cell", { name: name, exact: true })
+    page.getByRole("cell", { name: new RegExp(`^${escaped}( Completed)?$`) })
   ).toBeVisible();
 }
 export async function seedReferenceDataWithPrefix(

@@ -6,6 +6,7 @@ import {
   createBudget,
   createTag,
   e2eCurrentMonthDate,
+  e2eFutureDate,
   seedReferenceDataForUser,
   cleanupReferenceDataForUser,
   waitForFormReady,
@@ -44,7 +45,9 @@ test.describe("Budgets", () => {
     const ts = Date.now();
     const name = `e2e-budget-create-dates-${ts}`;
     const startDate = e2eCurrentMonthDate(10);
-    const endDate = e2eCurrentMonthDate(20);
+    // In the future, so the budget never turns "Completed" depending on the
+    // day the suite runs.
+    const endDate = e2eFutureDate();
 
     await createBudget(
       page,
@@ -447,7 +450,9 @@ test.describe("Budget dashboard ordering", () => {
     };
 
     await page.goto("/budgets");
-    await expect(page.getByRole("cell", { name: sorted[0], exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: sorted[0], exact: true })
+    ).toBeVisible();
     expect(await visibleOrder()).toEqual(sorted);
 
     // Updating a row rewrites it, which used to move it in the unordered list.
