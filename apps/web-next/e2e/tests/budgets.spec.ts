@@ -58,6 +58,12 @@ test.describe("Budgets", () => {
       startDate,
       endDate
     );
+
+    // createBudget accepts a "Completed" tag on the name cell, so check here
+    // that a budget ending in the future is not shown as completed.
+    await expect(
+      page.getByRole("row").filter({ hasText: name }).getByText("Completed")
+    ).toHaveCount(0);
   });
 
   test("user can edit a budget", async ({ page }) => {
