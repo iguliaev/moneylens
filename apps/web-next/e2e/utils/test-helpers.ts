@@ -29,10 +29,11 @@ export const supabaseAdmin = createClient<Database>(
   { auth: { persistSession: false } }
 );
 
-export function e2eCurrentMonthDate(dayOfMonth = 15): string {
+export function e2eCurrentMonthDate(dayOfMonth = 15, yearsAhead = 0): string {
   // Use UTC + a stable day inside the month to avoid timezone + month-boundary flakiness.
   const date = new Date();
   date.setUTCHours(12, 0, 0, 0);
+  date.setUTCFullYear(date.getUTCFullYear() + yearsAhead);
   date.setUTCDate(dayOfMonth);
   return date.toISOString().slice(0, 10);
 }
@@ -696,9 +697,8 @@ export async function createBudget(
   await page.getByRole("button", { name: /save/i }).click();
   await expect(page).toHaveURL(/\/budgets/);
   await expect(page.getByRole("heading", { name: "Budgets" })).toBeVisible();
-  await expect(
-    page.getByRole("cell", { name: name, exact: true })
-  ).toBeVisible();
+  // Match by row text: the name cell can also hold a tag (e.g. "Completed").
+  await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
 }
 export async function seedReferenceDataWithPrefix(
   userId: string,

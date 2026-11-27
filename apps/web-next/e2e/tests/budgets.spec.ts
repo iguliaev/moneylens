@@ -44,7 +44,8 @@ test.describe("Budgets", () => {
     const ts = Date.now();
     const name = `e2e-budget-create-dates-${ts}`;
     const startDate = e2eCurrentMonthDate(10);
-    const endDate = e2eCurrentMonthDate(20);
+    // A year ahead, so the budget never turns "Completed" mid-suite.
+    const endDate = e2eCurrentMonthDate(15, 1);
 
     await createBudget(
       page,
@@ -55,6 +56,11 @@ test.describe("Budgets", () => {
       startDate,
       endDate
     );
+
+    // createBudget matches by row text, so check the tag explicitly.
+    await expect(
+      page.getByRole("row").filter({ hasText: name }).getByText("Completed")
+    ).toHaveCount(0);
   });
 
   test("user can edit a budget", async ({ page }) => {
